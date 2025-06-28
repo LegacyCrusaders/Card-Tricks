@@ -13,87 +13,70 @@
       margin-top: 50px;
     }
     h1 {
-      margin-bottom: 10px; /* reduced space below title */
-      cursor: pointer; /* pointer on hover */
+      margin-bottom: 10px;
+      cursor: pointer;
       user-select: none;
     }
     button {
       font-size: 18px;
-      margin: 15px 0 30px 0;
+      margin: 10px;
       padding: 10px 20px;
       background-color: white;
       color: black;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      width: 160px;
-    }
-    button:hover {
-      background-color: lightgray;
     }
     #card-display {
       font-size: 140px;
-      margin: 20px 0 10px 0;
-      user-select: none;
+      margin: 10px 0;
       display: inline-flex;
-      align-items: center;
-      justify-content: center;
       gap: 10px;
-      height: 180px;
     }
-    #card-rank {
-      font-weight: bold;
-      font-size: 140px;
-      line-height: 1;
-      color: white;
-      user-select: none;
-    }
-    #card-suit {
-      font-size: 140px;
+    #card-rank, #card-suit {
       line-height: 1;
       user-select: none;
     }
-    #number-display {
-      font-size: 40px;
-      margin: 30px 0 10px 0;
-      user-select: none;
+    #number-display, #hit-count, #miss-count {
+      font-size: 28px;
+      margin: 15px 0;
+    }
+    .button-row {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
     }
     #stack-display {
-      margin-top: 30px;
-      font-size: 16px;
-      color: #ccc;
-      max-width: 90vw;
+      margin-top: 20px;
       white-space: pre-wrap;
-      word-wrap: break-word;
-      user-select: text;
-      display: none; /* hidden by default */
-      text-align: left;
-      margin-left: auto;
-      margin-right: auto;
+      font-size: 14px;
+      display: none;
     }
   </style>
 </head>
 <body>
   <h1 id="title">Pick a Card & Number</h1>
-
-  <div id="card-display" aria-label="Playing card">
-    <div id="card-rank">A</div>
-    <div id="card-suit">♠</div>
-  </div>
+  <div id="card-display"><div id="card-rank">A</div><div id="card-suit">♠</div></div>
   <button onclick="buttonPressed('card')">Random Card</button>
-
   <div id="number-display">Number: (loading...)</div>
   <button onclick="buttonPressed('number')">Random Number</button>
-
   <button onclick="buttonPressed('both')">Random Both</button>
+
+  <div class="button-row">
+    <div>
+      <div id="hit-count">Hits: 3</div>
+      <button onclick="recordHit()">Hit</button>
+    </div>
+    <div>
+      <div id="miss-count">Misses: 68</div>
+      <button onclick="recordMiss()">Miss</button>
+    </div>
+  </div>
 
   <pre id="stack-display"></pre>
 
   <script>
-    const stack = [
+    let stack = [
       '4 of Clubs', '7 of Hearts', 'King of Diamonds', '9 of Spades', '2 of Clubs', 'Jack of Hearts', '5 of Diamonds', 'Ace of Spades',
       '10 of Clubs', '3 of Hearts', '6 of Spades', 'Queen of Clubs', '8 of Diamonds', 'King of Clubs', '2 of Diamonds', '4 of Hearts',
       'Ace of Clubs', '7 of Spades', '3 of Diamonds', '9 of Clubs', '5 of Hearts', 'Jack of Spades', '6 of Diamonds', 'Queen of Hearts',
@@ -105,11 +88,37 @@
 
     let currentCard = null;
     let currentNumber = null;
+    let hitCount = 3;
+    let missCount = 68;
     let lastPresses = [];
-
-    // For secret clicks
     let clickCount = 0;
     let clickTimer = null;
+
+    const suits = {
+      Spades: '♠',
+      Clubs: '♣',
+      Hearts: '♥',
+      Diamonds: '♦'
+    };
+
+    const suitColors = {
+      Spades: 'white',
+      Clubs: 'white',
+      Hearts: 'red',
+      Diamonds: 'red'
+    };
+
+    function parseCard(card) {
+      const [rank, , suit] = card.split(' ');
+      return { rank, suit };
+    }
+
+    function displayCard(cardStr) {
+      const { rank, suit } = parseCard(cardStr);
+      document.getElementById('card-rank').textContent = rank === '10' ? '10' : rank[0];
+      document.getElementById('card-suit').textContent = suits[suit];
+      document.getElementById('card-suit').style.color = suitColors[suit];
+    }
 
     function numberToCard(n) {
       return stack[n - 1];
@@ -119,107 +128,52 @@
       return stack.indexOf(card) + 1;
     }
 
-    function parseCard(cardStr) {
-      const [rank, , suit] = cardStr.split(' ');
-      return { rank, suit };
-    }
-
-    function suitSymbol(suit) {
-      switch (suit) {
-        case 'Spades':   return { symbol: '♠', color: 'white' };
-        case 'Clubs':    return { symbol: '♣', color: 'white' };
-        case 'Hearts':   return { symbol: '♥', color: 'red' };
-        case 'Diamonds': return { symbol: '♦', color: 'red' };
-        default:         return { symbol: '?', color: 'white' };
-      }
-    }
-
-    function updatePressHistory(buttonName) {
-      lastPresses.push(buttonName);
+    function updatePressHistory(type) {
+      lastPresses.push(type);
       if (lastPresses.length > 3) lastPresses.shift();
     }
 
-    function displayCard(cardStr) {
-      const cardRankDiv = document.getElementById('card-rank');
-      const cardSuitDiv = document.getElementById('card-suit');
-
-      const { rank, suit } = parseCard(cardStr);
-      const { symbol, color } = suitSymbol(suit);
-
-      let displayRank = rank;
-      if (rank === '10') displayRank = '10';
-      else if (rank === 'Jack') displayRank = 'J';
-      else if (rank === 'Queen') displayRank = 'Q';
-      else if (rank === 'King') displayRank = 'K';
-      else if (rank === 'Ace') displayRank = 'A';
-
-      cardRankDiv.textContent = displayRank;
-      cardSuitDiv.textContent = symbol;
-      cardSuitDiv.style.color = color;
-      cardRankDiv.style.color = 'white';
-    }
-
     function showCard() {
-      if (lastPresses.length > 0 && lastPresses[lastPresses.length - 1] === 'number' && currentNumber !== null) {
+      if (lastPresses.at(-1) === 'number' && currentNumber !== null) {
         currentCard = numberToCard(currentNumber);
       } else {
-        const randomIndex = Math.floor(Math.random() * 52);
-        currentCard = stack[randomIndex];
+        const idx = Math.floor(Math.random() * 52);
+        currentCard = stack[idx];
       }
       displayCard(currentCard);
       updatePressHistory('card');
     }
 
     function showNumber() {
-      const numberDisplay = document.getElementById('number-display');
-      if (lastPresses.length > 0 && lastPresses[lastPresses.length - 1] === 'card' && currentCard !== null) {
+      if (lastPresses.at(-1) === 'card' && currentCard !== null) {
         currentNumber = cardToNumber(currentCard);
       } else {
         currentNumber = Math.floor(Math.random() * 52) + 1;
       }
-      numberDisplay.textContent = `Number: ${currentNumber}`;
+      document.getElementById('number-display').textContent = `Number: ${currentNumber}`;
       updatePressHistory('number');
     }
 
     function showBoth() {
       const numberDisplay = document.getElementById('number-display');
-
       const last3 = lastPresses.slice(-3);
-      const sequenceIsCardNumberBoth = last3.length === 3 &&
-                                      last3[0] === 'card' &&
-                                      last3[1] === 'number' &&
-                                      last3[2] === 'both';
-
-      if (sequenceIsCardNumberBoth && currentNumber !== null) {
+      const matchSeq = last3.join(',') === 'card,number,both';
+      if (matchSeq && currentNumber !== null) {
         currentCard = numberToCard(currentNumber);
-        displayCard(currentCard);
-        numberDisplay.textContent = `Number: ${currentNumber}`;
       } else {
         currentNumber = Math.floor(Math.random() * 52) + 1;
-
-        let randomCard;
+        let newCard;
         do {
-          const randomIndex = Math.floor(Math.random() * 52);
-          randomCard = stack[randomIndex];
-        } while (cardToNumber(randomCard) === currentNumber);
-
-        currentCard = randomCard;
-        displayCard(currentCard);
-        numberDisplay.textContent = `Number: ${currentNumber}`;
+          const idx = Math.floor(Math.random() * 52);
+          newCard = stack[idx];
+        } while (cardToNumber(newCard) === currentNumber);
+        currentCard = newCard;
       }
-
+      numberDisplay.textContent = `Number: ${currentNumber}`;
+      displayCard(currentCard);
       updatePressHistory('both');
     }
 
-    // Hide stack if visible
-    function hideStackIfVisible() {
-      const stackDiv = document.getElementById('stack-display');
-      if (stackDiv.style.display === 'block') {
-        stackDiv.style.display = 'none';
-      }
-    }
-
-    // Handle button presses + hide stack if visible
     function buttonPressed(type) {
       hideStackIfVisible();
       if (type === 'card') showCard();
@@ -227,41 +181,52 @@
       else if (type === 'both') showBoth();
     }
 
-    // Secret triple-click to show stack; single-click to hide if visible
+    function recordHit() {
+      hitCount++;
+      document.getElementById('hit-count').textContent = `Hits: ${hitCount}`;
+      if (currentCard) {
+        const idx = cardToNumber(currentCard) - 1;
+        stack = [...stack.slice(idx + 1), ...stack.slice(0, idx + 1)];
+      }
+    }
+
+    function recordMiss() {
+      missCount++;
+      document.getElementById('miss-count').textContent = `Misses: ${missCount}`;
+    }
+
+    function hideStackIfVisible() {
+      const stackDiv = document.getElementById('stack-display');
+      if (stackDiv.style.display === 'block') {
+        stackDiv.style.display = 'none';
+      }
+    }
+
     document.getElementById('title').addEventListener('click', () => {
       const stackDiv = document.getElementById('stack-display');
-
       if (stackDiv.style.display === 'block') {
-        // Single click hides stack if visible
         stackDiv.style.display = 'none';
         clickCount = 0;
-        if (clickTimer) {
-          clearTimeout(clickTimer);
-          clickTimer = null;
-        }
+        if (clickTimer) clearTimeout(clickTimer);
         return;
       }
-
-      // If stack not visible, count clicks for triple-click
       clickCount++;
       if (clickTimer) clearTimeout(clickTimer);
       clickTimer = setTimeout(() => {
         clickCount = 0;
       }, 1000);
-
       if (clickCount === 3) {
         clickCount = 0;
-        let formattedStack = stack.map((card, i) => `${i + 1}: ${card}`).join('\n');
-        stackDiv.textContent = formattedStack;
+        stackDiv.textContent = stack.map((c, i) => `${i + 1}: ${c}`).join('\n');
         stackDiv.style.display = 'block';
       }
     });
 
-    window.onload = function() {
+    window.onload = () => {
       currentNumber = Math.floor(Math.random() * 52) + 1;
       currentCard = numberToCard(currentNumber);
-      displayCard(currentCard);
       document.getElementById('number-display').textContent = `Number: ${currentNumber}`;
+      displayCard(currentCard);
     };
   </script>
 </body>
