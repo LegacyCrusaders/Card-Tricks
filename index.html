@@ -151,7 +151,7 @@
     function showBoth() {
       const numberDisplay = document.getElementById('number-display');
       const last3 = lastPresses.slice(-3);
-      const matchSeq = last3.join(',') === 'card,number,both';
+      const matchSeq = last3.join(',') === 'card,number';
       if (matchSeq && currentNumber !== null) {
         currentCard = numberToCard(currentNumber);
       } else {
