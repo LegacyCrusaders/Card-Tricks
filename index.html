@@ -65,18 +65,18 @@
   <div class="button-row">
     <div>
       <div id="hit-count">Hits: 3</div>
-      <button onclick="recordHit()">Hit</button>
+      <button onclick="buttonPressed('hit')">Hit</button>
     </div>
     <div>
       <div id="miss-count">Misses: 68</div>
-      <button onclick="recordMiss()">Miss</button>
+      <button onclick="buttonPressed('miss')">Miss</button>
     </div>
   </div>
 
   <pre id="stack-display"></pre>
 
   <script>
-    let stack = [
+    const initialStack = [
       '4 of Clubs', '7 of Hearts', 'King of Diamonds', '9 of Spades', '2 of Clubs', 'Jack of Hearts', '5 of Diamonds', 'Ace of Spades',
       '10 of Clubs', '3 of Hearts', '6 of Spades', 'Queen of Clubs', '8 of Diamonds', 'King of Clubs', '2 of Diamonds', '4 of Hearts',
       'Ace of Clubs', '7 of Spades', '3 of Diamonds', '9 of Clubs', '5 of Hearts', 'Jack of Spades', '6 of Diamonds', 'Queen of Hearts',
@@ -86,6 +86,7 @@
       '8 of Spades', '10 of Diamonds', '10 of Hearts', '10 of Spades'
     ];
 
+    let stack = [...initialStack];
     let currentCard = null;
     let currentNumber = null;
     let hitCount = 3;
@@ -95,17 +96,10 @@
     let clickTimer = null;
 
     const suits = {
-      Spades: '♠',
-      Clubs: '♣',
-      Hearts: '♥',
-      Diamonds: '♦'
+      Spades: '♠', Clubs: '♣', Hearts: '♥', Diamonds: '♦'
     };
-
     const suitColors = {
-      Spades: 'white',
-      Clubs: 'white',
-      Hearts: 'red',
-      Diamonds: 'red'
+      Spades: 'white', Clubs: 'white', Hearts: 'red', Diamonds: 'red'
     };
 
     function parseCard(card) {
@@ -179,9 +173,12 @@
       if (type === 'card') showCard();
       else if (type === 'number') showNumber();
       else if (type === 'both') showBoth();
+      else if (type === 'hit') recordHit();
+      else if (type === 'miss') recordMiss();
     }
 
     function recordHit() {
+      hideStackIfVisible();
       hitCount++;
       document.getElementById('hit-count').textContent = `Hits: ${hitCount}`;
       if (currentCard) {
@@ -191,8 +188,10 @@
     }
 
     function recordMiss() {
+      hideStackIfVisible();
       missCount++;
       document.getElementById('miss-count').textContent = `Misses: ${missCount}`;
+      stack = [...initialStack];
     }
 
     function hideStackIfVisible() {
