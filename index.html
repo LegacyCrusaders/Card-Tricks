@@ -3,230 +3,332 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pick a Card & Number</title>
+  <title>Running Card Choice Statistics</title>
   <style>
     body {
-      background-color: black;
-      color: white;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
-      margin-top: 50px;
+      font-family: Arial, sans-serif;
+      max-width: 460px;
+      margin: 20px auto;
+      padding: 20px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: #f9f9f9;
+      user-select: none;
     }
     h1 {
-      margin-bottom: 10px;
+      text-align: center;
+      margin-bottom: 8px;
+      line-height: 1.2;
+      margin-top: 0;
       cursor: pointer;
       user-select: none;
+    }
+    h1 span {
+      display: block;
+    }
+    #description {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+    #stackDisplay {
+      font-family: monospace;
+      font-size: 14px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-bottom: 20px;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      display: none;
+      user-select: text;
+      line-height: 1.3;
+    }
+    .input-area {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .dropdowns {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    select {
+      width: 110px;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
     button {
-      font-size: 18px;
-      margin: 10px;
-      padding: 10px 20px;
-      background-color: white;
-      color: black;
+      padding: 8px 12px;
+      font-size: 14px;
+      border-radius: 4px;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
     }
-    #card-display {
-      font-size: 140px;
-      margin: 10px 0;
-      display: inline-flex;
-      gap: 10px;
+    button:hover {
+      background-color: #0056b3;
     }
-    #card-rank, #card-suit {
+    #submitBtn {
+      margin-top: 20px;
+      width: 100%;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    #result {
+      margin-top: 24px;
+      font-size: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+      min-height: 28px;
+    }
+    option.red {
+      color: red;
+    }
+    .card-display {
+      flex-grow: 1;
+      text-align: center;
+      font-size: 80px;
+      font-weight: bold;
       line-height: 1;
+      cursor: pointer;
       user-select: none;
     }
-    #number-display, #hit-count, #miss-count {
-      font-size: 28px;
-      margin: 15px 0;
+    .card-display.red {
+      color: red;
     }
-    .button-row {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+    .card-display.black {
+      color: black;
     }
-    #stack-display {
-      margin-top: 20px;
-      white-space: pre-wrap;
-      font-size: 14px;
+    #loading {
+      text-align: center;
+      font-size: 16px;
+      color: #777;
       display: none;
     }
   </style>
 </head>
 <body>
-  <h1 id="title">Pick a Card & Number</h1>
-  <div id="card-display"><div id="card-rank">A</div><div id="card-suit">♠</div></div>
-  <button onclick="buttonPressed('card')">Random Card</button>
-  <div id="number-display">Number: (loading...)</div>
-  <button onclick="buttonPressed('number')">Random Number</button>
-  <button onclick="buttonPressed('both')">Random Both</button>
+  <h1 id="title">
+    <span>Running Card</span>
+    <span>Choice Statistics</span>
+  </h1>
 
-  <div class="button-row">
-    <div>
-      <div id="hit-count">Hits: 3</div>
-      <button onclick="buttonPressed('hit')">Hit</button>
-    </div>
-    <div>
-      <div id="miss-count">Misses: 68</div>
-      <button onclick="buttonPressed('miss')">Miss</button>
-    </div>
+  <div id="description">
+    An ever updating data set on the commonality of named card and number combinations and the probability of it being at their position.
   </div>
 
-  <pre id="stack-display"></pre>
+  <div id="stackDisplay"></div>
+
+  <div class="input-area">
+    <div class="dropdowns">
+      <div class="controls">
+        <select id="numberSelect"></select>
+        <button id="randomNumberBtn">Randomize</button>
+      </div>
+      <div class="controls">
+        <select id="cardSelect"></select>
+        <button id="randomCardBtn">Randomize</button>
+      </div>
+    </div>
+    <div id="cardDisplay" class="card-display black">A♠</div>
+  </div>
+
+  <button id="submitBtn">Submit</button>
+
+  <div id="loading">Querying database...</div>
+  <div id="result">Select a number and card, then submit to see likelihood of being chosen.</div>
 
   <script>
-    const initialStack = [
-      '4 of Clubs', '7 of Hearts', 'King of Diamonds', '9 of Spades', '2 of Clubs', 'Jack of Hearts', '5 of Diamonds', 'Ace of Spades',
-      '10 of Clubs', '3 of Hearts', '6 of Spades', 'Queen of Clubs', '8 of Diamonds', 'King of Clubs', '2 of Diamonds', '4 of Hearts',
-      'Ace of Clubs', '7 of Spades', '3 of Diamonds', '9 of Clubs', '5 of Hearts', 'Jack of Spades', '6 of Diamonds', 'Queen of Hearts',
-      '8 of Clubs', 'King of Spades', '2 of Spades', '4 of Diamonds', 'Ace of Hearts', '7 of Clubs', '3 of Spades', '9 of Hearts',
-      '5 of Spades', 'Jack of Diamonds', '6 of Clubs', 'Queen of Spades', '8 of Hearts', 'King of Hearts', '2 of Hearts', '4 of Spades',
-      'Ace of Diamonds', '7 of Diamonds', '3 of Clubs', '9 of Diamonds', '5 of Clubs', 'Jack of Clubs', '6 of Hearts', 'Queen of Diamonds',
-      '8 of Spades', '10 of Diamonds', '10 of Hearts', '10 of Spades'
+    const mnemonicaStack = [
+      "4♣","2♦","7♦","3♣","9♠","Q♦","6♠","5♠","Q♣","2♠",
+      "J♦","8♣","3♠","7♣","5♥","10♠","K♦","2♣","3♥","8♠",
+      "6♦","5♣","K♠","9♥","A♣","4♠","J♥","10♦","10♣","K♥",
+      "3♦","8♥","6♣","10♥","9♣","4♥","Q♠","A♥","7♠","8♦",
+      "A♠","9♦","K♣","6♥","Q♥","2♥","7♥","5♦","4♦","A♦",
+      "J♣","J♠"
     ];
 
-    let stack = [...initialStack];
-    let currentCard = null;
-    let currentNumber = null;
-    let hitCount = 3;
-    let missCount = 68;
-    let lastPresses = [];
+    const cardToPosition = Object.fromEntries(mnemonicaStack.map((card, i) => [card, i + 1]));
+    const numberToCard = Object.fromEntries(mnemonicaStack.map((card, i) => [i + 1, card]));
+
+    const numberSelect = document.getElementById('numberSelect');
+    const cardSelect = document.getElementById('cardSelect');
+    const resultDiv = document.getElementById('result');
+    const loadingDiv = document.getElementById('loading');
+    const cardDisplay = document.getElementById('cardDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+    const stackDisplay = document.getElementById('stackDisplay');
+    const title = document.getElementById('title');
+
     let clickCount = 0;
-    let clickTimer = null;
+    let lastCardSelected = false;
+    let lastNumberSelected = false;
+    let stats = {};
+    let titleClicks = [];
+    let updateTimeout;
 
-    const suits = {
-      Spades: '♠', Clubs: '♣', Hearts: '♥', Diamonds: '♦'
-    };
-    const suitColors = {
-      Spades: 'white', Clubs: 'white', Hearts: 'red', Diamonds: 'red'
-    };
+    function populateDropdowns() {
+      for (let i = 1; i <= 52; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i;
+        numberSelect.appendChild(opt);
+      }
 
-    function parseCard(card) {
-      const [rank, , suit] = card.split(' ');
-      return { rank, suit };
+      for (let card of mnemonicaStack) {
+        const opt = document.createElement('option');
+        opt.value = card;
+        opt.textContent = card;
+        if (card.includes('♥') || card.includes('♦')) opt.classList.add('red');
+        cardSelect.appendChild(opt);
+      }
     }
 
-    function displayCard(cardStr) {
-      const { rank, suit } = parseCard(cardStr);
-      document.getElementById('card-rank').textContent = rank === '10' ? '10' : rank[0];
-      document.getElementById('card-suit').textContent = suits[suit];
-      document.getElementById('card-suit').style.color = suitColors[suit];
+    function updateCardDisplay(card) {
+      cardDisplay.textContent = card;
+      cardDisplay.className = 'card-display ' + (card.includes('♥') || card.includes('♦') ? 'red' : 'black');
     }
 
-    function numberToCard(n) {
-      return stack[n - 1];
+    function getLikelihood(card, number, alwaysNew = false) {
+      const key = `${card}-${number}`;
+      const isCorrect = cardToPosition[card] === parseInt(number);
+      if (!(key in stats) || alwaysNew) {
+        stats[key] = isCorrect
+          ? +(0.13 + Math.random() * 0.16).toFixed(2)
+          : +(1 + Math.random() * 4).toFixed(2);
+      }
+      return stats[key];
     }
 
-    function cardToNumber(card) {
-      return stack.indexOf(card) + 1;
+    function updateResultDisplay(card, number, forceNew = true, forcedLikelihood = null) {
+      clearTimeout(updateTimeout);
+      loadingDiv.style.display = 'block';
+      resultDiv.textContent = '';
+      updateTimeout = setTimeout(() => {
+        const likelihood = forcedLikelihood !== null
+          ? forcedLikelihood
+          : getLikelihood(card, number, forceNew);
+        loadingDiv.style.display = 'none';
+        resultDiv.textContent = `Chosen ${likelihood.toFixed(2)}% of the time.`;
+      }, 250);
     }
 
-    function updatePressHistory(type) {
-      lastPresses.push(type);
-      if (lastPresses.length > 3) lastPresses.shift();
-    }
-
-    function showCard() {
-      if (lastPresses.at(-1) === 'number' && currentNumber !== null) {
-        currentCard = numberToCard(currentNumber);
+    function randomizeCard(force = false) {
+      let card;
+      if (force && lastNumberSelected) {
+        const number = parseInt(numberSelect.value);
+        card = numberToCard[number];
+        lastNumberSelected = false;
       } else {
-        const idx = Math.floor(Math.random() * 52);
-        currentCard = stack[idx];
+        const index = Math.floor(Math.random() * 52);
+        card = mnemonicaStack[index];
+        lastCardSelected = true;
       }
-      displayCard(currentCard);
-      updatePressHistory('card');
+      cardSelect.value = card;
+      updateCardDisplay(card);
+      updateResultDisplay(card, numberSelect.value);
     }
 
-    function showNumber() {
-      if (lastPresses.at(-1) === 'card' && currentCard !== null) {
-        currentNumber = cardToNumber(currentCard);
+    function randomizeNumber(force = false) {
+      let number;
+      if (force && lastCardSelected) {
+        const card = cardSelect.value;
+        number = cardToPosition[card];
+        lastCardSelected = false;
       } else {
-        currentNumber = Math.floor(Math.random() * 52) + 1;
+        number = Math.floor(Math.random() * 52) + 1;
+        lastNumberSelected = true;
       }
-      document.getElementById('number-display').textContent = `Number: ${currentNumber}`;
-      updatePressHistory('number');
+      numberSelect.value = number;
+      updateResultDisplay(cardSelect.value, number);
     }
 
-    function showBoth() {
-      const numberDisplay = document.getElementById('number-display');
-      const last3 = lastPresses.slice(-3);
-      const matchSeq = last3.join(',') === 'card,number';
-      if (matchSeq && currentNumber !== null) {
-        currentCard = numberToCard(currentNumber);
-      } else {
-        currentNumber = Math.floor(Math.random() * 52) + 1;
-        let newCard;
-        do {
-          const idx = Math.floor(Math.random() * 52);
-          newCard = stack[idx];
-        } while (cardToNumber(newCard) === currentNumber);
-        currentCard = newCard;
-      }
-      numberDisplay.textContent = `Number: ${currentNumber}`;
-      displayCard(currentCard);
-      updatePressHistory('both');
-    }
+    cardSelect.addEventListener('change', () => {
+      lastCardSelected = true;
+      updateCardDisplay(cardSelect.value);
+      hideStack();
+      updateResultDisplay(cardSelect.value, numberSelect.value);
+    });
 
-    function buttonPressed(type) {
-      hideStackIfVisible();
-      if (type === 'card') showCard();
-      else if (type === 'number') showNumber();
-      else if (type === 'both') showBoth();
-      else if (type === 'hit') recordHit();
-      else if (type === 'miss') recordMiss();
-    }
+    numberSelect.addEventListener('change', () => {
+      lastNumberSelected = true;
+      hideStack();
+      updateResultDisplay(cardSelect.value, numberSelect.value);
+    });
 
-    function recordHit() {
-      hideStackIfVisible();
-      hitCount++;
-      document.getElementById('hit-count').textContent = `Hits: ${hitCount}`;
-      if (currentCard) {
-        const idx = cardToNumber(currentCard) - 1;
-        stack = [...stack.slice(idx + 1), ...stack.slice(0, idx + 1)];
-      }
-    }
+    document.getElementById('randomCardBtn').onclick = () => { randomizeCard(true); hideStack(); };
+    document.getElementById('randomNumberBtn').onclick = () => { randomizeNumber(true); hideStack(); };
 
-    function recordMiss() {
-      hideStackIfVisible();
-      missCount++;
-      document.getElementById('miss-count').textContent = `Misses: ${missCount}`;
-      stack = [...initialStack];
-    }
-
-    function hideStackIfVisible() {
-      const stackDiv = document.getElementById('stack-display');
-      if (stackDiv.style.display === 'block') {
-        stackDiv.style.display = 'none';
-      }
-    }
-
-    document.getElementById('title').addEventListener('click', () => {
-      const stackDiv = document.getElementById('stack-display');
-      if (stackDiv.style.display === 'block') {
-        stackDiv.style.display = 'none';
-        clickCount = 0;
-        if (clickTimer) clearTimeout(clickTimer);
-        return;
-      }
+    cardDisplay.onclick = () => {
       clickCount++;
-      if (clickTimer) clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => {
-        clickCount = 0;
-      }, 1000);
-      if (clickCount === 3) {
-        clickCount = 0;
-        stackDiv.textContent = stack.map((c, i) => `${i + 1}: ${c}`).join('\n');
-        stackDiv.style.display = 'block';
+      if (clickCount % 3 === 0) {
+        const index = Math.floor(Math.random() * 52);
+        const card = mnemonicaStack[index];
+        const number = index + 1;
+        cardSelect.value = card;
+        numberSelect.value = number;
+        updateCardDisplay(card);
+        updateResultDisplay(card, number, true);
+      } else {
+        randomizeCard();
+        randomizeNumber();
+      }
+      hideStack();
+    };
+
+    submitBtn.onclick = () => {
+      const card = cardSelect.value;
+      const number = parseInt(numberSelect.value);
+      const key = `${card}-${number}`;
+      if (!(key in stats)) stats[key] = getLikelihood(card, number);
+      const increment = Math.random() < 0.5 ? 0.01 : 0.02;
+      stats[key] = Math.min(5.0, +(stats[key] + increment).toFixed(2));
+      updateResultDisplay(card, number, false, stats[key]);
+    };
+
+    function hideStack() {
+      stackDisplay.style.display = 'none';
+    }
+
+    title.addEventListener('click', () => {
+      const now = Date.now();
+      titleClicks = titleClicks.filter(t => now - t < 700);
+      titleClicks.push(now);
+      if (titleClicks.length >= 3) {
+        if (stackDisplay.style.display === 'block') {
+          stackDisplay.style.display = 'none';
+        } else {
+          stackDisplay.textContent = mnemonicaStack.map((card, i) => `${i + 1}: ${card}`).join('\n');
+          stackDisplay.style.display = 'block';
+        }
+        titleClicks = [];
       }
     });
 
-    window.onload = () => {
-      currentNumber = Math.floor(Math.random() * 52) + 1;
-      currentCard = numberToCard(currentNumber);
-      document.getElementById('number-display').textContent = `Number: ${currentNumber}`;
-      displayCard(currentCard);
-    };
+    populateDropdowns();
+    const randIndex = Math.floor(Math.random() * 52);
+    cardSelect.value = mnemonicaStack[randIndex];
+    numberSelect.value = randIndex + 1;
+    updateCardDisplay(mnemonicaStack[randIndex]);
+    updateResultDisplay(cardSelect.value, numberSelect.value);
   </script>
 </body>
 </html>
