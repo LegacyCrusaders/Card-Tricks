@@ -2,105 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prediction</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
-body {
-  background: black;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-family: Arial, sans-serif;
-  font-size: 28px;
-  user-select: none;
-}
+  body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+  }
+  #text {
+    font-size: 2.2em;
+    padding: 20px;
+  }
 </style>
 </head>
-
 <body>
-<div id="msg">Tap to begin</div>
+
+<div id="text">Tap to begin<br><br>Version 1</div>
 
 <script>
 let started = false;
-let armed = false;
+let faceDown = false;
+let lastDirection = null;
+let lastSpeed = 0;
 
-let lastTime = null;
-let lastBeta = null;
-let lastGamma = null;
+const SPEED_THRESHOLD = 45; // requested value
+const text = document.getElementById("text");
 
-const SPEED_THRESHOLD = 80; // tuned for Android hand motion
-
-document.body.addEventListener("click", async () => {
-  if (started) return;
-
-  if (typeof DeviceMotionEvent !== "undefined" &&
-      typeof DeviceMotionEvent.requestPermission === "function") {
-    try {
-      const permission = await DeviceMotionEvent.requestPermission();
-      if (permission !== "granted") return;
-    } catch (e) {}
+function requestMotionPermission() {
+  if (
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    DeviceMotionEvent.requestPermission().then(response => {
+      if (response === "granted") {
+        startMotion();
+      } else {
+        text.innerHTML = "Motion permission denied";
+      }
+    });
+  } else {
+    startMotion();
   }
+}
 
+function startMotion() {
   started = true;
-  document.getElementById("msg").innerText = "Place phone face down";
-  window.addEventListener("deviceorientation", onOrient);
-});
+  text.innerHTML = "Version 1<br><br>Set phone down";
+  window.addEventListener("devicemotion", handleMotion);
+}
 
-function onOrient(e) {
-  const beta = e.beta;
-  const gamma = e.gamma;
-  const now = Date.now();
+function handleMotion(event) {
+  if (!event.accelerationIncludingGravity) return;
 
-  const isFaceDown = Math.abs(beta) > 150;
+  const x = event.accelerationIncludingGravity.x;
+  const y = event.accelerationIncludingGravity.y;
+  const z = event.accelerationIncludingGravity.z;
 
-  if (isFaceDown) {
-    armed = true;
-    lastTime = now;
-    lastBeta = beta;
-    lastGamma = gamma;
-    document.getElementById("msg").innerText = "Lift the phone";
+  const speed = Math.sqrt(x*x + y*y + z*z);
+  lastSpeed = speed;
+
+  // Detect face down / face up
+  if (z < -7) {
+    faceDown = true;
+    text.innerHTML = "Version 1<br><br>(waiting)";
     return;
   }
 
-  if (!armed || lastTime === null) return;
-
-  const dt = (now - lastTime) / 1000;
-  if (dt <= 0) return;
-
-  const speed =
-    Math.abs(beta - lastBeta) / dt +
-    Math.abs(gamma - lastGamma) / dt;
-
-  if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
-    armed = false;
-    reveal(beta, gamma, speed);
+  if (z > 7 && faceDown) {
+    faceDown = false;
+    revealPrediction();
   }
 
-  lastTime = now;
-  lastBeta = beta;
-  lastGamma = gamma;
+  // Track dominant direction
+  if (Math.abs(x) > Math.abs(y)) {
+    lastDirection = x > 0 ? "right" : "left";
+  } else {
+    lastDirection = y > 0 ? "up" : "down";
+  }
 }
 
-function reveal(beta, gamma, speed) {
-  const fast = speed > SPEED_THRESHOLD;
-  let result = "?";
+function revealPrediction() {
+  let number;
 
-  if (beta < -45) result = fast ? 2 : 1;       // top
-  else if (gamma > 45) result = fast ? 4 : 3;  // right
-  else if (beta > 45) result = fast ? 6 : 5;   // bottom
-  else if (gamma < -45) result = fast ? 8 : 7; // left
+  const fast = lastSpeed > SPEED_THRESHOLD;
 
-  document.getElementById("msg").innerText =
-    "My prediction is:\n" + result;
+  if (lastDirection === "up") {
+    number = fast ? 2 : 1;
+  } else if (lastDirection === "right") {
+    number = fast ? 4 : 3;
+  } else if (lastDirection === "down") {
+    number = fast ? 6 : 5;
+  } else if (lastDirection === "left") {
+    number = fast ? 8 : 7;
+  } else {
+    number = "?";
+  }
+
+  text.innerHTML = "My prediction is<br><br>" + number;
 }
+
+document.body.addEventListener("click", () => {
+  if (!started) {
+    requestMotionPermission();
+  }
+});
 </script>
 
 </body>
