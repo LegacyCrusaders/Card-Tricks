@@ -24,7 +24,7 @@
 </head>
 <body>
 
-<div id="text">Tap to begin<br><br>Version 3</div>
+<div id="text">Tap to begin<br><br>Version 4</div>
 
 <script>
 let started = false;
@@ -33,9 +33,25 @@ let revealed = false;
 let lastDirection = null;
 
 const text = document.getElementById("text");
+const EARLY_Z_TRIGGER = -4; // triggers while phone is still angled
 
-// EARLY trigger: prediction locks while phone is still steeply angled
-const EARLY_Z_TRIGGER = -4;
+// Wake lock variable
+let wakeLock = null;
+
+// Request wake lock to keep screen on
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        console.log('Wake lock released');
+      });
+      console.log('Wake lock active');
+    }
+  } catch (err) {
+    console.log('Wake lock not available:', err);
+  }
+}
 
 function requestMotionPermission() {
   if (
@@ -45,18 +61,20 @@ function requestMotionPermission() {
     DeviceMotionEvent.requestPermission().then(response => {
       if (response === "granted") {
         startMotion();
+        requestWakeLock();
       } else {
         text.innerHTML = "Motion permission denied";
       }
     });
   } else {
     startMotion();
+    requestWakeLock();
   }
 }
 
 function startMotion() {
   started = true;
-  text.innerHTML = "Version 3<br><br>Set phone down";
+  text.innerHTML = "Version 4<br><br>Set phone down";
   window.addEventListener("devicemotion", handleMotion);
 }
 
@@ -71,11 +89,11 @@ function handleMotion(event) {
   if (z < -7) {
     faceDown = true;
     revealed = false;
-    text.innerHTML = "Version 3<br><br>(waiting)";
+    text.innerHTML = "Version 4<br><br>(waiting)";
     return;
   }
 
-  // Lock prediction VERY early
+  // Lock prediction very early
   if (faceDown && !revealed && z > EARLY_Z_TRIGGER) {
     revealed = true;
     faceDown = false;
@@ -108,6 +126,7 @@ function revealPrediction() {
   text.innerHTML = "My prediction is<br><br>" + number;
 }
 
+// Tap to begin
 document.body.addEventListener("click", () => {
   if (!started) {
     requestMotionPermission();
