@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Prediction</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <style>
   body {
     margin: 0;
@@ -24,7 +24,7 @@
 </head>
 <body>
 
-<div id="text">Tap to begin<br><br>Version 4</div>
+<div id="text">Tap to begin<br><br>Version 5</div>
 
 <script>
 let started = false;
@@ -33,23 +33,24 @@ let revealed = false;
 let lastDirection = null;
 
 const text = document.getElementById("text");
-const EARLY_Z_TRIGGER = -4; // triggers while phone is still angled
-
-// Wake lock variable
+const EARLY_Z_TRIGGER = -4;
 let wakeLock = null;
 
-// Request wake lock to keep screen on
+// Hide URL bar
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    window.scrollTo(0,1);
+  }, 100);
+});
+
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => {
-        console.log('Wake lock released');
-      });
-      console.log('Wake lock active');
+      wakeLock.addEventListener('release', () => console.log('Wake lock released'));
     }
-  } catch (err) {
-    console.log('Wake lock not available:', err);
+  } catch(e) {
+    console.log('Wake lock unavailable:', e);
   }
 }
 
@@ -74,7 +75,7 @@ function requestMotionPermission() {
 
 function startMotion() {
   started = true;
-  text.innerHTML = "Version 4<br><br>Set phone down";
+  text.innerHTML = "Version 5<br><br>Set phone down";
   window.addEventListener("devicemotion", handleMotion);
 }
 
@@ -85,22 +86,19 @@ function handleMotion(event) {
   const y = event.accelerationIncludingGravity.y;
   const z = event.accelerationIncludingGravity.z;
 
-  // Detect face-down
   if (z < -7) {
     faceDown = true;
     revealed = false;
-    text.innerHTML = "Version 4<br><br>(waiting)";
+    text.innerHTML = "Version 5<br><br>(waiting)";
     return;
   }
 
-  // Lock prediction very early
   if (faceDown && !revealed && z > EARLY_Z_TRIGGER) {
     revealed = true;
     faceDown = false;
     revealPrediction();
   }
 
-  // Track dominant direction continuously
   if (Math.abs(x) > Math.abs(y)) {
     lastDirection = x > 0 ? "right" : "left";
   } else {
@@ -110,27 +108,17 @@ function handleMotion(event) {
 
 function revealPrediction() {
   let number;
-
-  if (lastDirection === "up") {
-    number = 1;
-  } else if (lastDirection === "right") {
-    number = 2;
-  } else if (lastDirection === "down") {
-    number = 3;
-  } else if (lastDirection === "left") {
-    number = 4;
-  } else {
-    number = "?";
-  }
+  if (lastDirection === "up") number = 1;
+  else if (lastDirection === "right") number = 2;
+  else if (lastDirection === "down") number = 3;
+  else if (lastDirection === "left") number = 4;
+  else number = "?";
 
   text.innerHTML = "My prediction is<br><br>" + number;
 }
 
-// Tap to begin
 document.body.addEventListener("click", () => {
-  if (!started) {
-    requestMotionPermission();
-  }
+  if (!started) requestMotionPermission();
 });
 </script>
 
