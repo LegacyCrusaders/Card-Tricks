@@ -11,8 +11,8 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    height: 105vh; /* extra for scrolling to hide URL bar */
-    background: #001f3f; /* fallback color */
+    height: 105vh;
+    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
     font-family: 'SamsungSharpSans', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   }
 
@@ -20,11 +20,11 @@
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: #001f3f;
+    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
+    color: #e0dfff;
     font-size: 28px;
     cursor: pointer;
     z-index: 10;
@@ -39,30 +39,48 @@
     align-items: center;
     justify-content: center;
     margin: 0;
-    /* subtle gradient to mimic Samsung lock screen */
-    background: linear-gradient(to bottom, #001f3f 0%, #003366 100%);
+    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
     position: relative;
   }
 
   .lock-icon {
     position: absolute;
-    top: 40px;
+    top: 50px;
     font-size: 28px;
-    color: #cccccc;
+    color: #e0dfff;
   }
 
   .time {
     font-size: 100px;
     font-weight: 300;
-    color: white;
+    color: #e0dfff;
     letter-spacing: -2px;
   }
 
   .date {
     font-size: 24px;
-    color: #cccccc;
+    color: #e0dfff;
     margin-top: 10px;
   }
+
+  /* Bottom corner buttons */
+  .corner-button {
+    position: absolute;
+    bottom: 40px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 28px;
+  }
+
+  .phone-button { left: 40px; }
+  .camera-button { right: 40px; }
+
 </style>
 </head>
 <body>
@@ -73,6 +91,8 @@
   <div class="lock-icon">🔒</div>
   <div class="time" id="time">--:--</div>
   <div class="date" id="date">Loading...</div>
+  <div class="corner-button phone-button">📞</div>
+  <div class="corner-button camera-button">📷</div>
 </div>
 
 <script>
@@ -83,27 +103,23 @@ let finished = false;
 let wasFaceDown = false;
 let fakeTicker;
 
-// Format time
 function formatTime(d) {
   let h = d.getHours() % 12 || 12;
   let m = d.getMinutes();
   return h + ":" + String(m).padStart(2, "0");
 }
 
-// Update date
 function updateDate(d) {
-  const options = { weekday: 'long', month: 'long', day: 'numeric' };
+  const options = { weekday: 'short', month: 'long', day: 'numeric' };
   document.getElementById("date").textContent =
     d.toLocaleDateString(undefined, options);
 }
 
-// Display function (no blinking)
 function display(d) {
   document.getElementById("time").textContent = formatTime(d);
   updateDate(d);
 }
 
-// Start fake clock
 function startFakeClock() {
   display(fakeTime);
   fakeTicker = setInterval(() => {
@@ -114,7 +130,6 @@ function startFakeClock() {
   }, 1000);
 }
 
-// Orientation detection
 function setupOrientation() {
   window.addEventListener("deviceorientation", (event) => {
     let beta = event.beta;
@@ -128,7 +143,6 @@ function setupOrientation() {
   });
 }
 
-// Rewind function
 function startRewind() {
   setTimeout(() => {
     let steps = 5;
@@ -141,17 +155,15 @@ function startRewind() {
         finished = true;
         setInterval(() => display(new Date()), 1000);
       }
-    }, 500); // 1 minute per 0.5 sec
-  }, 3000); // 3 sec suspense
+    }, 500);
+  }, 3000);
 }
 
-// Tap to start overlay
 document.getElementById("startOverlay").addEventListener("click", async () => {
   document.getElementById("startOverlay").style.display = "none";
   const phone = document.getElementById("phone");
   phone.style.display = "flex";
 
-  // request full screen
   if (document.documentElement.requestFullscreen) {
     await document.documentElement.requestFullscreen();
   } else if (document.documentElement.webkitRequestFullscreen) {
