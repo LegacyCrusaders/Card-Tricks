@@ -1,32 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prediction</title>
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  background: black;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  font-family: sans-serif;
-  text-align: center;
-}
-</style>
-</head>
-
-<body>
-<div id="msg">Tap to begin</div>
-
 <script>
 let armed = false;
-let faceDown = false;
-let locked = false;
-let lastTime, lastBeta, lastGamma;
+let ready = false;
+let lastTime = null;
+let lastBeta = null;
+let lastGamma = null;
 
 const SPEED = 25;
 
@@ -40,35 +17,41 @@ document.body.onclick = async () => {
   }
 
   armed = true;
-  document.getElementById("msg").innerText = "Set phone face down";
+  document.getElementById("msg").innerText = "Place phone face down";
   window.addEventListener("deviceorientation", handle);
 };
 
 function handle(e) {
-  if (!armed || locked) return;
+  if (!armed) return;
 
   const beta = e.beta;
   const gamma = e.gamma;
   const now = Date.now();
 
-  if (!faceDown) {
-    if (Math.abs(beta) < 10 && Math.abs(gamma) < 10) {
-      faceDown = true;
-      document.getElementById("msg").innerText = "Lift the phone";
-      lastTime = now;
-      lastBeta = beta;
-      lastGamma = gamma;
-    }
+  // FACE DOWN = screen clearly down
+  const isFaceDown = Math.abs(beta) > 150;
+
+  // If face down, arm the next reveal
+  if (isFaceDown) {
+    ready = true;
+    lastTime = now;
+    lastBeta = beta;
+    lastGamma = gamma;
+    document.getElementById("msg").innerText = "Lift the phone";
     return;
   }
+
+  // Only reveal if we were face down first
+  if (!ready || lastTime === null) return;
 
   const dt = (now - lastTime) / 1000;
   const speed =
     Math.abs(beta - lastBeta) / dt +
     Math.abs(gamma - lastGamma) / dt;
 
+  // Clear directional tilt
   if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
-    locked = true;
+    ready = false; // require face-down again before next reveal
     reveal(beta, gamma, speed);
   }
 
@@ -81,14 +64,12 @@ function reveal(beta, gamma, speed) {
   const fast = speed > SPEED;
   let n = "?";
 
-  if (beta < -45) n = fast ? 2 : 1;
-  else if (gamma > 45) n = fast ? 4 : 3;
-  else if (beta > 45) n = fast ? 6 : 5;
-  else if (gamma < -45) n = fast ? 8 : 7;
+  if (beta < -45) n = fast ? 2 : 1;       // top
+  else if (gamma > 45) n = fast ? 4 : 3;  // right
+  else if (beta > 45) n = fast ? 6 : 5;   // bottom
+  else if (gamma < -45) n = fast ? 8 : 7; // left
 
   document.getElementById("msg").innerText =
     "My prediction is:\n" + n;
 }
 </script>
-</body>
-</html>
