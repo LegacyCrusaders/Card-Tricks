@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lock Screen Time</title>
+<style>
+  body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    user-select: none;
+  }
+  .lockscreen {
+    text-align: center;
+  }
+  .time {
+    font-size: 80px;
+    font-weight: 300;
+    letter-spacing: -2px;
+  }
+  .date {
+    font-size: 20px;
+    opacity: 0.8;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="lockscreen" id="screen">
+  <div class="time" id="time">--:--</div>
+  <div class="date" id="date"></div>
+</div>
+
+<script>
+let showingFakeTime = true;
+
+function formatTime(d) {
+  let h = d.getHours();
+  let m = d.getMinutes();
+  h = h % 12 || 12;
+  return h + ":" + String(m).padStart(2, "0");
+}
+
+function updateDate(d) {
+  const options = { weekday: 'long', month: 'long', day: 'numeric' };
+  document.getElementById("date").textContent = d.toLocaleDateString(undefined, options);
+}
+
+function showFakeTime() {
+  let d = new Date();
+  d.setMinutes(d.getMinutes() + 5);
+  document.getElementById("time").textContent = formatTime(d);
+  updateDate(d);
+}
+
+function showRealTime() {
+  showingFakeTime = false;
+  setInterval(() => {
+    let d = new Date();
+    document.getElementById("time").textContent = formatTime(d);
+    updateDate(d);
+  }, 1000);
+}
+
+showFakeTime();
+
+document.body.addEventListener("click", () => {
+  if (showingFakeTime) {
+    showRealTime();
+  }
+});
+</script>
+
+</body>
+</html>
