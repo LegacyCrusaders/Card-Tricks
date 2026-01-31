@@ -46,8 +46,8 @@
   .lock-icon {
     position: absolute;
     top: 50px;
-    font-size: 28px;
-    color: #e0dfff;
+    width: 28px;
+    height: 28px;
   }
 
   .time {
@@ -74,12 +74,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 28px;
   }
 
   .phone-button { left: 40px; }
   .camera-button { right: 40px; }
+
+  .corner-button svg,
+  .lock-icon svg {
+    fill: white;
+    width: 50%;
+    height: 50%;
+  }
 
 </style>
 </head>
@@ -88,11 +93,29 @@
 <div id="startOverlay">Tap to Start</div>
 
 <div id="phone">
-  <div class="lock-icon">🔒</div>
+  <!-- Lock icon -->
+  <div class="lock-icon">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7zm0 5h6v10H9V12z"/>
+    </svg>
+  </div>
+
   <div class="time" id="time">--:--</div>
   <div class="date" id="date">Loading...</div>
-  <div class="corner-button phone-button">📞</div>
-  <div class="corner-button camera-button">📷</div>
+
+  <!-- Phone button -->
+  <div class="corner-button phone-button">
+    <svg viewBox="0 0 24 24">
+      <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+    </svg>
+  </div>
+
+  <!-- Camera button -->
+  <div class="corner-button camera-button">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 5c-3.86 0-7 3.14-7 7s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm6-13h-3.17l-1.83-2H10L8.17 4H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/>
+    </svg>
+  </div>
 </div>
 
 <script>
