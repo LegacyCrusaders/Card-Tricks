@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prediction</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  color: white;
+  font-family: sans-serif;
+  font-size: 3em;
+  user-select: none;
+}
+#message {
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div id="message">Tap to begin</div>
+
+<script>
+let armed = false;
+let locked = false;
+let lastTime = null;
+let lastBeta = null;
+let lastGamma = null;
+
+const SPEED_THRESHOLD = 25; // adjust for sensitivity
+
+document.body.addEventListener("click", async () => {
+  if (armed) return;
+
+  if (typeof DeviceMotionEvent !== "undefined" &&
+      typeof DeviceMotionEvent.requestPermission === "function") {
+    const permission = await DeviceMotionEvent.requestPermission();
+    if (permission !== "granted") return;
+  }
+
+  armed = true;
+  document.getElementById("message").innerText = "Set phone down";
+  window.addEventListener("deviceorientation", handleOrientation);
+});
+
+function handleOrientation(e) {
+  if (!armed || locked) return;
+
+  const now = Date.now();
+  const beta = e.beta;   // front/back
+  const gamma = e.gamma; // left/right
+
+  if (lastTime !== null) {
+    const dt = (now - lastTime) / 1000;
+    const speed =
+      Math.abs(beta - lastBeta) / dt +
+      Math.abs(gamma - lastGamma) / dt;
+
+    if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
+      locked = true;
+      reveal(beta, gamma, speed);
+    }
+  }
+
+  lastTime = now;
+  lastBeta = beta;
+  lastGamma = gamma;
+}
+
+function reveal(beta, gamma, speed) {
+  const fast = speed > SPEED_THRESHOLD;
+  let result = "";
+
+  if (beta < -45) result = fast ? "2" : "1";          // top
+  else if (gamma > 45) result = fast ? "4" : "3";     // right
+  else if (beta > 45) result = fast ? "6" : "5";      // bottom
+  else if (gamma < -45) result = fast ? "8" : "7";    // left
+
+  document.getElementById("message").innerText =
+    "My prediction is:\n" + result;
+}
+</script>
+
+</body>
+</html>
