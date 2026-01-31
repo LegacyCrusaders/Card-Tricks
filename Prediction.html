@@ -31,17 +31,16 @@ body {
 <script>
 let started = false;
 let armed = false;
+
 let lastTime = null;
 let lastBeta = null;
 let lastGamma = null;
 
-const SPEED_THRESHOLD = 25;
+const SPEED_THRESHOLD = 80; // tuned for Android hand motion
 
-// User tap to start (required on mobile)
 document.body.addEventListener("click", async () => {
   if (started) return;
 
-  // iOS permission (safe on Android)
   if (typeof DeviceMotionEvent !== "undefined" &&
       typeof DeviceMotionEvent.requestPermission === "function") {
     try {
@@ -60,10 +59,8 @@ function onOrient(e) {
   const gamma = e.gamma;
   const now = Date.now();
 
-  // FACE DOWN: screen clearly down
   const isFaceDown = Math.abs(beta) > 150;
 
-  // Arm when face down
   if (isFaceDown) {
     armed = true;
     lastTime = now;
@@ -73,17 +70,17 @@ function onOrient(e) {
     return;
   }
 
-  // Only reveal if armed by face-down first
   if (!armed || lastTime === null) return;
 
   const dt = (now - lastTime) / 1000;
+  if (dt <= 0) return;
+
   const speed =
     Math.abs(beta - lastBeta) / dt +
     Math.abs(gamma - lastGamma) / dt;
 
-  // Clear directional tilt
   if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
-    armed = false; // require face down again before next reveal
+    armed = false;
     reveal(beta, gamma, speed);
   }
 
