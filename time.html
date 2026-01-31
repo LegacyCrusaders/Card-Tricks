@@ -5,46 +5,74 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lock Screen Rewind</title>
 <style>
-  body {
+  html, body {
     margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
     background: black;
-    color: white;
-    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-family: 'SamsungSharpSans', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  }
+
+  #startOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: black;
     display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  #phone {
+    width: 360px;
+    height: 720px;
+    border-radius: 50px;
+    background: black;
+    display: none;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    user-select: none;
+    margin: auto;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
   }
-  .lockscreen {
-    text-align: center;
-  }
+
   .time {
-    font-size: 80px;
+    font-size: 100px;
     font-weight: 300;
+    color: white;
     letter-spacing: -2px;
+    transition: all 0.2s ease;
   }
+
   .date {
-    font-size: 20px;
-    opacity: 0.8;
-    margin-top: 8px;
+    font-size: 24px;
+    color: #cccccc;
+    margin-top: 10px;
   }
 </style>
 </head>
 <body>
 
-<div class="lockscreen">
-  <div class="time" id="time"></div>
-  <div class="date" id="date"></div>
+<div id="startOverlay">Tap to Start</div>
+
+<div id="phone">
+  <div class="time" id="time">--:--</div>
+  <div class="date" id="date">Loading...</div>
 </div>
 
 <script>
 let fakeTime = new Date();
-fakeTime.setMinutes(fakeTime.getMinutes() + 5);
+fakeTime.setMinutes(fakeTime.getMinutes() + 5); // start 5 minutes ahead
 let rewinding = false;
 let finished = false;
-let triggered = false;
+let wasFaceDown = false;
 
+// Format functions
 function formatTime(d) {
   let h = d.getHours() % 12 || 12;
   let m = d.getMinutes();
@@ -62,51 +90,59 @@ function display(d) {
   updateDate(d);
 }
 
-// show initial fake time
-display(fakeTime);
+// Fake time ticker
+let fakeTicker;
 
-// keep fake time ticking while face down
-setInterval(() => {
-  if (!finished) {
-    fakeTime.setSeconds(fakeTime.getSeconds() + 1);
-    display(fakeTime);
-  }
-}, 1000);
+function startFakeClock() {
+  display(fakeTime);
+  fakeTicker = setInterval(() => {
+    if (!finished) {
+      fakeTime.setSeconds(fakeTime.getSeconds() + 1);
+      display(fakeTime);
+    }
+  }, 1000);
+}
 
-// detect flip using DeviceOrientation (z-axis)
-window.addEventListener("deviceorientation", (event) => {
-  if (triggered) return;
-
-  // gamma is tilt front/back, beta is left/right, alpha is compass
-  // z-axis detection is tricky; approximate by beta (tilt forward/back)
-  let beta = event.beta; // -180 to 180, 0 = flat
-  if (beta > 60) { // phone tilted up
-    triggered = true;
-    startRewind();
-  }
-});
+// Orientation detection for Galaxy S22
+function setupOrientation() {
+  window.addEventListener("deviceorientation", (event) => {
+    let beta = event.beta; // front/back tilt
+    if (beta > 150 || beta < -150) {
+      wasFaceDown = true; // detected face down
+    }
+    if (wasFaceDown && beta > -30 && beta < 30 && !rewinding) {
+      rewinding = true;
+      startRewind();
+    }
+  });
+}
 
 function startRewind() {
-  // wait 3 seconds
+  // wait 3 seconds for suspense
   setTimeout(() => {
-    rewinding = true;
-    let rewindSteps = 5; // 5 minutes / 2 per second = 3 steps
+    let steps = 5; // total 5 minutes
     let rewindInterval = setInterval(() => {
-      fakeTime.setMinutes(fakeTime.getMinutes() - 2);
+      fakeTime.setMinutes(fakeTime.getMinutes() - 1);
       display(fakeTime);
-      rewindSteps--;
-      if (rewindSteps <= 0) {
+      steps--;
+      if (steps <= 0) {
         clearInterval(rewindInterval);
         finished = true;
-        // switch to real time
-        setInterval(() => {
-          let now = new Date();
-          display(now);
-        }, 1000);
+        // switch to real time ticking
+        setInterval(() => display(new Date()), 1000);
       }
-    }, 1000);
+    }, 500); // 1 minute per half second
   }, 3000);
 }
+
+// Tap to start overlay
+document.getElementById("startOverlay").addEventListener("click", () => {
+  document.getElementById("startOverlay").style.display = "none";
+  const phone = document.getElementById("phone");
+  phone.style.display = "flex";
+  startFakeClock();
+  setupOrientation();
+});
 </script>
 
 </body>
