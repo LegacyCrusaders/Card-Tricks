@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Lock Screen Rewind</title>
 <style>
   html, body {
@@ -23,9 +25,10 @@
     justify-content: center;
     align-items: center;
     color: white;
-    font-size: 24px;
+    font-size: 28px;
     cursor: pointer;
     z-index: 10;
+    user-select: none;
   }
 
   #phone {
@@ -71,28 +74,29 @@ fakeTime.setMinutes(fakeTime.getMinutes() + 5); // start 5 minutes ahead
 let rewinding = false;
 let finished = false;
 let wasFaceDown = false;
+let fakeTicker;
 
-// Format functions
+// Format time
 function formatTime(d) {
   let h = d.getHours() % 12 || 12;
   let m = d.getMinutes();
   return h + ":" + String(m).padStart(2, "0");
 }
 
+// Update date
 function updateDate(d) {
   const options = { weekday: 'long', month: 'long', day: 'numeric' };
   document.getElementById("date").textContent =
     d.toLocaleDateString(undefined, options);
 }
 
+// Display function
 function display(d) {
   document.getElementById("time").textContent = formatTime(d);
   updateDate(d);
 }
 
-// Fake time ticker
-let fakeTicker;
-
+// Start fake clock
 function startFakeClock() {
   display(fakeTime);
   fakeTicker = setInterval(() => {
@@ -103,7 +107,7 @@ function startFakeClock() {
   }, 1000);
 }
 
-// Orientation detection for Galaxy S22
+// Orientation detection
 function setupOrientation() {
   window.addEventListener("deviceorientation", (event) => {
     let beta = event.beta; // front/back tilt
@@ -117,8 +121,8 @@ function setupOrientation() {
   });
 }
 
+// Rewind function
 function startRewind() {
-  // wait 3 seconds for suspense
   setTimeout(() => {
     let steps = 5; // total 5 minutes
     let rewindInterval = setInterval(() => {
@@ -131,15 +135,23 @@ function startRewind() {
         // switch to real time ticking
         setInterval(() => display(new Date()), 1000);
       }
-    }, 500); // 1 minute per half second
-  }, 3000);
+    }, 500); // 1 minute per 0.5 second
+  }, 3000); // 3-second suspense
 }
 
-// Tap to start overlay
-document.getElementById("startOverlay").addEventListener("click", () => {
+// Tap to start
+document.getElementById("startOverlay").addEventListener("click", async () => {
   document.getElementById("startOverlay").style.display = "none";
   const phone = document.getElementById("phone");
   phone.style.display = "flex";
+
+  // request full screen
+  if (document.documentElement.requestFullscreen) {
+    await document.documentElement.requestFullscreen();
+  } else if (document.documentElement.webkitRequestFullscreen) {
+    await document.documentElement.webkitRequestFullscreen();
+  }
+
   startFakeClock();
   setupOrientation();
 });
