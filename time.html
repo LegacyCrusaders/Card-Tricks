@@ -41,9 +41,9 @@
 <script>
 let fakeTime = new Date();
 fakeTime.setMinutes(fakeTime.getMinutes() + 5);
-
 let rewinding = false;
 let finished = false;
+let triggered = false;
 
 function formatTime(d) {
   let h = d.getHours() % 12 || 12;
@@ -62,36 +62,51 @@ function display(d) {
   updateDate(d);
 }
 
+// show initial fake time
 display(fakeTime);
 
-document.body.addEventListener("click", () => {
-  if (rewinding || finished) return;
+// keep fake time ticking while face down
+setInterval(() => {
+  if (!finished) {
+    fakeTime.setSeconds(fakeTime.getSeconds() + 1);
+    display(fakeTime);
+  }
+}, 1000);
 
-  rewinding = true;
+// detect flip using DeviceOrientation (z-axis)
+window.addEventListener("deviceorientation", (event) => {
+  if (triggered) return;
 
-  // 10 second pause before rewind starts
+  // gamma is tilt front/back, beta is left/right, alpha is compass
+  // z-axis detection is tricky; approximate by beta (tilt forward/back)
+  let beta = event.beta; // -180 to 180, 0 = flat
+  if (beta > 60) { // phone tilted up
+    triggered = true;
+    startRewind();
+  }
+});
+
+function startRewind() {
+  // wait 3 seconds
   setTimeout(() => {
-    let steps = 5;
-
+    rewinding = true;
+    let rewindSteps = 5; // 5 minutes / 2 per second = 3 steps
     let rewindInterval = setInterval(() => {
-      fakeTime.setMinutes(fakeTime.getMinutes() - 1);
+      fakeTime.setMinutes(fakeTime.getMinutes() - 2);
       display(fakeTime);
-      steps--;
-
-      if (steps === 0) {
+      rewindSteps--;
+      if (rewindSteps <= 0) {
         clearInterval(rewindInterval);
         finished = true;
-
-        // switch to real time ticking
+        // switch to real time
         setInterval(() => {
           let now = new Date();
           display(now);
         }, 1000);
       }
     }, 1000);
-
-  }, 10000);
-});
+  }, 3000);
+}
 </script>
 
 </body>
