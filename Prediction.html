@@ -24,15 +24,16 @@
 </head>
 <body>
 
-<div id="text">Tap to begin<br><br>Version 1</div>
+<div id="text">Tap to begin<br><br>Version 2</div>
 
 <script>
 let started = false;
 let faceDown = false;
+let revealed = false;
 let lastDirection = null;
 let lastSpeed = 0;
 
-const SPEED_THRESHOLD = 45; // requested value
+const SPEED_THRESHOLD = 45;
 const text = document.getElementById("text");
 
 function requestMotionPermission() {
@@ -54,7 +55,7 @@ function requestMotionPermission() {
 
 function startMotion() {
   started = true;
-  text.innerHTML = "Version 1<br><br>Set phone down";
+  text.innerHTML = "Version 2<br><br>Set phone down";
   window.addEventListener("devicemotion", handleMotion);
 }
 
@@ -68,19 +69,22 @@ function handleMotion(event) {
   const speed = Math.sqrt(x*x + y*y + z*z);
   lastSpeed = speed;
 
-  // Detect face down / face up
+  // Face down detection
   if (z < -7) {
     faceDown = true;
-    text.innerHTML = "Version 1<br><br>(waiting)";
+    revealed = false;
+    text.innerHTML = "Version 2<br><br>(waiting)";
     return;
   }
 
-  if (z > 7 && faceDown) {
+  // EARLY reveal while still angled
+  if (faceDown && !revealed && z > -2) {
+    revealed = true;
     faceDown = false;
     revealPrediction();
   }
 
-  // Track dominant direction
+  // Track dominant direction continuously
   if (Math.abs(x) > Math.abs(y)) {
     lastDirection = x > 0 ? "right" : "left";
   } else {
@@ -90,7 +94,6 @@ function handleMotion(event) {
 
 function revealPrediction() {
   let number;
-
   const fast = lastSpeed > SPEED_THRESHOLD;
 
   if (lastDirection === "up") {
