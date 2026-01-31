@@ -1,39 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prediction</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-size: 28px;
+  user-select: none;
+}
+</style>
+</head>
+
+<body>
+<div id="msg">Tap to begin</div>
+
 <script>
+let started = false;
 let armed = false;
-let ready = false;
 let lastTime = null;
 let lastBeta = null;
 let lastGamma = null;
 
-const SPEED = 25;
+const SPEED_THRESHOLD = 25;
 
-document.body.onclick = async () => {
-  if (armed) return;
+// User tap to start (required on mobile)
+document.body.addEventListener("click", async () => {
+  if (started) return;
 
+  // iOS permission (safe on Android)
   if (typeof DeviceMotionEvent !== "undefined" &&
       typeof DeviceMotionEvent.requestPermission === "function") {
-    const p = await DeviceMotionEvent.requestPermission();
-    if (p !== "granted") return;
+    try {
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission !== "granted") return;
+    } catch (e) {}
   }
 
-  armed = true;
+  started = true;
   document.getElementById("msg").innerText = "Place phone face down";
-  window.addEventListener("deviceorientation", handle);
-};
+  window.addEventListener("deviceorientation", onOrient);
+});
 
-function handle(e) {
-  if (!armed) return;
-
+function onOrient(e) {
   const beta = e.beta;
   const gamma = e.gamma;
   const now = Date.now();
 
-  // FACE DOWN = screen clearly down
+  // FACE DOWN: screen clearly down
   const isFaceDown = Math.abs(beta) > 150;
 
-  // If face down, arm the next reveal
+  // Arm when face down
   if (isFaceDown) {
-    ready = true;
+    armed = true;
     lastTime = now;
     lastBeta = beta;
     lastGamma = gamma;
@@ -41,8 +73,8 @@ function handle(e) {
     return;
   }
 
-  // Only reveal if we were face down first
-  if (!ready || lastTime === null) return;
+  // Only reveal if armed by face-down first
+  if (!armed || lastTime === null) return;
 
   const dt = (now - lastTime) / 1000;
   const speed =
@@ -51,7 +83,7 @@ function handle(e) {
 
   // Clear directional tilt
   if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
-    ready = false; // require face-down again before next reveal
+    armed = false; // require face down again before next reveal
     reveal(beta, gamma, speed);
   }
 
@@ -61,15 +93,18 @@ function handle(e) {
 }
 
 function reveal(beta, gamma, speed) {
-  const fast = speed > SPEED;
-  let n = "?";
+  const fast = speed > SPEED_THRESHOLD;
+  let result = "?";
 
-  if (beta < -45) n = fast ? 2 : 1;       // top
-  else if (gamma > 45) n = fast ? 4 : 3;  // right
-  else if (beta > 45) n = fast ? 6 : 5;   // bottom
-  else if (gamma < -45) n = fast ? 8 : 7; // left
+  if (beta < -45) result = fast ? 2 : 1;       // top
+  else if (gamma > 45) result = fast ? 4 : 3;  // right
+  else if (beta > 45) result = fast ? 6 : 5;   // bottom
+  else if (gamma < -45) result = fast ? 8 : 7; // left
 
   document.getElementById("msg").innerText =
-    "My prediction is:\n" + n;
+    "My prediction is:\n" + result;
 }
 </script>
+
+</body>
+</html>
