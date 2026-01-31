@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lock Screen Time</title>
+<title>Lock Screen Rewind</title>
 <style>
   body {
     margin: 0;
@@ -33,48 +33,64 @@
 </head>
 <body>
 
-<div class="lockscreen" id="screen">
-  <div class="time" id="time">--:--</div>
+<div class="lockscreen">
+  <div class="time" id="time"></div>
   <div class="date" id="date"></div>
 </div>
 
 <script>
-let showingFakeTime = true;
+let fakeTime = new Date();
+fakeTime.setMinutes(fakeTime.getMinutes() + 5);
+
+let rewinding = false;
+let finished = false;
 
 function formatTime(d) {
-  let h = d.getHours();
+  let h = d.getHours() % 12 || 12;
   let m = d.getMinutes();
-  h = h % 12 || 12;
   return h + ":" + String(m).padStart(2, "0");
 }
 
 function updateDate(d) {
   const options = { weekday: 'long', month: 'long', day: 'numeric' };
-  document.getElementById("date").textContent = d.toLocaleDateString(undefined, options);
+  document.getElementById("date").textContent =
+    d.toLocaleDateString(undefined, options);
 }
 
-function showFakeTime() {
-  let d = new Date();
-  d.setMinutes(d.getMinutes() + 5);
+function display(d) {
   document.getElementById("time").textContent = formatTime(d);
   updateDate(d);
 }
 
-function showRealTime() {
-  showingFakeTime = false;
-  setInterval(() => {
-    let d = new Date();
-    document.getElementById("time").textContent = formatTime(d);
-    updateDate(d);
-  }, 1000);
-}
-
-showFakeTime();
+display(fakeTime);
 
 document.body.addEventListener("click", () => {
-  if (showingFakeTime) {
-    showRealTime();
-  }
+  if (rewinding || finished) return;
+
+  rewinding = true;
+
+  // 10 second pause before rewind starts
+  setTimeout(() => {
+    let steps = 5;
+
+    let rewindInterval = setInterval(() => {
+      fakeTime.setMinutes(fakeTime.getMinutes() - 1);
+      display(fakeTime);
+      steps--;
+
+      if (steps === 0) {
+        clearInterval(rewindInterval);
+        finished = true;
+
+        // switch to real time ticking
+        setInterval(() => {
+          let now = new Date();
+          display(now);
+        }, 1000);
+      }
+    }, 1000);
+
+  }, 10000);
 });
 </script>
 
