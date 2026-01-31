@@ -1,40 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-family: sans-serif;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+<div id="msg">Tap to begin</div>
+
 <script>
 let armed = false;
+let faceDown = false;
 let locked = false;
-let faceDownConfirmed = false;
+let lastTime, lastBeta, lastGamma;
 
-let lastTime = null;
-let lastBeta = null;
-let lastGamma = null;
+const SPEED = 25;
 
-const SPEED_THRESHOLD = 25;
-
-document.body.addEventListener("click", async () => {
+document.body.onclick = async () => {
   if (armed) return;
 
   if (typeof DeviceMotionEvent !== "undefined" &&
       typeof DeviceMotionEvent.requestPermission === "function") {
-    const permission = await DeviceMotionEvent.requestPermission();
-    if (permission !== "granted") return;
+    const p = await DeviceMotionEvent.requestPermission();
+    if (p !== "granted") return;
   }
 
   armed = true;
-  document.getElementById("message").innerText = "Set phone face down";
-  window.addEventListener("deviceorientation", handleOrientation);
-});
+  document.getElementById("msg").innerText = "Set phone face down";
+  window.addEventListener("deviceorientation", handle);
+};
 
-function handleOrientation(e) {
+function handle(e) {
   if (!armed || locked) return;
 
-  const beta = e.beta;   // front/back
-  const gamma = e.gamma; // left/right
+  const beta = e.beta;
+  const gamma = e.gamma;
   const now = Date.now();
 
-  // Phase 1: confirm face down
-  if (!faceDownConfirmed) {
+  if (!faceDown) {
     if (Math.abs(beta) < 10 && Math.abs(gamma) < 10) {
-      faceDownConfirmed = true;
-      document.getElementById("message").innerText = "Lift the phone";
+      faceDown = true;
+      document.getElementById("msg").innerText = "Lift the phone";
       lastTime = now;
       lastBeta = beta;
       lastGamma = gamma;
@@ -42,17 +62,14 @@ function handleOrientation(e) {
     return;
   }
 
-  // Phase 2: detect lift + speed
-  if (lastTime !== null) {
-    const dt = (now - lastTime) / 1000;
-    const speed =
-      Math.abs(beta - lastBeta) / dt +
-      Math.abs(gamma - lastGamma) / dt;
+  const dt = (now - lastTime) / 1000;
+  const speed =
+    Math.abs(beta - lastBeta) / dt +
+    Math.abs(gamma - lastGamma) / dt;
 
-    if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
-      locked = true;
-      reveal(beta, gamma, speed);
-    }
+  if (Math.abs(beta) > 45 || Math.abs(gamma) > 45) {
+    locked = true;
+    reveal(beta, gamma, speed);
   }
 
   lastTime = now;
@@ -61,15 +78,17 @@ function handleOrientation(e) {
 }
 
 function reveal(beta, gamma, speed) {
-  const fast = speed > SPEED_THRESHOLD;
-  let result = "";
+  const fast = speed > SPEED;
+  let n = "?";
 
-  if (beta < -45) result = fast ? "2" : "1";      // top
-  else if (gamma > 45) result = fast ? "4" : "3"; // right
-  else if (beta > 45) result = fast ? "6" : "5";  // bottom
-  else if (gamma < -45) result = fast ? "8" : "7";// left
+  if (beta < -45) n = fast ? 2 : 1;
+  else if (gamma > 45) n = fast ? 4 : 3;
+  else if (beta > 45) n = fast ? 6 : 5;
+  else if (gamma < -45) n = fast ? 8 : 7;
 
-  document.getElementById("message").innerText =
-    "My prediction is:\n" + result;
+  document.getElementById("msg").innerText =
+    "My prediction is:\n" + n;
 }
 </script>
+</body>
+</html>
