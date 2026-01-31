@@ -10,9 +10,9 @@
   html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
-    height: 100%;
-    background: black;
+    overflow-x: hidden;
+    height: 105vh; /* extra height so you can scroll to hide URL bar */
+    background: #001f3f; /* darkish blue background */
     font-family: 'SamsungSharpSans', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   }
 
@@ -20,7 +20,7 @@
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: black;
+    background: #001f3f;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,13 +35,14 @@
     width: 360px;
     height: 720px;
     border-radius: 50px;
-    background: black;
+    background: #001f3f;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     margin: auto;
     box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    position: relative;
   }
 
   .time {
@@ -49,13 +50,15 @@
     font-weight: 300;
     color: white;
     letter-spacing: -2px;
-    transition: all 0.2s ease;
+    opacity: 1;
+    transition: opacity 0.2s ease;
   }
 
   .date {
     font-size: 24px;
     color: #cccccc;
     margin-top: 10px;
+    opacity: 0.8;
   }
 </style>
 </head>
@@ -70,7 +73,7 @@
 
 <script>
 let fakeTime = new Date();
-fakeTime.setMinutes(fakeTime.getMinutes() + 5); // start 5 minutes ahead
+fakeTime.setMinutes(fakeTime.getMinutes() + 5); // start 5 min ahead
 let rewinding = false;
 let finished = false;
 let wasFaceDown = false;
@@ -90,9 +93,14 @@ function updateDate(d) {
     d.toLocaleDateString(undefined, options);
 }
 
-// Display function
+// Display with subtle fade for each tick
 function display(d) {
-  document.getElementById("time").textContent = formatTime(d);
+  const timeEl = document.getElementById("time");
+  timeEl.style.opacity = 0;
+  setTimeout(() => {
+    timeEl.textContent = formatTime(d);
+    timeEl.style.opacity = 1;
+  }, 100); // 100ms fade
   updateDate(d);
 }
 
@@ -139,13 +147,13 @@ function startRewind() {
   }, 3000); // 3-second suspense
 }
 
-// Tap to start
+// Tap to start overlay
 document.getElementById("startOverlay").addEventListener("click", async () => {
   document.getElementById("startOverlay").style.display = "none";
   const phone = document.getElementById("phone");
   phone.style.display = "flex";
 
-  // request full screen
+  // Request full screen
   if (document.documentElement.requestFullscreen) {
     await document.documentElement.requestFullscreen();
   } else if (document.documentElement.webkitRequestFullscreen) {
