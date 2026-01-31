@@ -11,8 +11,8 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    height: 105vh; /* extra height so you can scroll to hide URL bar */
-    background: #001f3f; /* darkish blue background */
+    height: 105vh; /* extra for scrolling to hide URL bar */
+    background: #001f3f; /* fallback color */
     font-family: 'SamsungSharpSans', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   }
 
@@ -32,17 +32,23 @@
   }
 
   #phone {
-    width: 360px;
-    height: 720px;
-    border-radius: 50px;
-    background: #001f3f;
+    width: 100vw;
+    height: 100vh;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: auto;
-    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    margin: 0;
+    /* subtle gradient to mimic Samsung lock screen */
+    background: linear-gradient(to bottom, #001f3f 0%, #003366 100%);
     position: relative;
+  }
+
+  .lock-icon {
+    position: absolute;
+    top: 40px;
+    font-size: 28px;
+    color: #cccccc;
   }
 
   .time {
@@ -50,15 +56,12 @@
     font-weight: 300;
     color: white;
     letter-spacing: -2px;
-    opacity: 1;
-    transition: opacity 0.2s ease;
   }
 
   .date {
     font-size: 24px;
     color: #cccccc;
     margin-top: 10px;
-    opacity: 0.8;
   }
 </style>
 </head>
@@ -67,13 +70,14 @@
 <div id="startOverlay">Tap to Start</div>
 
 <div id="phone">
+  <div class="lock-icon">🔒</div>
   <div class="time" id="time">--:--</div>
   <div class="date" id="date">Loading...</div>
 </div>
 
 <script>
 let fakeTime = new Date();
-fakeTime.setMinutes(fakeTime.getMinutes() + 5); // start 5 min ahead
+fakeTime.setMinutes(fakeTime.getMinutes() + 5);
 let rewinding = false;
 let finished = false;
 let wasFaceDown = false;
@@ -93,14 +97,9 @@ function updateDate(d) {
     d.toLocaleDateString(undefined, options);
 }
 
-// Display with subtle fade for each tick
+// Display function (no blinking)
 function display(d) {
-  const timeEl = document.getElementById("time");
-  timeEl.style.opacity = 0;
-  setTimeout(() => {
-    timeEl.textContent = formatTime(d);
-    timeEl.style.opacity = 1;
-  }, 100); // 100ms fade
+  document.getElementById("time").textContent = formatTime(d);
   updateDate(d);
 }
 
@@ -118,9 +117,9 @@ function startFakeClock() {
 // Orientation detection
 function setupOrientation() {
   window.addEventListener("deviceorientation", (event) => {
-    let beta = event.beta; // front/back tilt
+    let beta = event.beta;
     if (beta > 150 || beta < -150) {
-      wasFaceDown = true; // detected face down
+      wasFaceDown = true;
     }
     if (wasFaceDown && beta > -30 && beta < 30 && !rewinding) {
       rewinding = true;
@@ -132,7 +131,7 @@ function setupOrientation() {
 // Rewind function
 function startRewind() {
   setTimeout(() => {
-    let steps = 5; // total 5 minutes
+    let steps = 5;
     let rewindInterval = setInterval(() => {
       fakeTime.setMinutes(fakeTime.getMinutes() - 1);
       display(fakeTime);
@@ -140,11 +139,10 @@ function startRewind() {
       if (steps <= 0) {
         clearInterval(rewindInterval);
         finished = true;
-        // switch to real time ticking
         setInterval(() => display(new Date()), 1000);
       }
-    }, 500); // 1 minute per 0.5 second
-  }, 3000); // 3-second suspense
+    }, 500); // 1 minute per 0.5 sec
+  }, 3000); // 3 sec suspense
 }
 
 // Tap to start overlay
@@ -153,7 +151,7 @@ document.getElementById("startOverlay").addEventListener("click", async () => {
   const phone = document.getElementById("phone");
   phone.style.display = "flex";
 
-  // Request full screen
+  // request full screen
   if (document.documentElement.requestFullscreen) {
     await document.documentElement.requestFullscreen();
   } else if (document.documentElement.webkitRequestFullscreen) {
