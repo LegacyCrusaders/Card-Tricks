@@ -1,4 +1,4 @@
-<!-- TIME LOOP PHONE – VERSION 3 -->
+<!-- TIME LOOP PHONE – VERSION 4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +30,7 @@ p{opacity:0.7;}
 <!-- START -->
 <div id="start" class="screen active">
   <h1>Tap to Begin</h1>
-  <p>Version 3</p>
+  <p>Version 4</p>
 </div>
 
 <!-- ARMED (blank) -->
@@ -43,7 +43,7 @@ p{opacity:0.7;}
   <p>Incoming Call</p>
   <div class="buttons">
     <div class="btn red" onclick="endToLog()">Decline</div>
-    <div class="btn green" onclick="answer()">Answer</div>
+    <div class="btn green" onclick="answerIncoming()">Answer</div>
   </div>
 </div>
 
@@ -74,29 +74,31 @@ let mode="idle";
 let faceDown=false;
 let timerInt;
 let seconds=0;
+let currentCaller="";
 
-// Initial log: Mom, Jordan, Future Me
+// Initial log
 let log=[
+  {name:"Future Me", time:"now", callable:false},
   {name:"Mom", time:"Yesterday", callable:false},
-  {name:"Jordan", time:"9:14 AM", callable:false},
-  {name:"Future Me", time:"now", callable:false}
+  {name:"Jordan", time:"9:14 AM", callable:false}
 ];
 
+// Utility: show screen
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
+// Tap to begin
 async function start(){
   if(!document.fullscreenElement){await document.documentElement.requestFullscreen();}
   if('wakeLock' in navigator){try{await navigator.wakeLock.request('screen');}catch{}}
   show('armed');
   mode="armed";
 }
-
 document.getElementById('start').onclick=start;
 
-// Detect flip
+// Flip detection
 window.addEventListener('deviceorientation', e=>{
   if(mode!=="armed") return;
   if(e.beta>150||e.beta<-150){faceDown=true;}
@@ -104,16 +106,24 @@ window.addEventListener('deviceorientation', e=>{
     faceDown=false;
     mode="locked";
     setTimeout(()=>{
-      document.getElementById('incomingName').innerText="Future Me";
       show('incoming');
       navigator.vibrate([200,200,200]);
     },1000);
   }
 });
 
-function answer(){
+// Answer incoming
+function answerIncoming(){
+  startCall("Future Me");
+}
+
+// General call starter
+function startCall(caller){
+  clearInterval(timerInt);
   seconds=0;
-  document.getElementById('callName').innerText=document.getElementById('incomingName').innerText;
+  currentCaller=caller;
+  document.getElementById('callName').innerText=caller;
+  document.getElementById('timer').innerText='00:00';
   show('call');
   timerInt=setInterval(()=>{
     seconds++;
@@ -123,45 +133,57 @@ function answer(){
   },1000);
 }
 
+// Hang up
 function hangUp(){
   clearInterval(timerInt);
-  // If ending Future Me, add Past Me at the bottom
-  if(mode==="locked" || mode==="call"){ // first call was Future Me
-    if(!log.find(x=>x.name==="Past Me")){
+  if(mode==="locked" || mode==="call"){
+    // First call ends, add Past Me at bottom
+    if(currentCaller==="Future Me" && !log.find(x=>x.name==="Past Me")){
       log.push({name:"Past Me", time:"now", callable:true});
     }
   }
+  // Update mode for next interaction
+  mode="log";
   renderLog();
   show('log');
-  mode="log";
 }
 
-function endToLog(){
-  renderLog();
-  show('log');
-  mode="log";
-}
+// Return to log without answering
+function endToLog(){ renderLog(); show('log'); mode="log"; }
 
+// Render log
 function renderLog(){
   const el=document.getElementById('logItems');
   el.innerHTML="";
-  // Show most recent at top
-  const sorted = [...log].reverse();
-  sorted.forEach(item=>{
+  // Sort: most recent first for display
+  let displayLog = [...log];
+  // First log: Future Me at top, Past Me at bottom
+  // Second log: Past Me at top, Future Me below
+  if(log.find(x=>x.name==="Past Me") && mode==="log"){
+    // Swap Past Me to top
+    displayLog = log.filter(x=>x.name==="Past Me").concat(log.filter(x=>x.name!=="Past Me"));
+  } else {
+    // normal ordering
+    displayLog = log;
+  }
+  displayLog.forEach(item=>{
     const d=document.createElement('div');
     d.className="log-item"+(item.callable?" callable":"");
     d.innerHTML=`${item.name}<span>${item.time}</span>`;
-    if(item.callable){ d.onclick=()=>callPast(); }
+    if(item.callable){ d.onclick=callPast; }
     el.appendChild(d);
   });
 }
 
+// Call Past Me
 function callPast(){
-  document.getElementById('callName').innerText="Past Me";
-  show('call');
+  currentCaller="Past Me";
+  startCall("Past Me");
   mode="calling";
-  setTimeout(answer,1200);
 }
+
+// Initial render
+renderLog();
 </script>
 
 </body>
