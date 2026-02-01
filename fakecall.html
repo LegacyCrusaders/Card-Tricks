@@ -2,350 +2,230 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Time Call</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Phone Call</title>
 
 <style>
-* {
-  box-sizing: border-box;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
 html, body {
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  height: 100%;
   background: black;
-  color: white;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  touch-action: none;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
 }
 
 .screen {
-  display: none;
   width: 100vw;
   height: 100vh;
-  padding: 24px 20px;
-  flex-direction: column;
-}
-
-.active { display: flex; }
-
-button {
-  border: none;
-  background: none;
+  display: none;
   color: white;
 }
 
-/* ---------- COMMON ---------- */
-
-.row {
+.center {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid #222;
 }
 
 .avatar {
-  width: 46px;
-  height: 46px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
-  background: #2c2c2c;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  margin-right: 14px;
+  background: #444;
+  margin-bottom: 15px;
 }
 
-.name {
-  font-size: 18px;
+.incoming h1,
+.calling h1 {
+  font-size: 26px;
+  margin: 5px 0;
 }
 
-.meta {
-  font-size: 14px;
-  opacity: 0.6;
-}
-
-.spacer {
-  flex: 1;
-}
-
-/* ---------- START ---------- */
-
-.action {
-  background: #3498db;
-  padding: 14px 28px;
-  border-radius: 30px;
-  font-size: 20px;
-  margin: auto;
-}
-
-/* ---------- INCOMING ---------- */
-
-.incoming {
-  align-items: center;
-  justify-content: space-between;
-}
-
-.big-avatar {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  background: #2c2c2c;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
-  margin-top: 40px;
-}
-
-.caller {
-  font-size: 32px;
-  margin-top: 18px;
-}
-
-.sub {
-  opacity: 0.6;
-  margin-top: 6px;
-}
-
-.controls-row {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 36px 24px;
-}
-
-.answer, .decline {
-  width: 82px;
-  height: 82px;
-  border-radius: 50%;
-}
-
-.answer { background: #2ecc71; }
-.decline { background: #e74c3c; }
-
-/* ---------- CONNECTED ---------- */
-
-.timer {
-  margin-top: 8px;
+.incoming p,
+.calling p {
   opacity: 0.7;
 }
 
-.grid {
+.answer-buttons {
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+}
+
+.green { background: #2ecc71; }
+.red { background: #e74c3c; }
+
+.controls {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  margin-top: 32px;
+  gap: 20px;
+  margin-top: 40px;
 }
 
 .control {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
+  opacity: 0.9;
 }
 
-.hangup {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  background: #e74c3c;
-  margin: 24px auto 0;
+.log {
+  padding: 20px;
 }
 
-/* ---------- CALL LOG ---------- */
-
-.header {
-  font-size: 22px;
-  margin-bottom: 12px;
+.log h2 {
+  margin-bottom: 10px;
 }
 
-.call-btn {
-  background: #2ecc71;
-  color: black;
-  padding: 14px 28px;
-  border-radius: 30px;
-  font-size: 20px;
-  margin-top: 20px;
+.log-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
+.log-item span {
+  float: right;
+  opacity: 0.6;
+}
+
+.options {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.options button {
+  background: #222;
+  color: white;
+  border: none;
+  padding: 12px;
+  width: 80%;
+  margin: 6px 0;
+  border-radius: 10px;
+  font-size: 16px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="start" class="screen active">
-  <button class="action" id="startBtn">Tap to Begin</button>
-</div>
+<!-- Incoming Call -->
+<div id="incoming" class="screen incoming center">
+  <div class="avatar"></div>
+  <h1>Future Me</h1>
+  <p>Incoming Call</p>
 
-<div id="armed" class="screen"></div>
-
-<div id="incoming" class="screen incoming">
-  <div>
-    <div class="big-avatar" id="bigAvatar">FM</div>
-    <div class="caller" id="callerName"></div>
-    <div class="sub">Mobile • Incoming call</div>
-  </div>
-
-  <div class="controls-row">
-    <button class="decline"></button>
-    <button class="answer" id="answerBtn"></button>
+  <div class="answer-buttons">
+    <div class="btn red" onclick="decline()">Decline</div>
+    <div class="btn green" onclick="answer()">Answer</div>
   </div>
 </div>
 
-<div id="connected" class="screen">
-  <div style="align-items:center;text-align:center">
-    <div class="big-avatar" id="connectedAvatar">FM</div>
-    <div class="caller" id="connectedName"></div>
-    <div class="timer" id="callTimer">00:00</div>
+<!-- In Call -->
+<div id="call" class="screen center">
+  <div class="avatar"></div>
+  <h1>Future Me</h1>
+  <p>00:12</p>
 
-    <div class="grid">
-      <div class="control">🔇</div>
-      <div class="control">⌨️</div>
-      <div class="control">🔊</div>
-      <div class="control">➕</div>
-      <div class="control">🎧</div>
-      <div class="control">📞</div>
-    </div>
+  <div class="controls">
+    <div class="control">Mute</div>
+    <div class="control">Keypad</div>
+    <div class="control">Speaker</div>
+    <div class="control">Add Call</div>
+    <div class="control">FaceTime</div>
+    <div class="control">Contacts</div>
   </div>
 
-  <button class="hangup" id="hangupBtn"></button>
+  <div class="answer-buttons">
+    <div class="btn red" onclick="hangup()">End</div>
+  </div>
 </div>
 
-<div id="log" class="screen">
-  <div class="header">Recents</div>
+<!-- Call Log -->
+<div id="log" class="screen log">
+  <h2>Recents</h2>
 
-  <div class="row">
-    <div class="avatar" id="recentAvatar">FM</div>
-    <div>
-      <div class="name" id="recentName">Future Me</div>
-      <div class="meta" id="recentTime">Just now</div>
-    </div>
-    <div class="spacer"></div>
-    <div class="meta">📞</div>
+  <div class="log-item" onclick="details('Past Me')">Past Me <span>now</span></div>
+  <div class="log-item">Future Me <span>now</span></div>
+  <div class="log-item">Jordan <span>9:14 AM</span></div>
+  <div class="log-item">Mom <span>Yesterday</span></div>
+</div>
+
+<!-- Contact Options -->
+<div id="details" class="screen center">
+  <h1 id="contactName"></h1>
+
+  <div class="options">
+    <button onclick="callBack()">Call</button>
+    <button>Text</button>
+    <button>Save to Contacts</button>
+    <button>Update Contact</button>
   </div>
+</div>
 
-  <div class="row">
-    <div class="avatar">M</div>
-    <div>
-      <div class="name">Mom</div>
-      <div class="meta">12 min ago</div>
-    </div>
-    <div class="spacer"></div>
-    <div class="meta">📞</div>
+<!-- Calling Screen -->
+<div id="calling" class="screen calling center">
+  <div class="avatar"></div>
+  <h1 id="callingName"></h1>
+  <p>calling…</p>
+
+  <div class="answer-buttons">
+    <div class="btn red" onclick="hangupToLog()">End</div>
   </div>
-
-  <div class="row">
-    <div class="avatar">J</div>
-    <div>
-      <div class="name">Jordan</div>
-      <div class="meta">Yesterday</div>
-    </div>
-    <div class="spacer"></div>
-    <div class="meta">📞</div>
-  </div>
-
-  <div class="row">
-    <div class="avatar">FM</div>
-    <div>
-      <div class="name">Future Me</div>
-      <div class="meta">2 days ago</div>
-    </div>
-    <div class="spacer"></div>
-    <div class="meta">📞</div>
-  </div>
-
-  <button class="call-btn" id="callbackBtn">Call Back</button>
 </div>
 
 <script>
-let faceDown = false;
-let mode = "future";
-let seconds = 0;
-let timer;
-
 function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+  document.getElementById(id).style.display = 'flex';
 }
 
-async function setup() {
-  if (!document.fullscreenElement) {
-    await document.documentElement.requestFullscreen();
-  }
-  try { await navigator.wakeLock.request('screen'); } catch {}
-  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
-    await DeviceOrientationEvent.requestPermission();
-  }
+function incomingCall() {
+  show('incoming');
 }
 
-function triggerCall(name, initials, delay) {
-  setTimeout(() => {
-    callerName.textContent = name;
-    connectedName.textContent = name;
-    recentName.textContent = name;
-    recentAvatar.textContent = initials;
-    bigAvatar.textContent = initials;
-    connectedAvatar.textContent = initials;
-    recentTime.textContent = "Just now";
-    show('incoming');
-    navigator.vibrate([300,200,300]);
-  }, delay);
+function answer() {
+  show('call');
 }
 
-function startTimer() {
-  seconds = 0;
-  timer = setInterval(() => {
-    seconds++;
-    callTimer.textContent =
-      String(Math.floor(seconds/60)).padStart(2,'0') + ":" +
-      String(seconds%60).padStart(2,'0');
-  }, 1000);
-}
-
-startBtn.onclick = async () => {
-  await setup();
-  show('armed');
-};
-
-window.addEventListener('deviceorientation', e => {
-  if (e.beta > 150 || e.beta < -150) {
-    faceDown = true;
-  } else if (faceDown) {
-    faceDown = false;
-
-    if (mode === "future") {
-      mode = "locked";
-      triggerCall("Future Me", "FM", 3000);
-    } else if (mode === "past") {
-      mode = "locked";
-      triggerCall("Past Me", "PM", 4000);
-    }
-  }
-});
-
-answerBtn.onclick = () => {
-  show('connected');
-  startTimer();
-};
-
-hangupBtn.onclick = () => {
-  clearInterval(timer);
+function hangup() {
   show('log');
-};
+}
 
-callbackBtn.onclick = () => {
-  mode = "past";
-  show('armed');
-};
+function decline() {
+  show('log');
+}
+
+function details(name) {
+  document.getElementById('contactName').innerText = name;
+  show('details');
+}
+
+function callBack() {
+  document.getElementById('callingName').innerText = document.getElementById('contactName').innerText;
+  show('calling');
+
+  setTimeout(() => {
+    show('call');
+  }, 1200);
+}
+
+function hangupToLog() {
+  show('log');
+}
+
+setTimeout(incomingCall, 800);
 </script>
 
 </body>
