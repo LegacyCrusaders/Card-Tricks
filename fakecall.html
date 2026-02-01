@@ -1,4 +1,4 @@
-<!-- TIME LOOP PHONE – VERSION 2 -->
+<!-- TIME LOOP PHONE – VERSION 3 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +22,6 @@ p{opacity:0.7;}
 .log-item{width:100%;padding:14px 0;border-bottom:1px solid #333;}
 .log-item span{float:right;opacity:0.6;}
 .log-item.callable{cursor:pointer;}
-.options button{width:80%;padding:12px;margin:6px 0;background:#222;border:none;border-radius:10px;color:white;font-size:16px;}
 </style>
 </head>
 
@@ -31,7 +30,7 @@ p{opacity:0.7;}
 <!-- START -->
 <div id="start" class="screen active">
   <h1>Tap to Begin</h1>
-  <p>Version 2</p>
+  <p>Version 3</p>
 </div>
 
 <!-- ARMED (blank) -->
@@ -76,6 +75,7 @@ let faceDown=false;
 let timerInt;
 let seconds=0;
 
+// Initial log: Mom, Jordan, Future Me
 let log=[
   {name:"Mom", time:"Yesterday", callable:false},
   {name:"Jordan", time:"9:14 AM", callable:false},
@@ -88,8 +88,8 @@ function show(id){
 }
 
 async function start(){
-  if (!document.fullscreenElement){await document.documentElement.requestFullscreen();}
-  if ('wakeLock' in navigator){try{await navigator.wakeLock.request('screen');}catch{}}
+  if(!document.fullscreenElement){await document.documentElement.requestFullscreen();}
+  if('wakeLock' in navigator){try{await navigator.wakeLock.request('screen');}catch{}}
   show('armed');
   mode="armed";
 }
@@ -98,8 +98,8 @@ document.getElementById('start').onclick=start;
 
 // Detect flip
 window.addEventListener('deviceorientation', e=>{
-  if (mode!=="armed") return;
-  if (e.beta > 150 || e.beta < -150){faceDown=true;}
+  if(mode!=="armed") return;
+  if(e.beta>150||e.beta<-150){faceDown=true;}
   else if(faceDown){
     faceDown=false;
     mode="locked";
@@ -113,8 +113,7 @@ window.addEventListener('deviceorientation', e=>{
 
 function answer(){
   seconds=0;
-  document.getElementById('callName').innerText=
-    document.getElementById('incomingName').innerText;
+  document.getElementById('callName').innerText=document.getElementById('incomingName').innerText;
   show('call');
   timerInt=setInterval(()=>{
     seconds++;
@@ -126,9 +125,11 @@ function answer(){
 
 function hangUp(){
   clearInterval(timerInt);
-  // Add Past Me if it doesn't exist yet
-  if(!log.find(x=>x.name==="Past Me")){
-    log.unshift({name:"Past Me", time:"now", callable:true});
+  // If ending Future Me, add Past Me at the bottom
+  if(mode==="locked" || mode==="call"){ // first call was Future Me
+    if(!log.find(x=>x.name==="Past Me")){
+      log.push({name:"Past Me", time:"now", callable:true});
+    }
   }
   renderLog();
   show('log');
@@ -144,13 +145,13 @@ function endToLog(){
 function renderLog(){
   const el=document.getElementById('logItems');
   el.innerHTML="";
-  log.forEach(item=>{
+  // Show most recent at top
+  const sorted = [...log].reverse();
+  sorted.forEach(item=>{
     const d=document.createElement('div');
     d.className="log-item"+(item.callable?" callable":"");
     d.innerHTML=`${item.name}<span>${item.time}</span>`;
-    if(item.callable){
-      d.onclick=()=>callPast();
-    }
+    if(item.callable){ d.onclick=()=>callPast(); }
     el.appendChild(d);
   });
 }
