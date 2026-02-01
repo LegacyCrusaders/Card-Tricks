@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIN Lock Screen</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(180deg, #050b20, #101c38);
+        color: white;
+        overflow: hidden;
+    }
+
+    .start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(180deg, #050b20, #101c38);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        gap: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+    .start-screen h2 {
+        font-size: 32px;
+        font-weight: 400;
+        opacity: 0.9;
+    }
+
+    .tap-hint {
+        font-size: 16px;
+        opacity: 0.6;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 0.3; }
+    }
+
+    .phone {
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 60px 20px 40px;
+        position: relative;
+    }
+
+    .header {
+        text-align: center;
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 400;
+    }
+
+    .header p {
+        margin: 8px 0 0;
+        font-size: 14px;
+        opacity: 0.7;
+        font-weight: 300;
+    }
+
+    .dots {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        margin: 40px 0;
+    }
+
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255,255,255,0.5);
+        background: transparent;
+        transition: all 0.2s;
+    }
+
+    .dot.filled {
+        background: white;
+        border-color: white;
+    }
+
+    .keypad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .key {
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        font-size: 28px;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.15s;
+        position: relative;
+        padding: 10px;
+    }
+
+    .key span:first-child {
+        margin-top: -12px;
+    }
+
+    .key .letters {
+        position: absolute;
+        bottom: 20%;
+        font-size: 7px;
+        opacity: 0.45;
+        letter-spacing: 1px;
+        font-weight: 300;
+    }
+
+    .key:active {
+        background: rgba(255,255,255,0.2);
+    }
+
+    .icon-btn {
+        background: transparent;
+        font-size: 18px;
+        opacity: 0.7;
+    }
+
+    .icon-btn:active {
+        background: transparent;
+        opacity: 1;
+    }
+
+    .icon-btn svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .fingerprint-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 30px 0 50px;
+    }
+
+    .fingerprint {
+        width: 48px;
+        height: 48px;
+        opacity: 0.6;
+    }
+
+    .emergency {
+        text-align: center;
+        font-size: 15px;
+        cursor: pointer;
+        color: white;
+        opacity: 0.8;
+        font-weight: 300;
+        padding: 20px;
+    }
+
+    .unlock {
+        display: none;
+        width: 100%;
+        height: 100%;
+        background: white;
+        color: black;
+        justify-content: center;
+        align-items: center;
+        font-size: 72px;
+        font-weight: 600;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    .red { color: #ff0000; }
+    .black { color: #000000; }
+
+    .shake {
+        animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        50% { transform: translateX(10px); }
+        75% { transform: translateX(-10px); }
+        100% { transform: translateX(0); }
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<div class="start-screen" id="startScreen">
+    <h2>Tap to Start</h2>
+    <div class="tap-hint">Touch anywhere to begin</div>
+</div>
+
+<div class="phone hidden" id="lockScreen">
+    <div class="header">
+        <h1>Enter PIN</h1>
+        <p>Your PIN contains at least 4 digits.</p>
+    </div>
+
+    <div class="dots" id="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <div class="keypad">
+        <div class="key" data-value="1"><span>1</span></div>
+        <div class="key" data-value="2"><span>2</span><span class="letters">ABC</span></div>
+        <div class="key" data-value="3"><span>3</span><span class="letters">DEF</span></div>
+        <div class="key" data-value="4"><span>4</span><span class="letters">GHI</span></div>
+        <div class="key" data-value="5"><span>5</span><span class="letters">JKL</span></div>
+        <div class="key" data-value="6"><span>6</span><span class="letters">MNO</span></div>
+        <div class="key" data-value="7"><span>7</span><span class="letters">PQRS</span></div>
+        <div class="key" data-value="8"><span>8</span><span class="letters">TUV</span></div>
+        <div class="key" data-value="9"><span>9</span><span class="letters">WXYZ</span></div>
+        <div class="key icon-btn" id="back">
+            <svg fill="white" viewBox="0 0 24 24">
+                <path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/>
+            </svg>
+        </div>
+        <div class="key" data-value="0"><span>0</span></div>
+        <div class="key icon-btn" id="enter">
+            <span style="font-size: 16px; font-weight: 400;">OK</span>
+        </div>
+    </div>
+
+    <div class="fingerprint-container">
+        <svg class="fingerprint" fill="white" viewBox="0 0 24 24">
+            <path d="M12 1C8.69 1 6 3.69 6 7v1.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-2.76 2.24-5 5-5s5 2.24 5 5v1.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-3.31-2.69-6-6-6z"/>
+            <path d="M12 3c-2.21 0-4 1.79-4 4v2.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-1.66 1.34-3 3-3s3 1.34 3 3v2.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-2.21-1.79-4-4-4z"/>
+            <path d="M12 5c-1.1 0-2 .9-2 2v5.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-.55.45-1 1-1s1 .45 1 1v8.5c0 .28.22.5.5.5s.5-.22.5-.5V7c0-1.1-.9-2-2-2z"/>
+            <path d="M7.5 10c-.28 0-.5.22-.5.5v4c0 2.76 2.24 5 5 5 .28 0 .5-.22.5-.5s-.22-.5-.5-.5c-2.21 0-4-1.79-4-4v-4c0-.28-.22-.5-.5-.5z"/>
+            <path d="M16.5 10c-.28 0-.5.22-.5.5v4c0 1.66-1.34 3-3 3-.28 0-.5.22-.5.5s.22.5.5.5c2.21 0 4-1.79 4-4v-4c0-.28-.22-.5-.5-.5z"/>
+            <path d="M12 21c-3.31 0-6-2.69-6-6v-2.5c0-.28-.22-.5-.5-.5s-.5.22-.5.5V15c0 3.86 3.14 7 7 7 .28 0 .5-.22.5-.5s-.22-.5-.5-.5z"/>
+        </svg>
+    </div>
+
+    <div class="emergency">Emergency call</div>
+</div>
+
+<div class="unlock" id="unlockScreen"></div>
+
+<script>
+let entered = [];
+const dots = document.querySelectorAll('.dot');
+const keys = document.querySelectorAll('.key[data-value]');
+const lockScreen = document.getElementById('lockScreen');
+const unlockScreen = document.getElementById('unlockScreen');
+const startScreen = document.getElementById('startScreen');
+let wakeLock = null;
+
+// Start screen functionality
+startScreen.addEventListener('click', async () => {
+    startScreen.classList.add('hidden');
+    lockScreen.classList.remove('hidden');
+    
+    // Request fullscreen
+    try {
+        if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            await document.documentElement.webkitRequestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+            await document.documentElement.mozRequestFullScreen();
+        }
+    } catch (err) {
+        console.log('Fullscreen request failed:', err);
+    }
+    
+    // Request wake lock to prevent screen from sleeping
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake lock acquired');
+            
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake lock released');
+            });
+        }
+    } catch (err) {
+        console.log('Wake lock request failed:', err);
+    }
+});
+
+// Re-acquire wake lock if page becomes visible again
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake lock re-acquired');
+        } catch (err) {
+            console.log('Wake lock re-acquire failed:', err);
+        }
+    }
+});
+
+keys.forEach(key => {
+    key.addEventListener('click', () => {
+        const val = key.getAttribute('data-value');
+        if (!val) return;
+        if (entered.length >= 4) return;
+        entered.push(parseInt(val));
+        dots[entered.length - 1].classList.add('filled');
+
+        if (entered.length === 4) {
+            setTimeout(checkCode, 150);
+        }
+    });
+});
+
+// Back button
+document.getElementById('back').addEventListener('click', () => {
+    if (entered.length === 0) return;
+    entered.pop();
+    dots[entered.length].classList.remove('filled');
+});
+
+// Enter button
+document.getElementById('enter').addEventListener('click', checkCode);
+
+function reset() {
+    entered = [];
+    dots.forEach(d => d.classList.remove('filled'));
+}
+
+function fail() {
+    lockScreen.classList.add('shake');
+    setTimeout(() => {
+        lockScreen.classList.remove('shake');
+        reset();
+    }, 300);
+}
+
+function checkCode() {
+    if (entered.length !== 4) {
+        fail();
+        return;
+    }
+
+    const [a,b,c,suit] = entered;
+
+    const allowedValues = [0,1,2,4,8];
+    const suitMap = {
+        1: {char: '♣', color: 'black'},
+        2: {char: '♥', color: 'red'},
+        3: {char: '♠', color: 'black'},
+        4: {char: '♦', color: 'red'}
+    };
+
+    if (!suitMap[suit]) { fail(); return; }
+    if (![a,b,c].every(v => allowedValues.includes(v))) { fail(); return; }
+    
+    // Check for duplicate non-zero values in first 3 digits
+    // Only 0 can be duplicated, values 1,2,4,8 must be unique
+    const firstThree = [a,b,c];
+    const nonZeroValues = firstThree.filter(v => v !== 0);
+    const uniqueNonZero = [...new Set(nonZeroValues)];
+    if (nonZeroValues.length !== uniqueNonZero.length) {
+        fail();
+        return;
+    }
+    
+    const sum = a+b+c;
+    if (sum < 1 || sum > 13) { fail(); return; }
+
+    reveal(sum, suitMap[suit]);
+}
+
+function reveal(value, suit) {
+    let label;
+    if (value === 1) label = 'Ace';
+    else if (value === 11) label = 'Jack';
+    else if (value === 12) label = 'Queen';
+    else if (value === 13) label = 'King';
+    else label = value;
+
+    let suitName;
+    if (suit.char === '♣') suitName = 'Clubs';
+    else if (suit.char === '♥') suitName = 'Hearts';
+    else if (suit.char === '♠') suitName = 'Spades';
+    else if (suit.char === '♦') suitName = 'Diamonds';
+
+    const searchQuery = `${label} of ${suitName} playing card`;
+    const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchQuery)}`;
+    
+    window.location.href = googleImageSearchUrl;
+}
+</script>
+
+</body>
+</html>
