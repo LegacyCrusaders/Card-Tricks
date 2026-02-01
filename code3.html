@@ -295,7 +295,34 @@ const unlockScreen = document.getElementById('unlockScreen');
 const startScreen = document.getElementById('startScreen');
 let wakeLock = null;
 let voiceSearchMode = false;
+let textSearchMode = false;
+let textInput = '';
 let recognition = null;
+
+// T9 keypad mapping
+const t9Map = {
+    '2': 'abc',
+    '3': 'def',
+    '4': 'ghi',
+    '5': 'jkl',
+    '6': 'mno',
+    '7': 'pqrs',
+    '8': 'tuv',
+    '9': 'wxyz',
+    '0': ' '
+};
+
+function convertT9ToText(numbers) {
+    let result = '';
+    for (let digit of numbers) {
+        const letters = t9Map[digit];
+        if (letters) {
+            // Take the first letter of each group as the guess
+            result += letters[0];
+        }
+    }
+    return result;
+}
 
 // Initialize speech recognition if available
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -374,6 +401,26 @@ keys.forEach(key => {
         const val = key.getAttribute('data-value');
         if (!val) return;
         
+        // If in text search mode, collect digits for text conversion
+        if (textSearchMode) {
+            if (val === '1') {
+                // Execute search with collected text
+                const searchText = convertT9ToText(textInput);
+                console.log('Text search:', textInput, '→', searchText);
+                const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchText)}`;
+                lockScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    window.location.href = googleImageSearchUrl;
+                }, 500);
+                return;
+            } else {
+                // Add to text input
+                textInput += val;
+                console.log('Text input so far:', textInput, '→', convertT9ToText(textInput));
+                return;
+            }
+        }
+        
         // If in voice search mode and 7 is pressed, execute Google Images search
         if (voiceSearchMode && val === '7' && recognition && recognition.searchQuery) {
             const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
@@ -387,6 +434,14 @@ keys.forEach(key => {
         if (entered.length >= 4) return;
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
+
+        // Check for text search activation code: 9-9-9
+        if (entered.length === 3 && entered[0] === 9 && entered[1] === 9 && entered[2] === 9) {
+            textSearchMode = true;
+            textInput = '';
+            console.log('Text search mode activated - type numbers, press 1 to search');
+            return;
+        }
 
         // Check for voice search activation code: 4-5-6
         if (entered.length === 3 && entered[0] === 4 && entered[1] === 5 && entered[2] === 6) {
@@ -407,6 +462,14 @@ keys.forEach(key => {
 
 // Back button
 document.getElementById('back').addEventListener('click', () => {
+    // If in text search mode, cancel it
+    if (textSearchMode) {
+        textSearchMode = false;
+        textInput = '';
+        reset();
+        return;
+    }
+    
     // If in voice search mode, cancel it silently
     if (voiceSearchMode) {
         voiceSearchMode = false;
