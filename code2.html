@@ -107,8 +107,8 @@
     .keypad {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        max-width: 380px;
+        gap: 20px;
+        max-width: 400px;
         margin: 0 auto;
         padding: 0 20px;
     }
@@ -121,23 +121,24 @@
         justify-content: center;
         align-items: center;
         flex-direction: column;
-        font-size: 32px;
+        font-size: 28px;
         cursor: pointer;
         user-select: none;
         transition: background 0.15s;
         position: relative;
+        padding: 10px;
     }
 
     .key span:first-child {
-        margin-top: -8px;
+        margin-top: -12px;
     }
 
     .key .letters {
         position: absolute;
-        bottom: 24%;
-        font-size: 8px;
+        bottom: 20%;
+        font-size: 7px;
         opacity: 0.45;
-        letter-spacing: 0.8px;
+        letter-spacing: 1px;
         font-weight: 300;
     }
 
@@ -385,6 +386,17 @@ function checkCode() {
 
     if (!suitMap[suit]) { fail(); return; }
     if (![a,b,c].every(v => allowedValues.includes(v))) { fail(); return; }
+    
+    // Check for duplicate non-zero values in first 3 digits
+    // Only 0 can be duplicated, values 1,2,4,8 must be unique
+    const firstThree = [a,b,c];
+    const nonZeroValues = firstThree.filter(v => v !== 0);
+    const uniqueNonZero = [...new Set(nonZeroValues)];
+    if (nonZeroValues.length !== uniqueNonZero.length) {
+        fail();
+        return;
+    }
+    
     const sum = a+b+c;
     if (sum < 1 || sum > 13) { fail(); return; }
 
