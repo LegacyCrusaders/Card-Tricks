@@ -2,59 +2,64 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Time Call</title>
 
 <style>
+* {
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   background: black;
   color: white;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  touch-action: none;
 }
 
 .screen {
   display: none;
-  height: 100%;
-  width: 100%;
-  justify-content: space-between;
+  width: 100vw;
+  height: 100vh;
+  padding: 40px 20px;
   align-items: center;
+  justify-content: space-between;
   flex-direction: column;
-  padding: 60px 20px;
 }
 
 .active { display: flex; }
 
+/* ---------- COMMON ---------- */
+
 button {
   border: none;
-  border-radius: 50%;
-  width: 90px;
-  height: 90px;
-  font-size: 16px;
+  background: none;
   color: white;
 }
 
-.answer {
-  background: #2ecc71;
-}
-
-.decline {
-  background: #e74c3c;
-}
-
-.callback {
-  background: #3498db;
-  border-radius: 30px;
-  width: auto;
-  padding: 14px 28px;
-  font-size: 20px;
+.circle {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #2c2c2c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  margin-top: 60px;
 }
 
 .caller {
   font-size: 34px;
-  margin-top: 80px;
+  margin-top: 20px;
 }
 
 .sub {
@@ -62,32 +67,66 @@ button {
   margin-top: 6px;
 }
 
-.ring {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: white;
-  animation: pulse 1.5s infinite;
-  margin-top: 20px;
+.timer {
+  margin-top: 8px;
+  opacity: 0.7;
+  font-size: 18px;
 }
 
-@keyframes pulse {
-  0% { opacity: 0.2; }
-  50% { opacity: 1; }
-  100% { opacity: 0.2; }
-}
+/* ---------- INCOMING ---------- */
 
-.controls {
+.controls-row {
   width: 100%;
   display: flex;
   justify-content: space-between;
   padding: 0 40px 40px;
 }
 
-.timer {
+.answer, .decline {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+}
+
+.answer { background: #2ecc71; }
+.decline { background: #e74c3c; }
+
+/* ---------- CONNECTED ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  margin-top: 40px;
+}
+
+.control {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 20px;
-  opacity: 0.7;
-  margin-top: 10px;
+  opacity: 0.9;
+}
+
+.hangup {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #e74c3c;
+  margin-bottom: 30px;
+}
+
+/* ---------- START / CALLBACK ---------- */
+
+.action {
+  background: #3498db;
+  padding: 14px 28px;
+  border-radius: 30px;
+  font-size: 20px;
 }
 </style>
 </head>
@@ -95,18 +134,19 @@ button {
 <body>
 
 <div id="start" class="screen active">
-  <button class="callback" id="startBtn">Tap to Begin</button>
+  <button class="action" id="startBtn">Tap to Begin</button>
 </div>
 
 <div id="armed" class="screen"></div>
 
 <div id="incoming" class="screen">
   <div>
+    <div class="circle" id="avatar">FM</div>
     <div class="caller" id="callerName"></div>
     <div class="sub">Mobile • Incoming call</div>
-    <div class="ring"></div>
   </div>
-  <div class="controls">
+
+  <div class="controls-row">
     <button class="decline"></button>
     <button class="answer" id="answerBtn"></button>
   </div>
@@ -114,22 +154,32 @@ button {
 
 <div id="connected" class="screen">
   <div>
+    <div class="circle" id="connectedAvatar">FM</div>
     <div class="caller" id="connectedName"></div>
     <div class="timer" id="callTimer">00:00</div>
+
+    <div class="grid">
+      <div class="control">🔇</div>
+      <div class="control">⌨️</div>
+      <div class="control">🔊</div>
+      <div class="control">➕</div>
+      <div class="control">🎧</div>
+      <div class="control">📞</div>
+    </div>
   </div>
-  <button class="decline" id="hangupBtn"></button>
+
+  <button class="hangup" id="hangupBtn"></button>
 </div>
 
 <div id="callbackScreen" class="screen">
   <div class="sub">Call log</div>
-  <button class="callback" id="callbackBtn">Call Back</button>
+  <button class="action" id="callbackBtn">Call Back</button>
 </div>
 
 <script>
-let wakeLock = null;
 let faceDown = false;
 let mode = "future";
-let timerInterval;
+let timer;
 let seconds = 0;
 
 function show(id) {
@@ -137,79 +187,71 @@ function show(id) {
   document.getElementById(id).classList.add('active');
 }
 
-async function goFullscreen() {
+async function setup() {
   if (!document.fullscreenElement) {
     await document.documentElement.requestFullscreen();
   }
-}
-
-async function requestWakeLock() {
   try {
-    wakeLock = await navigator.wakeLock.request('screen');
+    await navigator.wakeLock.request('screen');
   } catch {}
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+    await DeviceOrientationEvent.requestPermission();
+  }
 }
 
-function triggerCall(name, delay) {
+function triggerCall(name, initials, delay) {
   setTimeout(() => {
-    document.getElementById('callerName').textContent = name;
-    document.getElementById('connectedName').textContent = name;
+    callerName.textContent = name;
+    connectedName.textContent = name;
+    avatar.textContent = initials;
+    connectedAvatar.textContent = initials;
     show('incoming');
-    navigator.vibrate([300,200,300,200,300]);
+    navigator.vibrate([300,200,300]);
   }, delay);
 }
 
 function startTimer() {
   seconds = 0;
-  timerInterval = setInterval(() => {
+  timer = setInterval(() => {
     seconds++;
-    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    document.getElementById('callTimer').textContent = `${m}:${s}`;
+    callTimer.textContent =
+      String(Math.floor(seconds/60)).padStart(2,'0') + ":" +
+      String(seconds%60).padStart(2,'0');
   }, 1000);
 }
 
-document.getElementById('startBtn').onclick = async () => {
-  await goFullscreen();
-  await requestWakeLock();
-
-  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
-    await DeviceOrientationEvent.requestPermission();
-  }
-
+startBtn.onclick = async () => {
+  await setup();
   show('armed');
 };
 
 window.addEventListener('deviceorientation', e => {
   if (e.beta > 150 || e.beta < -150) {
     faceDown = true;
-  } else {
-    if (faceDown) {
-      faceDown = false;
+  } else if (faceDown) {
+    faceDown = false;
 
-      if (mode === "future") {
-        mode = "locked";
-        triggerCall("Future Me", 4000);
-      }
-
-      if (mode === "past") {
-        mode = "locked";
-        triggerCall("Past Me", 5000);
-      }
+    if (mode === "future") {
+      mode = "locked";
+      triggerCall("Future Me", "FM", 3500);
+    } else if (mode === "past") {
+      mode = "locked";
+      triggerCall("Past Me", "PM", 5000);
     }
   }
 });
 
-document.getElementById('answerBtn').onclick = () => {
+answerBtn.onclick = () => {
   show('connected');
   startTimer();
 };
 
-document.getElementById('hangupBtn').onclick = () => {
-  clearInterval(timerInterval);
+hangupBtn.onclick = () => {
+  clearInterval(timer);
   show('callbackScreen');
 };
 
-document.getElementById('callbackBtn').onclick = () => {
+callbackBtn.onclick = () => {
   mode = "past";
   show('armed');
 };
