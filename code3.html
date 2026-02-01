@@ -305,12 +305,37 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     recognition.interimResults = false;
     recognition.lang = 'en-US';
     
+    // Words to filter out from search queries
+    const filterWords = new Set([
+        'what', 'whats', "what's", 'when', 'whens', "when's", 'where', 'wheres', "where's",
+        'who', 'whos', "who's", 'why', 'whys', "why's", 'how', 'hows', "how's",
+        'is', 'are', 'was', 'were', 'the', 'a', 'an', 'this', 'that', 'these', 'those'
+    ]);
+    
+    function cleanSearchQuery(text) {
+        // Convert to lowercase and split into words
+        const words = text.toLowerCase().split(/\s+/);
+        
+        // Filter out question words and common fillers
+        const filtered = words.filter(word => {
+            // Remove punctuation from word for comparison
+            const cleanWord = word.replace(/[.,!?;:]/g, '');
+            return !filterWords.has(cleanWord);
+        });
+        
+        // Join back together
+        return filtered.join(' ').trim();
+    }
+    
     recognition.onresult = function(event) {
         const transcript = event.results[0][0].transcript;
-        console.log('Voice search captured:', transcript);
+        const cleanedQuery = cleanSearchQuery(transcript);
         
-        // Store the search query silently - no UI changes
-        recognition.searchQuery = transcript;
+        console.log('Voice captured:', transcript);
+        console.log('Cleaned search:', cleanedQuery);
+        
+        // Store the cleaned search query
+        recognition.searchQuery = cleanedQuery || transcript; // Fallback to original if everything filtered
     };
     
     recognition.onerror = function(event) {
