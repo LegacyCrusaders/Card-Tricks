@@ -429,28 +429,12 @@ function reveal(value, suit) {
     const searchQuery = `${label} of ${suitName} playing card`;
     const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchQuery)}`;
     
-    // Create iframe to preload the page
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.top = '0';
-    iframe.style.left = '0';
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = 'none';
-    iframe.style.opacity = '0';
-    iframe.style.zIndex = '999';
-    iframe.src = googleImageSearchUrl;
-    document.body.appendChild(iframe);
-    
     // Fade out lock screen
     lockScreen.classList.add('fade-out');
     
-    // After fade completes, show iframe and redirect
+    // Redirect after fade completes
     setTimeout(() => {
-        iframe.style.opacity = '1';
-        setTimeout(() => {
-            window.location.href = googleImageSearchUrl;
-        }, 100);
+        window.location.href = googleImageSearchUrl;
     }, 500);
 }
 </script>
