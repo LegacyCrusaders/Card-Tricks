@@ -295,6 +295,7 @@ const unlockScreen = document.getElementById('unlockScreen');
 const startScreen = document.getElementById('startScreen');
 let wakeLock = null;
 let voiceSearchMode = false;
+let youtubeMode = false;
 let recognition = null;
 
 // Initialize speech recognition if available
@@ -309,7 +310,8 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const filterWords = new Set([
         'what', 'whats', "what's", 'when', 'whens', "when's", 'where', 'wheres', "where's",
         'who', 'whos', "who's", 'why', 'whys', "why's", 'how', 'hows', "how's",
-        'is', 'are', 'was', 'were', 'the', 'a', 'an', 'this', 'that', 'these', 'those'
+        'is', 'are', 'was', 'were', 'the', 'a', 'an', 'this', 'that', 'these', 'those',
+        'play', 'song', 'music', 'video'
     ]);
     
     function cleanSearchQuery(text) {
@@ -336,6 +338,7 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         
         // Store the cleaned search query
         recognition.searchQuery = cleanedQuery || transcript; // Fallback to original if everything filtered
+        recognition.isYouTube = youtubeMode; // Remember which mode we're in
     };
     
     recognition.onerror = function(event) {
@@ -399,6 +402,16 @@ keys.forEach(key => {
         const val = key.getAttribute('data-value');
         if (!val) return;
         
+        // If in YouTube mode and 1 is pressed, execute YouTube search
+        if (youtubeMode && val === '1' && recognition && recognition.searchQuery) {
+            const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(recognition.searchQuery)}`;
+            lockScreen.classList.add('fade-out');
+            setTimeout(() => {
+                window.location.href = youtubeSearchUrl;
+            }, 500);
+            return;
+        }
+        
         // If in voice search mode and 9 is pressed, execute Google Images search
         if (voiceSearchMode && val === '9' && recognition && recognition.searchQuery) {
             const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
@@ -419,9 +432,30 @@ keys.forEach(key => {
             // Don't return, let it process the new digit normally
         }
         
+        // If YouTube mode was just activated, convert the 111 to ***
+        if (youtubeMode && entered.length === 3) {
+            // Change all dots to show as asterisks
+            dots.forEach(dot => {
+                dot.classList.add('filled');
+            });
+            entered = ['*', '*', '*']; // Mark as hidden
+            // Don't return, let it process the new digit normally
+        }
+        
         if (entered.length >= 4) return;
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
+
+        // Check for YouTube activation code: 1-1-1
+        if (entered.length === 3 && entered[0] === 1 && entered[1] === 1 && entered[2] === 1) {
+            if (recognition) {
+                youtubeMode = true;
+                // Keep UI unchanged - don't show any indication to spectator
+                recognition.searchQuery = null;
+                recognition.start();
+            }
+            return;
+        }
 
         // Check for voice search activation code: 9-9-9
         if (entered.length === 3 && entered[0] === 9 && entered[1] === 9 && entered[2] === 9) {
