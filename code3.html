@@ -296,8 +296,6 @@ const startScreen = document.getElementById('startScreen');
 let wakeLock = null;
 let voiceSearchMode = false;
 let youtubeMode = false;
-let searchTabOpened = false;
-let newTab = null;
 let recognition = null;
 
 // Initialize speech recognition if available
@@ -404,69 +402,43 @@ keys.forEach(key => {
         const val = key.getAttribute('data-value');
         if (!val) return;
         
-        // If in voice search mode and 9 is pressed
-        if (voiceSearchMode && val === '9') {
-            if (!searchTabOpened && recognition && recognition.searchQuery) {
-                // First 9: Open search in background tab
-                const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
-                newTab = window.open(googleImageSearchUrl, '_blank');
-                searchTabOpened = true;
-                console.log('Tab opened in background');
-                // Add the digit to entered array and fill the dot
-                if (entered.length < 4) {
-                    entered.push(parseInt(val));
-                    dots[entered.length - 1].classList.add('filled');
-                }
-                return;
-            } else if (searchTabOpened && newTab) {
-                // Second 9: Switch to the tab and close this one
-                newTab.focus();
-                setTimeout(() => {
-                    window.close();
-                }, 100);
-                return;
-            }
+        // If in voice search mode and 9 is pressed, execute Google Images search
+        if (voiceSearchMode && val === '9' && recognition && recognition.searchQuery) {
+            const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
+            lockScreen.classList.add('fade-out');
+            setTimeout(() => {
+                window.location.href = googleImageSearchUrl;
+            }, 500);
+            return;
         }
         
-        // If in YouTube mode and 1 is pressed
-        if (youtubeMode && val === '1') {
-            if (!searchTabOpened && recognition && recognition.searchQuery) {
-                // First 1: Open YouTube in background tab
-                const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(recognition.searchQuery)}`;
-                newTab = window.open(youtubeSearchUrl, '_blank');
-                searchTabOpened = true;
-                console.log('YouTube tab opened in background');
-                // Add the digit to entered array and fill the dot
-                if (entered.length < 4) {
-                    entered.push(parseInt(val));
-                    dots[entered.length - 1].classList.add('filled');
-                }
-                return;
-            } else if (searchTabOpened && newTab) {
-                // Second 1: Switch to the tab and close this one
-                newTab.focus();
-                setTimeout(() => {
-                    window.close();
-                }, 100);
-                return;
-            }
+        // If in YouTube mode and 1 is pressed, execute YouTube search
+        if (youtubeMode && val === '1' && recognition && recognition.searchQuery) {
+            const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(recognition.searchQuery)}`;
+            lockScreen.classList.add('fade-out');
+            setTimeout(() => {
+                window.location.href = youtubeSearchUrl;
+            }, 500);
+            return;
         }
         
-        // If voice search was just activated, convert the 99 to **
-        if (voiceSearchMode && entered.length === 2 && !searchTabOpened) {
+        // If voice search was just activated, convert the 999 to ***
+        if (voiceSearchMode && entered.length === 3) {
             // Change all dots to show as asterisks
-            dots[0].classList.add('filled');
-            dots[1].classList.add('filled');
-            entered = ['*', '*']; // Mark as hidden
+            dots.forEach(dot => {
+                dot.classList.add('filled');
+            });
+            entered = ['*', '*', '*']; // Mark as hidden
             // Don't return, let it process the new digit normally
         }
         
-        // If YouTube mode was just activated, convert the 11 to **
-        if (youtubeMode && entered.length === 2 && !searchTabOpened) {
+        // If YouTube mode was just activated, convert the 111 to ***
+        if (youtubeMode && entered.length === 3) {
             // Change all dots to show as asterisks
-            dots[0].classList.add('filled');
-            dots[1].classList.add('filled');
-            entered = ['*', '*']; // Mark as hidden
+            dots.forEach(dot => {
+                dot.classList.add('filled');
+            });
+            entered = ['*', '*', '*']; // Mark as hidden
             // Don't return, let it process the new digit normally
         }
         
@@ -474,12 +446,10 @@ keys.forEach(key => {
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
 
-        // Check for YouTube activation code: 1-1
-        if (entered.length === 2 && entered[0] === 1 && entered[1] === 1) {
+        // Check for YouTube activation code: 1-1-1
+        if (entered.length === 3 && entered[0] === 1 && entered[1] === 1 && entered[2] === 1) {
             if (recognition) {
                 youtubeMode = true;
-                searchTabOpened = false;
-                newTab = null;
                 // Keep UI unchanged - don't show any indication to spectator
                 recognition.searchQuery = null;
                 recognition.start();
@@ -487,12 +457,10 @@ keys.forEach(key => {
             return;
         }
 
-        // Check for voice search activation code: 9-9
-        if (entered.length === 2 && entered[0] === 9 && entered[1] === 9) {
+        // Check for voice search activation code: 9-9-9
+        if (entered.length === 3 && entered[0] === 9 && entered[1] === 9 && entered[2] === 9) {
             if (recognition) {
                 voiceSearchMode = true;
-                searchTabOpened = false;
-                newTab = null;
                 // Keep UI unchanged - don't show any indication to spectator
                 recognition.searchQuery = null;
                 recognition.start();
@@ -511,11 +479,6 @@ document.getElementById('back').addEventListener('click', () => {
     // If in YouTube mode, cancel it silently
     if (youtubeMode) {
         youtubeMode = false;
-        searchTabOpened = false;
-        if (newTab) {
-            newTab.close();
-            newTab = null;
-        }
         if (recognition) {
             recognition.stop();
             recognition.searchQuery = null;
@@ -527,11 +490,6 @@ document.getElementById('back').addEventListener('click', () => {
     // If in voice search mode, cancel it silently
     if (voiceSearchMode) {
         voiceSearchMode = false;
-        searchTabOpened = false;
-        if (newTab) {
-            newTab.close();
-            newTab = null;
-        }
         if (recognition) {
             recognition.stop();
             recognition.searchQuery = null;
