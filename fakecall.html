@@ -19,57 +19,105 @@ html, body {
   display: none;
   height: 100%;
   width: 100%;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   flex-direction: column;
+  padding: 60px 20px;
 }
 
-.active {
-  display: flex;
-}
+.active { display: flex; }
 
 button {
-  font-size: 22px;
-  padding: 14px 28px;
-  border-radius: 30px;
   border: none;
-  margin-top: 20px;
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  font-size: 16px;
+  color: white;
+}
+
+.answer {
+  background: #2ecc71;
+}
+
+.decline {
+  background: #e74c3c;
+}
+
+.callback {
+  background: #3498db;
+  border-radius: 30px;
+  width: auto;
+  padding: 14px 28px;
+  font-size: 20px;
 }
 
 .caller {
-  font-size: 30px;
-  margin-bottom: 6px;
+  font-size: 34px;
+  margin-top: 80px;
 }
 
 .sub {
-  opacity: 0.7;
-  margin-bottom: 30px;
+  opacity: 0.6;
+  margin-top: 6px;
 }
 
-.answer { background: #2ecc71; color: black; }
-.hangup { background: #e74c3c; color: white; }
-.callback { background: #3498db; color: white; }
+.ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  animation: pulse 1.5s infinite;
+  margin-top: 20px;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 40px 40px;
+}
+
+.timer {
+  font-size: 20px;
+  opacity: 0.7;
+  margin-top: 10px;
+}
 </style>
 </head>
 
 <body>
 
 <div id="start" class="screen active">
-  <button id="startBtn">Tap to Begin</button>
+  <button class="callback" id="startBtn">Tap to Begin</button>
 </div>
 
 <div id="armed" class="screen"></div>
 
 <div id="incoming" class="screen">
-  <div class="caller" id="callerName"></div>
-  <div class="sub">Incoming call…</div>
-  <button class="answer" id="answerBtn">Answer</button>
+  <div>
+    <div class="caller" id="callerName"></div>
+    <div class="sub">Mobile • Incoming call</div>
+    <div class="ring"></div>
+  </div>
+  <div class="controls">
+    <button class="decline"></button>
+    <button class="answer" id="answerBtn"></button>
+  </div>
 </div>
 
 <div id="connected" class="screen">
-  <div class="caller" id="connectedName"></div>
-  <div class="sub">Connected</div>
-  <button class="hangup" id="hangupBtn">Hang Up</button>
+  <div>
+    <div class="caller" id="connectedName"></div>
+    <div class="timer" id="callTimer">00:00</div>
+  </div>
+  <button class="decline" id="hangupBtn"></button>
 </div>
 
 <div id="callbackScreen" class="screen">
@@ -80,11 +128,9 @@ button {
 <script>
 let wakeLock = null;
 let faceDown = false;
-
-let mode = "future"; 
-// future → first call
-// callback → waiting to trigger past
-// past → second call
+let mode = "future";
+let timerInterval;
+let seconds = 0;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -112,6 +158,16 @@ function triggerCall(name, delay) {
   }, delay);
 }
 
+function startTimer() {
+  seconds = 0;
+  timerInterval = setInterval(() => {
+    seconds++;
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    document.getElementById('callTimer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
 document.getElementById('startBtn').onclick = async () => {
   await goFullscreen();
   await requestWakeLock();
@@ -132,7 +188,7 @@ window.addEventListener('deviceorientation', e => {
 
       if (mode === "future") {
         mode = "locked";
-        triggerCall("Future Me", 10000);
+        triggerCall("Future Me", 4000);
       }
 
       if (mode === "past") {
@@ -145,12 +201,12 @@ window.addEventListener('deviceorientation', e => {
 
 document.getElementById('answerBtn').onclick = () => {
   show('connected');
+  startTimer();
 };
 
 document.getElementById('hangupBtn').onclick = () => {
-  if (mode === "locked") {
-    show('callbackScreen');
-  }
+  clearInterval(timerInterval);
+  show('callbackScreen');
 };
 
 document.getElementById('callbackBtn').onclick = () => {
