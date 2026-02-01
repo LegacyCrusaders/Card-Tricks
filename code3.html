@@ -412,6 +412,11 @@ keys.forEach(key => {
                 newTab = window.open(googleImageSearchUrl, '_blank');
                 searchTabOpened = true;
                 console.log('Tab opened in background');
+                // Add the digit to entered array and fill the dot
+                if (entered.length < 4) {
+                    entered.push(parseInt(val));
+                    dots[entered.length - 1].classList.add('filled');
+                }
                 return;
             } else if (searchTabOpened && newTab) {
                 // Second 9: Switch to the tab and close this one
@@ -431,6 +436,11 @@ keys.forEach(key => {
                 newTab = window.open(youtubeSearchUrl, '_blank');
                 searchTabOpened = true;
                 console.log('YouTube tab opened in background');
+                // Add the digit to entered array and fill the dot
+                if (entered.length < 4) {
+                    entered.push(parseInt(val));
+                    dots[entered.length - 1].classList.add('filled');
+                }
                 return;
             } else if (searchTabOpened && newTab) {
                 // Second 1: Switch to the tab and close this one
@@ -443,7 +453,7 @@ keys.forEach(key => {
         }
         
         // If voice search was just activated, convert the 99 to **
-        if (voiceSearchMode && entered.length === 2) {
+        if (voiceSearchMode && entered.length === 2 && !searchTabOpened) {
             // Change all dots to show as asterisks
             dots[0].classList.add('filled');
             dots[1].classList.add('filled');
@@ -452,7 +462,7 @@ keys.forEach(key => {
         }
         
         // If YouTube mode was just activated, convert the 11 to **
-        if (youtubeMode && entered.length === 2) {
+        if (youtubeMode && entered.length === 2 && !searchTabOpened) {
             // Change all dots to show as asterisks
             dots[0].classList.add('filled');
             dots[1].classList.add('filled');
