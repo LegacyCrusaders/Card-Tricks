@@ -29,15 +29,11 @@ html, body {
   display: none;
   width: 100vw;
   height: 100vh;
-  padding: 40px 20px;
-  align-items: center;
-  justify-content: space-between;
+  padding: 24px 20px;
   flex-direction: column;
 }
 
 .active { display: flex; }
-
-/* ---------- COMMON ---------- */
 
 button {
   border: none;
@@ -45,21 +41,72 @@ button {
   color: white;
 }
 
-.circle {
-  width: 96px;
-  height: 96px;
+/* ---------- COMMON ---------- */
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #222;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   background: #2c2c2c;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
-  margin-top: 60px;
+  font-size: 18px;
+  margin-right: 14px;
+}
+
+.name {
+  font-size: 18px;
+}
+
+.meta {
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ---------- START ---------- */
+
+.action {
+  background: #3498db;
+  padding: 14px 28px;
+  border-radius: 30px;
+  font-size: 20px;
+  margin: auto;
+}
+
+/* ---------- INCOMING ---------- */
+
+.incoming {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.big-avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: #2c2c2c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  margin-top: 40px;
 }
 
 .caller {
-  font-size: 34px;
-  margin-top: 20px;
+  font-size: 32px;
+  margin-top: 18px;
 }
 
 .sub {
@@ -67,24 +114,16 @@ button {
   margin-top: 6px;
 }
 
-.timer {
-  margin-top: 8px;
-  opacity: 0.7;
-  font-size: 18px;
-}
-
-/* ---------- INCOMING ---------- */
-
 .controls-row {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 40px 40px;
+  padding: 0 36px 24px;
 }
 
 .answer, .decline {
-  width: 84px;
-  height: 84px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
 }
 
@@ -93,11 +132,16 @@ button {
 
 /* ---------- CONNECTED ---------- */
 
+.timer {
+  margin-top: 8px;
+  opacity: 0.7;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 26px;
-  margin-top: 40px;
+  gap: 22px;
+  margin-top: 32px;
 }
 
 .control {
@@ -108,25 +152,30 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  opacity: 0.9;
 }
 
 .hangup {
-  width: 78px;
-  height: 78px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   background: #e74c3c;
-  margin-bottom: 30px;
+  margin: 24px auto 0;
 }
 
-/* ---------- START / CALLBACK ---------- */
+/* ---------- CALL LOG ---------- */
 
-.action {
-  background: #3498db;
+.header {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.call-btn {
+  background: #2ecc71;
+  color: black;
   padding: 14px 28px;
   border-radius: 30px;
   font-size: 20px;
+  margin-top: 20px;
 }
 </style>
 </head>
@@ -139,9 +188,9 @@ button {
 
 <div id="armed" class="screen"></div>
 
-<div id="incoming" class="screen">
+<div id="incoming" class="screen incoming">
   <div>
-    <div class="circle" id="avatar">FM</div>
+    <div class="big-avatar" id="bigAvatar">FM</div>
     <div class="caller" id="callerName"></div>
     <div class="sub">Mobile • Incoming call</div>
   </div>
@@ -153,8 +202,8 @@ button {
 </div>
 
 <div id="connected" class="screen">
-  <div>
-    <div class="circle" id="connectedAvatar">FM</div>
+  <div style="align-items:center;text-align:center">
+    <div class="big-avatar" id="connectedAvatar">FM</div>
     <div class="caller" id="connectedName"></div>
     <div class="timer" id="callTimer">00:00</div>
 
@@ -171,16 +220,57 @@ button {
   <button class="hangup" id="hangupBtn"></button>
 </div>
 
-<div id="callbackScreen" class="screen">
-  <div class="sub">Call log</div>
-  <button class="action" id="callbackBtn">Call Back</button>
+<div id="log" class="screen">
+  <div class="header">Recents</div>
+
+  <div class="row">
+    <div class="avatar" id="recentAvatar">FM</div>
+    <div>
+      <div class="name" id="recentName">Future Me</div>
+      <div class="meta" id="recentTime">Just now</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">📞</div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">M</div>
+    <div>
+      <div class="name">Mom</div>
+      <div class="meta">12 min ago</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">📞</div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">J</div>
+    <div>
+      <div class="name">Jordan</div>
+      <div class="meta">Yesterday</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">📞</div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">FM</div>
+    <div>
+      <div class="name">Future Me</div>
+      <div class="meta">2 days ago</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="meta">📞</div>
+  </div>
+
+  <button class="call-btn" id="callbackBtn">Call Back</button>
 </div>
 
 <script>
 let faceDown = false;
 let mode = "future";
-let timer;
 let seconds = 0;
+let timer;
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -191,9 +281,7 @@ async function setup() {
   if (!document.fullscreenElement) {
     await document.documentElement.requestFullscreen();
   }
-  try {
-    await navigator.wakeLock.request('screen');
-  } catch {}
+  try { await navigator.wakeLock.request('screen'); } catch {}
   if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
     await DeviceOrientationEvent.requestPermission();
   }
@@ -203,8 +291,11 @@ function triggerCall(name, initials, delay) {
   setTimeout(() => {
     callerName.textContent = name;
     connectedName.textContent = name;
-    avatar.textContent = initials;
+    recentName.textContent = name;
+    recentAvatar.textContent = initials;
+    bigAvatar.textContent = initials;
     connectedAvatar.textContent = initials;
+    recentTime.textContent = "Just now";
     show('incoming');
     navigator.vibrate([300,200,300]);
   }, delay);
@@ -233,10 +324,10 @@ window.addEventListener('deviceorientation', e => {
 
     if (mode === "future") {
       mode = "locked";
-      triggerCall("Future Me", "FM", 3500);
+      triggerCall("Future Me", "FM", 3000);
     } else if (mode === "past") {
       mode = "locked";
-      triggerCall("Past Me", "PM", 5000);
+      triggerCall("Past Me", "PM", 4000);
     }
   }
 });
@@ -248,7 +339,7 @@ answerBtn.onclick = () => {
 
 hangupBtn.onclick = () => {
   clearInterval(timer);
-  show('callbackScreen');
+  show('log');
 };
 
 callbackBtn.onclick = () => {
