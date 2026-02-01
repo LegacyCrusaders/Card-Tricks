@@ -384,6 +384,16 @@ keys.forEach(key => {
             return;
         }
         
+        // If voice search was just activated, convert the 999 to ***
+        if (voiceSearchMode && entered.length === 3) {
+            // Change all dots to show as asterisks
+            dots.forEach(dot => {
+                dot.classList.add('filled');
+            });
+            entered = ['*', '*', '*']; // Mark as hidden
+            // Don't return, let it process the new digit normally
+        }
+        
         if (entered.length >= 4) return;
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
