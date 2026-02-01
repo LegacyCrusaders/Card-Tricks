@@ -307,27 +307,20 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     
     recognition.onresult = function(event) {
         const transcript = event.results[0][0].transcript;
-        console.log('Voice search:', transcript);
+        console.log('Voice search captured:', transcript);
         
-        // Show what was heard
-        document.querySelector('.header h1').textContent = `"${transcript}"`;
-        document.querySelector('.header p').textContent = 'Press 7 to search or back to cancel';
-        
-        // Store the search query
+        // Store the search query silently - no UI changes
         recognition.searchQuery = transcript;
     };
     
     recognition.onerror = function(event) {
         console.error('Speech recognition error:', event.error);
-        document.querySelector('.header h1').textContent = 'Voice Error';
-        document.querySelector('.header p').textContent = 'Try again or press back';
+        // Keep silent - spectator shouldn't know there was an error
     };
     
     recognition.onend = function() {
-        if (!recognition.searchQuery) {
-            document.querySelector('.header h1').textContent = 'No Speech Detected';
-            document.querySelector('.header p').textContent = 'Press 4-5-6 again or back to cancel';
-        }
+        // Stay silent even if no speech detected
+        console.log('Recognition ended, query:', recognition.searchQuery);
     };
 }
 
@@ -381,12 +374,12 @@ keys.forEach(key => {
         const val = key.getAttribute('data-value');
         if (!val) return;
         
-        // If in voice search mode and 7 is pressed, execute search
+        // If in voice search mode and 7 is pressed, execute Google Images search
         if (voiceSearchMode && val === '7' && recognition && recognition.searchQuery) {
-            const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(recognition.searchQuery)}`;
+            const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
             lockScreen.classList.add('fade-out');
             setTimeout(() => {
-                window.location.href = googleSearchUrl;
+                window.location.href = googleImageSearchUrl;
             }, 500);
             return;
         }
@@ -399,13 +392,9 @@ keys.forEach(key => {
         if (entered.length === 3 && entered[0] === 4 && entered[1] === 5 && entered[2] === 6) {
             if (recognition) {
                 voiceSearchMode = true;
-                document.querySelector('.header h1').textContent = 'Listening...';
-                document.querySelector('.header p').textContent = 'Speak your search query';
+                // Keep UI unchanged - don't show any indication to spectator
                 recognition.searchQuery = null;
                 recognition.start();
-            } else {
-                document.querySelector('.header h1').textContent = 'Voice Not Supported';
-                document.querySelector('.header p').textContent = 'Your browser does not support voice search';
             }
             return;
         }
@@ -418,15 +407,13 @@ keys.forEach(key => {
 
 // Back button
 document.getElementById('back').addEventListener('click', () => {
-    // If in voice search mode, cancel it
+    // If in voice search mode, cancel it silently
     if (voiceSearchMode) {
         voiceSearchMode = false;
         if (recognition) {
             recognition.stop();
             recognition.searchQuery = null;
         }
-        document.querySelector('.header h1').textContent = 'Enter PIN';
-        document.querySelector('.header p').textContent = 'Your PIN contains at least 4 digits.';
         reset();
         return;
     }
