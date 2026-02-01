@@ -295,109 +295,7 @@ const unlockScreen = document.getElementById('unlockScreen');
 const startScreen = document.getElementById('startScreen');
 let wakeLock = null;
 let voiceSearchMode = false;
-let textSearchMode = false;
-let textInput = '';
 let recognition = null;
-
-// T9 keypad mapping
-const t9Map = {
-    '2': 'abc',
-    '3': 'def',
-    '4': 'ghi',
-    '5': 'jkl',
-    '6': 'mno',
-    '7': 'pqrs',
-    '8': 'tuv',
-    '9': 'wxyz',
-    '0': ' '
-};
-
-// Common English words for better T9 conversion
-const commonWords = new Set([
-    'cat', 'dog', 'bird', 'fish', 'lion', 'tiger', 'bear', 'wolf', 'fox', 'deer',
-    'car', 'house', 'tree', 'book', 'phone', 'computer', 'table', 'chair', 'door', 'window',
-    'love', 'happy', 'sad', 'good', 'bad', 'big', 'small', 'new', 'old', 'young',
-    'red', 'blue', 'green', 'yellow', 'black', 'white', 'pink', 'orange', 'purple', 'brown',
-    'food', 'water', 'fire', 'earth', 'air', 'sun', 'moon', 'star', 'sky', 'cloud',
-    'man', 'woman', 'boy', 'girl', 'baby', 'child', 'person', 'people', 'friend', 'family',
-    'day', 'night', 'time', 'year', 'week', 'month', 'hour', 'minute', 'second',
-    'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one',
-    'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now',
-    'old', 'see', 'two', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use',
-    'apple', 'banana', 'orange', 'grape', 'lemon', 'peach', 'cherry', 'melon', 'berry',
-    'pizza', 'burger', 'pasta', 'salad', 'soup', 'rice', 'bread', 'cheese', 'meat',
-    'home', 'work', 'school', 'store', 'park', 'beach', 'city', 'town', 'street',
-    'hello', 'world', 'test', 'name', 'game', 'play', 'run', 'jump', 'walk', 'talk',
-    'harold', 'elephant', 'giraffe', 'monkey', 'zebra', 'panda', 'koala', 'rabbit'
-]);
-
-function generateT9Combinations(numbers) {
-    if (!numbers || numbers.length === 0) return [''];
-    
-    function generate(index) {
-        if (index === numbers.length) return [''];
-        
-        const digit = numbers[index];
-        const letters = t9Map[digit] || '';
-        const rest = generate(index + 1);
-        
-        const results = [];
-        for (let letter of letters) {
-            for (let suffix of rest) {
-                results.push(letter + suffix);
-            }
-        }
-        return results;
-    }
-    
-    return generate(0);
-}
-
-function convertT9ToText(numbers) {
-    const combinations = generateT9Combinations(numbers);
-    
-    // First, try to find an exact match in common words
-    for (let combo of combinations) {
-        if (commonWords.has(combo.toLowerCase())) {
-            return combo;
-        }
-    }
-    
-    // If no exact match, use heuristics to pick the best option
-    // Prefer combinations with more vowels and common letter patterns
-    let best = combinations[0] || '';
-    let bestScore = -1;
-    
-    for (let combo of combinations) {
-        let score = 0;
-        const lower = combo.toLowerCase();
-        
-        // Score based on vowel distribution
-        const vowels = (lower.match(/[aeiou]/g) || []).length;
-        const consonants = lower.length - vowels;
-        if (vowels > 0 && consonants > 0) {
-            score += 5;
-        }
-        
-        // Penalize repeated letters (unless common like 'ee', 'll', 'ss')
-        if (/([^els])\1/.test(lower)) {
-            score -= 3;
-        }
-        
-        // Reward common starting letters
-        if (/^[acdeimnprst]/.test(lower)) {
-            score += 2;
-        }
-        
-        if (score > bestScore) {
-            bestScore = score;
-            best = combo;
-        }
-    }
-    
-    return best;
-}
 
 // Initialize speech recognition if available
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -476,28 +374,8 @@ keys.forEach(key => {
         const val = key.getAttribute('data-value');
         if (!val) return;
         
-        // If in text search mode, collect digits for text conversion
-        if (textSearchMode) {
-            if (val === '1') {
-                // Execute search with collected text
-                const searchText = convertT9ToText(textInput);
-                console.log('Text search:', textInput, '→', searchText);
-                const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchText)}`;
-                lockScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    window.location.href = googleImageSearchUrl;
-                }, 500);
-                return;
-            } else {
-                // Add to text input
-                textInput += val;
-                console.log('Text input so far:', textInput, '→', convertT9ToText(textInput));
-                return;
-            }
-        }
-        
-        // If in voice search mode and 7 is pressed, execute Google Images search
-        if (voiceSearchMode && val === '7' && recognition && recognition.searchQuery) {
+        // If in voice search mode and 9 is pressed, execute Google Images search
+        if (voiceSearchMode && val === '9' && recognition && recognition.searchQuery) {
             const googleImageSearchUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(recognition.searchQuery)}`;
             lockScreen.classList.add('fade-out');
             setTimeout(() => {
@@ -510,16 +388,8 @@ keys.forEach(key => {
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
 
-        // Check for text search activation code: 9-9-9
+        // Check for voice search activation code: 9-9-9
         if (entered.length === 3 && entered[0] === 9 && entered[1] === 9 && entered[2] === 9) {
-            textSearchMode = true;
-            textInput = '';
-            console.log('Text search mode activated - type numbers, press 1 to search');
-            return;
-        }
-
-        // Check for voice search activation code: 4-5-6
-        if (entered.length === 3 && entered[0] === 4 && entered[1] === 5 && entered[2] === 6) {
             if (recognition) {
                 voiceSearchMode = true;
                 // Keep UI unchanged - don't show any indication to spectator
@@ -537,14 +407,6 @@ keys.forEach(key => {
 
 // Back button
 document.getElementById('back').addEventListener('click', () => {
-    // If in text search mode, cancel it
-    if (textSearchMode) {
-        textSearchMode = false;
-        textInput = '';
-        reset();
-        return;
-    }
-    
     // If in voice search mode, cancel it silently
     if (voiceSearchMode) {
         voiceSearchMode = false;
