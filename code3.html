@@ -294,6 +294,42 @@ const lockScreen = document.getElementById('lockScreen');
 const unlockScreen = document.getElementById('unlockScreen');
 const startScreen = document.getElementById('startScreen');
 let wakeLock = null;
+let voiceSearchMode = false;
+let recognition = null;
+
+// Initialize speech recognition if available
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        console.log('Voice search:', transcript);
+        
+        // Show what was heard
+        document.querySelector('.header h1').textContent = `"${transcript}"`;
+        document.querySelector('.header p').textContent = 'Press 7 to search or back to cancel';
+        
+        // Store the search query
+        recognition.searchQuery = transcript;
+    };
+    
+    recognition.onerror = function(event) {
+        console.error('Speech recognition error:', event.error);
+        document.querySelector('.header h1').textContent = 'Voice Error';
+        document.querySelector('.header p').textContent = 'Try again or press back';
+    };
+    
+    recognition.onend = function() {
+        if (!recognition.searchQuery) {
+            document.querySelector('.header h1').textContent = 'No Speech Detected';
+            document.querySelector('.header p').textContent = 'Press 4-5-6 again or back to cancel';
+        }
+    };
+}
 
 // Start screen functionality
 startScreen.addEventListener('click', async () => {
@@ -344,9 +380,35 @@ keys.forEach(key => {
     key.addEventListener('click', () => {
         const val = key.getAttribute('data-value');
         if (!val) return;
+        
+        // If in voice search mode and 7 is pressed, execute search
+        if (voiceSearchMode && val === '7' && recognition && recognition.searchQuery) {
+            const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(recognition.searchQuery)}`;
+            lockScreen.classList.add('fade-out');
+            setTimeout(() => {
+                window.location.href = googleSearchUrl;
+            }, 500);
+            return;
+        }
+        
         if (entered.length >= 4) return;
         entered.push(parseInt(val));
         dots[entered.length - 1].classList.add('filled');
+
+        // Check for voice search activation code: 4-5-6
+        if (entered.length === 3 && entered[0] === 4 && entered[1] === 5 && entered[2] === 6) {
+            if (recognition) {
+                voiceSearchMode = true;
+                document.querySelector('.header h1').textContent = 'Listening...';
+                document.querySelector('.header p').textContent = 'Speak your search query';
+                recognition.searchQuery = null;
+                recognition.start();
+            } else {
+                document.querySelector('.header h1').textContent = 'Voice Not Supported';
+                document.querySelector('.header p').textContent = 'Your browser does not support voice search';
+            }
+            return;
+        }
 
         if (entered.length === 4) {
             setTimeout(checkCode, 150);
@@ -356,6 +418,19 @@ keys.forEach(key => {
 
 // Back button
 document.getElementById('back').addEventListener('click', () => {
+    // If in voice search mode, cancel it
+    if (voiceSearchMode) {
+        voiceSearchMode = false;
+        if (recognition) {
+            recognition.stop();
+            recognition.searchQuery = null;
+        }
+        document.querySelector('.header h1').textContent = 'Enter PIN';
+        document.querySelector('.header p').textContent = 'Your PIN contains at least 4 digits.';
+        reset();
+        return;
+    }
+    
     if (entered.length === 0) return;
     entered.pop();
     dots[entered.length].classList.remove('filled');
