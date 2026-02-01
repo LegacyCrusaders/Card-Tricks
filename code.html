@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lock Screen</title>
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        background: linear-gradient(180deg, #0b1a2f, #142d4c);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+    }
+
+    .phone {
+        width: 360px;
+        height: 740px;
+        border-radius: 30px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 40px 20px;
+        box-sizing: border-box;
+    }
+
+    .dots {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+
+    .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    .dot.filled {
+        background: white;
+    }
+
+    .keypad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 40px;
+    }
+
+    .key {
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 26px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .key:active {
+        background: rgba(255,255,255,0.25);
+    }
+
+    .unlock {
+        display: none;
+        width: 100%;
+        height: 100%;
+        background: white;
+        color: black;
+        justify-content: center;
+        align-items: center;
+        font-size: 72px;
+        font-weight: 600;
+    }
+
+    .red { color: red; }
+    .black { color: black; }
+
+    .shake {
+        animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        50% { transform: translateX(8px); }
+        75% { transform: translateX(-8px); }
+        100% { transform: translateX(0); }
+    }
+</style>
+</head>
+<body>
+
+<div class="phone" id="lockScreen">
+    <div class="dots" id="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <div class="keypad">
+        <div class="key">1</div>
+        <div class="key">2</div>
+        <div class="key">3</div>
+        <div class="key">4</div>
+        <div class="key">5</div>
+        <div class="key">6</div>
+        <div class="key">7</div>
+        <div class="key">8</div>
+        <div class="key">9</div>
+        <div class="key">0</div>
+    </div>
+</div>
+
+<div class="unlock" id="unlockScreen"></div>
+
+<script>
+let entered = [];
+const dots = document.querySelectorAll('.dot');
+const keys = document.querySelectorAll('.key');
+const lockScreen = document.getElementById('lockScreen');
+const unlockScreen = document.getElementById('unlockScreen');
+
+keys.forEach(key => {
+    key.addEventListener('click', () => {
+        if (entered.length >= 4) return;
+        entered.push(parseInt(key.textContent));
+        dots[entered.length - 1].classList.add('filled');
+
+        if (entered.length === 4) {
+            setTimeout(checkCode, 150);
+        }
+    });
+});
+
+function reset() {
+    entered = [];
+    dots.forEach(d => d.classList.remove('filled'));
+}
+
+function checkCode() {
+    const [a,b,c,suit] = entered;
+
+    const allowedValues = [0,1,2,4,8];
+    const suitMap = {
+        1: {char: '♣', color: 'black'},
+        2: {char: '♥', color: 'red'},
+        3: {char: '♠', color: 'black'},
+        4: {char: '♦', color: 'red'}
+    };
+
+    // Validate suit
+    if (!suitMap[suit]) {
+        fail();
+        return;
+    }
+
+    // Validate first three digits
+    if (![a,b,c].every(v => allowedValues.includes(v))) {
+        fail();
+        return;
+    }
+
+    const sum = a + b + c;
+    if (sum < 1 || sum > 13) {
+        fail();
+        return;
+    }
+
+    // Success
+    reveal(sum, suitMap[suit]);
+}
+
+function fail() {
+    lockScreen.classList.add('shake');
+    setTimeout(() => {
+        lockScreen.classList.remove('shake');
+        reset();
+    }, 300);
+}
+
+function reveal(value, suit) {
+    lockScreen.style.display = 'none';
+    unlockScreen.style.display = 'flex';
+
+    let label;
+    if (value === 1) label = 'A';
+    else if (value === 11) label = 'J';
+    else if (value === 12) label = 'Q';
+    else if (value === 13) label = 'K';
+    else label = value;
+
+    unlockScreen.innerHTML = `<span class="${suit.color}">${label}${suit.char}</span>`;
+}
+</script>
+
+</body>
+</html>
