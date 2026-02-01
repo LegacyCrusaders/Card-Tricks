@@ -6,114 +6,131 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Lock Screen Rewind</title>
+
 <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    height: 105vh;
-    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
-    font-family: 'SamsungSharpSans', -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 105vh;
+  overflow-x: hidden;
+  background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+}
 
-  #startOverlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #e0dfff;
-    font-size: 28px;
-    cursor: pointer;
-    z-index: 10;
-    user-select: none;
-  }
+#startOverlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #e0dfff;
+  z-index: 10;
+  user-select: none;
+}
 
-  #phone {
-    width: 100vw;
-    height: 100vh;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
-    position: relative;
-  }
+#startOverlay .title {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
 
-  .lock-icon {
-    position: absolute;
-    top: 50px;
-    width: 28px;
-    height: 28px;
-  }
+#startOverlay .version {
+  font-size: 14px;
+  opacity: 0.7;
+}
 
-  .time {
-    font-size: 100px;
-    font-weight: 300;
-    color: #e0dfff;
-    letter-spacing: -2px;
-  }
+#phone {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: linear-gradient(to bottom, #6a4fff 0%, #2c1e8f 100%);
+  color: #e0dfff;
+}
 
-  .date {
-    font-size: 24px;
-    color: #e0dfff;
-    margin-top: 10px;
-  }
+.lock-icon {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 26px;
+}
 
-  /* Bottom corner buttons */
-  .corner-button {
-    position: absolute;
-    bottom: 40px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.lock-icon svg {
+  fill: white;
+}
 
-  .phone-button { left: 40px; }
-  .camera-button { right: 40px; }
+.center {
+  position: absolute;
+  top: 35%;
+  width: 100%;
+  text-align: center;
+}
 
-  .corner-button svg,
-  .lock-icon svg {
-    fill: white;
-    width: 50%;
-    height: 50%;
-  }
+.time {
+  font-size: 100px;
+  font-weight: 300;
+  letter-spacing: -2px;
+}
 
+.date {
+  font-size: 24px;
+  margin-top: 8px;
+}
+
+.corner-button {
+  position: absolute;
+  bottom: 40px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corner-button svg {
+  width: 50%;
+  height: 50%;
+  fill: white;
+}
+
+.phone-btn { left: 40px; }
+.camera-btn { right: 40px; }
 </style>
 </head>
+
 <body>
 
-<div id="startOverlay">Tap to Start</div>
+<div id="startOverlay">
+  <div class="title">Tap to Begin</div>
+  <div class="version">v1.0.3</div>
+</div>
 
 <div id="phone">
-  <!-- Lock icon -->
   <div class="lock-icon">
     <svg viewBox="0 0 24 24">
-      <path d="M12 2C9.24 2 7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7zm0 5h6v10H9V12z"/>
+      <path d="M12 2c-2.76 0-5 2.24-5 5v3H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V12c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7z"/>
     </svg>
   </div>
 
-  <div class="time" id="time">--:--</div>
-  <div class="date" id="date">Loading...</div>
+  <div class="center">
+    <div class="time" id="time">--:--</div>
+    <div class="date" id="date"></div>
+  </div>
 
-  <!-- Phone button -->
-  <div class="corner-button phone-button">
+  <div class="corner-button phone-btn">
     <svg viewBox="0 0 24 24">
-      <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+      <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
     </svg>
   </div>
 
-  <!-- Camera button -->
-  <div class="corner-button camera-button">
+  <div class="corner-button camera-btn">
     <svg viewBox="0 0 24 24">
-      <path d="M12 5c-3.86 0-7 3.14-7 7s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm6-13h-3.17l-1.83-2H10L8.17 4H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/>
+      <path d="M12 5c-3.86 0-7 3.14-7 7s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
     </svg>
   </div>
 </div>
@@ -121,10 +138,10 @@
 <script>
 let fakeTime = new Date();
 fakeTime.setMinutes(fakeTime.getMinutes() + 5);
+
+let wasFaceDown = false;
 let rewinding = false;
 let finished = false;
-let wasFaceDown = false;
-let fakeTicker;
 
 function formatTime(d) {
   let h = d.getHours() % 12 || 12;
@@ -132,70 +149,57 @@ function formatTime(d) {
   return h + ":" + String(m).padStart(2, "0");
 }
 
-function updateDate(d) {
-  const options = { weekday: 'short', month: 'long', day: 'numeric' };
-  document.getElementById("date").textContent =
-    d.toLocaleDateString(undefined, options);
-}
-
-function display(d) {
+function updateDisplay(d) {
   document.getElementById("time").textContent = formatTime(d);
-  updateDate(d);
+  document.getElementById("date").textContent =
+    d.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric" });
 }
 
 function startFakeClock() {
-  display(fakeTime);
-  fakeTicker = setInterval(() => {
+  updateDisplay(fakeTime);
+  setInterval(() => {
     if (!finished) {
       fakeTime.setSeconds(fakeTime.getSeconds() + 1);
-      display(fakeTime);
+      updateDisplay(fakeTime);
     }
   }, 1000);
 }
 
-function setupOrientation() {
-  window.addEventListener("deviceorientation", (event) => {
-    let beta = event.beta;
-    if (beta > 150 || beta < -150) {
-      wasFaceDown = true;
-    }
-    if (wasFaceDown && beta > -30 && beta < 30 && !rewinding) {
-      rewinding = true;
-      startRewind();
-    }
-  });
-}
-
 function startRewind() {
   setTimeout(() => {
-    let steps = 5;
-    let rewindInterval = setInterval(() => {
-      fakeTime.setMinutes(fakeTime.getMinutes() - 1);
-      display(fakeTime);
-      steps--;
-      if (steps <= 0) {
-        clearInterval(rewindInterval);
+    const delays = [800, 400, 250, 500, 900];
+    let step = 0;
+
+    function rewindStep() {
+      if (step >= delays.length) {
         finished = true;
-        setInterval(() => display(new Date()), 1000);
+        setInterval(() => updateDisplay(new Date()), 1000);
+        return;
       }
-    }, 500);
+      fakeTime.setMinutes(fakeTime.getMinutes() - 1);
+      updateDisplay(fakeTime);
+      setTimeout(rewindStep, delays[step++]);
+    }
+
+    rewindStep();
   }, 3000);
 }
 
-document.getElementById("startOverlay").addEventListener("click", async () => {
-  document.getElementById("startOverlay").style.display = "none";
-  const phone = document.getElementById("phone");
-  phone.style.display = "flex";
-
-  if (document.documentElement.requestFullscreen) {
-    await document.documentElement.requestFullscreen();
-  } else if (document.documentElement.webkitRequestFullscreen) {
-    await document.documentElement.webkitRequestFullscreen();
+window.addEventListener("deviceorientation", e => {
+  if (e.beta > 150 || e.beta < -150) wasFaceDown = true;
+  if (wasFaceDown && e.beta > -30 && e.beta < 30 && !rewinding) {
+    rewinding = true;
+    startRewind();
   }
-
-  startFakeClock();
-  setupOrientation();
 });
+
+document.getElementById("startOverlay").onclick = async () => {
+  document.getElementById("startOverlay").style.display = "none";
+  document.getElementById("phone").style.display = "block";
+  if (document.documentElement.requestFullscreen)
+    await document.documentElement.requestFullscreen();
+  startFakeClock();
+};
 </script>
 
 </body>
