@@ -1,4 +1,4 @@
-<!-- TIME LOOP PHONE – VERSION 1 -->
+<!-- TIME LOOP PHONE – VERSION 2 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,97 +7,22 @@
 <title>Phone</title>
 
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: black;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  overflow: hidden;
-  color: white;
-}
-
-.screen {
-  position: fixed;
-  inset: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
-
-.active { display: flex; }
-
-.avatar {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: #555;
-  margin-bottom: 15px;
-}
-
-h1 { margin: 6px 0; font-size: 26px; }
-p { opacity: 0.7; }
-
-.buttons {
-  position: absolute;
-  bottom: 40px;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-}
-
-.btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.green { background:#2ecc71; color:black; }
-.red { background:#e74c3c; }
-
-.controls {
-  display:grid;
-  grid-template-columns: repeat(3,1fr);
-  gap:20px;
-  margin-top:40px;
-  text-align:center;
-  font-size:14px;
-}
-
-.log {
-  padding:20px;
-  align-items:flex-start;
-}
-
-.log-item {
-  width:100%;
-  padding:14px 0;
-  border-bottom:1px solid #333;
-}
-
-.log-item span {
-  float:right;
-  opacity:0.6;
-}
-
-.log-item.callable {
-  cursor:pointer;
-}
-
-.options button {
-  width:80%;
-  padding:12px;
-  margin:6px 0;
-  background:#222;
-  border:none;
-  border-radius:10px;
-  color:white;
-  font-size:16px;
-}
+html, body { margin:0; padding:0; height:100%; background:black; font-family:-apple-system,BlinkMacSystemFont,sans-serif; color:white; overflow:hidden;}
+.screen{position:fixed; inset:0; display:none; justify-content:center; align-items:center; flex-direction:column;}
+.active{display:flex;}
+.avatar{width:90px;height:90px;border-radius:50%;background:#555;margin-bottom:15px;}
+h1{margin:6px 0;font-size:26px;}
+p{opacity:0.7;}
+.buttons{position:absolute;bottom:40px;width:100%;display:flex;justify-content:space-around;}
+.btn{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.green{background:#2ecc71;color:black;}
+.red{background:#e74c3c;}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px;text-align:center;font-size:14px;}
+.log{padding:20px;align-items:flex-start;}
+.log-item{width:100%;padding:14px 0;border-bottom:1px solid #333;}
+.log-item span{float:right;opacity:0.6;}
+.log-item.callable{cursor:pointer;}
+.options button{width:80%;padding:12px;margin:6px 0;background:#222;border:none;border-radius:10px;color:white;font-size:16px;}
 </style>
 </head>
 
@@ -106,7 +31,7 @@ p { opacity: 0.7; }
 <!-- START -->
 <div id="start" class="screen active">
   <h1>Tap to Begin</h1>
-  <p>Version 1</p>
+  <p>Version 2</p>
 </div>
 
 <!-- ARMED (blank) -->
@@ -145,26 +70,16 @@ p { opacity: 0.7; }
   <div id="logItems"></div>
 </div>
 
-<!-- CALLING OUT -->
-<div id="calling" class="screen">
-  <div class="avatar"></div>
-  <h1 id="callingName"></h1>
-  <p>calling…</p>
-  <div class="buttons">
-    <div class="btn red" onclick="hangUp()">End</div>
-  </div>
-</div>
-
 <script>
-let mode = "idle";
-let faceDown = false;
+let mode="idle";
+let faceDown=false;
 let timerInt;
-let seconds = 0;
+let seconds=0;
 
-let log = [
-  {name:"Mom", time:"Yesterday"},
-  {name:"Jordan", time:"9:14 AM"},
-  {name:"Future Me", time:"now"}
+let log=[
+  {name:"Mom", time:"Yesterday", callable:false},
+  {name:"Jordan", time:"9:14 AM", callable:false},
+  {name:"Future Me", time:"now", callable:false}
 ];
 
 function show(id){
@@ -173,28 +88,24 @@ function show(id){
 }
 
 async function start(){
-  if (!document.fullscreenElement) {
-    await document.documentElement.requestFullscreen();
-  }
-  if ('wakeLock' in navigator) {
-    try { await navigator.wakeLock.request('screen'); } catch {}
-  }
+  if (!document.fullscreenElement){await document.documentElement.requestFullscreen();}
+  if ('wakeLock' in navigator){try{await navigator.wakeLock.request('screen');}catch{}}
   show('armed');
-  mode = "armed";
+  mode="armed";
 }
 
-document.getElementById('start').onclick = start;
+document.getElementById('start').onclick=start;
 
+// Detect flip
 window.addEventListener('deviceorientation', e=>{
   if (mode!=="armed") return;
-  if (e.beta > 150 || e.beta < -150) {
-    faceDown = true;
-  } else if (faceDown) {
-    faceDown = false;
-    mode = "locked";
+  if (e.beta > 150 || e.beta < -150){faceDown=true;}
+  else if(faceDown){
+    faceDown=false;
+    mode="locked";
     setTimeout(()=>{
-      show('incoming');
       document.getElementById('incomingName').innerText="Future Me";
+      show('incoming');
       navigator.vibrate([200,200,200]);
     },1000);
   }
@@ -202,21 +113,22 @@ window.addEventListener('deviceorientation', e=>{
 
 function answer(){
   seconds=0;
-  document.getElementById('callName').innerText =
+  document.getElementById('callName').innerText=
     document.getElementById('incomingName').innerText;
   show('call');
   timerInt=setInterval(()=>{
     seconds++;
     let m=String(Math.floor(seconds/60)).padStart(2,'0');
     let s=String(seconds%60).padStart(2,'0');
-    timer.innerText=`${m}:${s}`;
+    document.getElementById('timer').innerText=`${m}:${s}`;
   },1000);
 }
 
 function hangUp(){
   clearInterval(timerInt);
-  if (mode==="calling") {
-    log.unshift({name:"Past Me", time:"now"});
+  // Add Past Me if it doesn't exist yet
+  if(!log.find(x=>x.name==="Past Me")){
+    log.unshift({name:"Past Me", time:"now", callable:true});
   }
   renderLog();
   show('log');
@@ -234,9 +146,9 @@ function renderLog(){
   el.innerHTML="";
   log.forEach(item=>{
     const d=document.createElement('div');
-    d.className="log-item"+(item.name==="Past Me"?" callable":"");
+    d.className="log-item"+(item.callable?" callable":"");
     d.innerHTML=`${item.name}<span>${item.time}</span>`;
-    if (item.name==="Past Me"){
+    if(item.callable){
       d.onclick=()=>callPast();
     }
     el.appendChild(d);
@@ -244,10 +156,10 @@ function renderLog(){
 }
 
 function callPast(){
-  document.getElementById('callingName').innerText="Past Me";
-  show('calling');
+  document.getElementById('callName').innerText="Past Me";
+  show('call');
   mode="calling";
-  setTimeout(()=>answer(),1200);
+  setTimeout(answer,1200);
 }
 </script>
 
