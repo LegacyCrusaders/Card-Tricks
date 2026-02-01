@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Time Call</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: black;
+  color: white;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.screen {
+  display: none;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.active {
+  display: flex;
+}
+
+button {
+  font-size: 22px;
+  padding: 14px 28px;
+  border-radius: 30px;
+  border: none;
+  margin-top: 20px;
+}
+
+.caller {
+  font-size: 30px;
+  margin-bottom: 6px;
+}
+
+.sub {
+  opacity: 0.7;
+  margin-bottom: 30px;
+}
+
+.answer { background: #2ecc71; color: black; }
+.hangup { background: #e74c3c; color: white; }
+.callback { background: #3498db; color: white; }
+</style>
+</head>
+
+<body>
+
+<div id="start" class="screen active">
+  <button id="startBtn">Tap to Begin</button>
+</div>
+
+<div id="armed" class="screen"></div>
+
+<div id="incoming" class="screen">
+  <div class="caller" id="callerName"></div>
+  <div class="sub">Incoming call…</div>
+  <button class="answer" id="answerBtn">Answer</button>
+</div>
+
+<div id="connected" class="screen">
+  <div class="caller" id="connectedName"></div>
+  <div class="sub">Connected</div>
+  <button class="hangup" id="hangupBtn">Hang Up</button>
+</div>
+
+<div id="callbackScreen" class="screen">
+  <div class="sub">Call log</div>
+  <button class="callback" id="callbackBtn">Call Back</button>
+</div>
+
+<script>
+let wakeLock = null;
+let faceDown = false;
+
+let mode = "future"; 
+// future → first call
+// callback → waiting to trigger past
+// past → second call
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function goFullscreen() {
+  if (!document.fullscreenElement) {
+    await document.documentElement.requestFullscreen();
+  }
+}
+
+async function requestWakeLock() {
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch {}
+}
+
+function triggerCall(name, delay) {
+  setTimeout(() => {
+    document.getElementById('callerName').textContent = name;
+    document.getElementById('connectedName').textContent = name;
+    show('incoming');
+    navigator.vibrate([300,200,300,200,300]);
+  }, delay);
+}
+
+document.getElementById('startBtn').onclick = async () => {
+  await goFullscreen();
+  await requestWakeLock();
+
+  if (typeof DeviceOrientationEvent?.requestPermission === 'function') {
+    await DeviceOrientationEvent.requestPermission();
+  }
+
+  show('armed');
+};
+
+window.addEventListener('deviceorientation', e => {
+  if (e.beta > 150 || e.beta < -150) {
+    faceDown = true;
+  } else {
+    if (faceDown) {
+      faceDown = false;
+
+      if (mode === "future") {
+        mode = "locked";
+        triggerCall("Future Me", 10000);
+      }
+
+      if (mode === "past") {
+        mode = "locked";
+        triggerCall("Past Me", 5000);
+      }
+    }
+  }
+});
+
+document.getElementById('answerBtn').onclick = () => {
+  show('connected');
+};
+
+document.getElementById('hangupBtn').onclick = () => {
+  if (mode === "locked") {
+    show('callbackScreen');
+  }
+};
+
+document.getElementById('callbackBtn').onclick = () => {
+  mode = "past";
+  show('armed');
+};
+</script>
+
+</body>
+</html>
