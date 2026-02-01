@@ -312,16 +312,91 @@ const t9Map = {
     '0': ' '
 };
 
+// Common English words for better T9 conversion
+const commonWords = new Set([
+    'cat', 'dog', 'bird', 'fish', 'lion', 'tiger', 'bear', 'wolf', 'fox', 'deer',
+    'car', 'house', 'tree', 'book', 'phone', 'computer', 'table', 'chair', 'door', 'window',
+    'love', 'happy', 'sad', 'good', 'bad', 'big', 'small', 'new', 'old', 'young',
+    'red', 'blue', 'green', 'yellow', 'black', 'white', 'pink', 'orange', 'purple', 'brown',
+    'food', 'water', 'fire', 'earth', 'air', 'sun', 'moon', 'star', 'sky', 'cloud',
+    'man', 'woman', 'boy', 'girl', 'baby', 'child', 'person', 'people', 'friend', 'family',
+    'day', 'night', 'time', 'year', 'week', 'month', 'hour', 'minute', 'second',
+    'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one',
+    'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now',
+    'old', 'see', 'two', 'who', 'boy', 'did', 'let', 'put', 'say', 'she', 'too', 'use',
+    'apple', 'banana', 'orange', 'grape', 'lemon', 'peach', 'cherry', 'melon', 'berry',
+    'pizza', 'burger', 'pasta', 'salad', 'soup', 'rice', 'bread', 'cheese', 'meat',
+    'home', 'work', 'school', 'store', 'park', 'beach', 'city', 'town', 'street',
+    'hello', 'world', 'test', 'name', 'game', 'play', 'run', 'jump', 'walk', 'talk',
+    'harold', 'elephant', 'giraffe', 'monkey', 'zebra', 'panda', 'koala', 'rabbit'
+]);
+
+function generateT9Combinations(numbers) {
+    if (!numbers || numbers.length === 0) return [''];
+    
+    function generate(index) {
+        if (index === numbers.length) return [''];
+        
+        const digit = numbers[index];
+        const letters = t9Map[digit] || '';
+        const rest = generate(index + 1);
+        
+        const results = [];
+        for (let letter of letters) {
+            for (let suffix of rest) {
+                results.push(letter + suffix);
+            }
+        }
+        return results;
+    }
+    
+    return generate(0);
+}
+
 function convertT9ToText(numbers) {
-    let result = '';
-    for (let digit of numbers) {
-        const letters = t9Map[digit];
-        if (letters) {
-            // Take the first letter of each group as the guess
-            result += letters[0];
+    const combinations = generateT9Combinations(numbers);
+    
+    // First, try to find an exact match in common words
+    for (let combo of combinations) {
+        if (commonWords.has(combo.toLowerCase())) {
+            return combo;
         }
     }
-    return result;
+    
+    // If no exact match, use heuristics to pick the best option
+    // Prefer combinations with more vowels and common letter patterns
+    let best = combinations[0] || '';
+    let bestScore = -1;
+    
+    for (let combo of combinations) {
+        let score = 0;
+        const lower = combo.toLowerCase();
+        
+        // Score based on vowel distribution
+        const vowels = (lower.match(/[aeiou]/g) || []).length;
+        const consonants = lower.length - vowels;
+        if (vowels > 0 && consonants > 0) {
+            score += 5;
+        }
+        
+        // Penalize repeated letters (unless common like 'ee', 'll', 'ss')
+        if (/([^els])\1/.test(lower)) {
+            score -= 3;
+        }
+        
+        // Reward common starting letters
+        if (/^[acdeimnprst]/.test(lower)) {
+            score += 2;
+        }
+        
+        if (score > bestScore) {
+            bestScore = score;
+            best = combo;
+        }
+    }
+    
+    return best;
 }
 
 // Initialize speech recognition if available
