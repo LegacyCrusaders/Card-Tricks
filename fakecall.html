@@ -1,19 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Future Call</title>
-
-<style>
 html, body {
   margin: 0;
   padding: 0;
-  background: black;
-  color: white;
+  background: #000;
+  color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   height: 100%;
-  overflow: hidden;
 }
 
 .screen {
@@ -30,187 +21,124 @@ html, body {
   align-items: center;
 }
 
-button {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 18px;
-}
-
-.icon {
-  font-size: 28px;
-}
-
 /* TAP */
 #tap {
-  text-align: center;
+  background: radial-gradient(circle at top, #222, #000);
+  font-size: 26px;
+}
+
+#tap div:last-child {
+  font-size: 14px;
+  margin-top: 12px;
+  opacity: 0.7;
 }
 
 /* LOCK */
 #lock {
+  background: linear-gradient(#111, #000);
   justify-content: space-between;
-  padding: 30px;
+  padding: 40px 30px;
 }
 
-.lock-top {
-  text-align: center;
+.lock-top .icon {
+  font-size: 34px;
 }
 
 .lock-bottom {
+  width: 100%;
   display: flex;
   justify-content: space-between;
+  font-size: 30px;
 }
 
 /* INCOMING */
 #incoming {
-  background: linear-gradient(#1a1a1a, black);
+  background: linear-gradient(#2a2a2a, #000);
   text-align: center;
+}
+
+#incoming div:first-child {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+#incoming div:nth-child(2) {
+  font-size: 18px;
+  opacity: 0.7;
 }
 
 .call-buttons {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  margin-top: 40px;
+  margin-top: 60px;
+}
+
+.call-buttons button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.call-buttons button:first-child {
+  background: #aa2e2e;
+}
+
+.call-buttons button:last-child {
+  background: #2ea043;
 }
 
 /* IN CALL */
 #inCall {
+  background: linear-gradient(#1c1c1c, #000);
   text-align: center;
+}
+
+#callName {
+  font-size: 32px;
+  margin-top: 60px;
+}
+
+#timer {
+  font-size: 18px;
+  margin-top: 6px;
+  opacity: 0.7;
 }
 
 .call-controls {
   display: flex;
   justify-content: space-around;
-  margin-top: 40px;
+  width: 100%;
+  margin-top: 80px;
+}
+
+.call-controls button {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #333;
+  font-size: 12px;
 }
 
 /* CALL LOG */
 #log {
-  padding: 20px;
+  background: #000;
+  padding-top: 40px;
   flex-direction: column;
 }
 
 .log-item {
-  padding: 12px;
-  border-bottom: 1px solid #333;
+  padding: 18px 24px;
+  font-size: 22px;
+  border-bottom: 1px solid #222;
 }
+
 .log-item button {
+  font-size: 22px;
+  color: #0a84ff;
   width: 100%;
   text-align: left;
+  background: none;
+  border: none;
 }
-</style>
-</head>
-
-<body>
-
-<!-- TAP -->
-<div id="tap" class="screen center active">
-  <div>Tap to Begin</div>
-  <div style="margin-top:10px;font-size:12px;">Version 5</div>
-</div>
-
-<!-- LOCK -->
-<div id="lock" class="screen center">
-  <div class="lock-top">
-    <div class="icon">🔒</div>
-  </div>
-  <div class="lock-bottom">
-    <div class="icon">📞</div>
-    <div class="icon">📷</div>
-  </div>
-</div>
-
-<!-- INCOMING -->
-<div id="incoming" class="screen center">
-  <div>Future Me</div>
-  <div style="margin-top:10px;">Incoming Call</div>
-  <div class="call-buttons">
-    <button onclick="decline()">Decline</button>
-    <button onclick="answer()">Answer</button>
-  </div>
-</div>
-
-<!-- IN CALL -->
-<div id="inCall" class="screen center">
-  <div id="callName">Future Me</div>
-  <div id="timer">00:00</div>
-  <div class="call-controls">
-    <button>Mute</button>
-    <button onclick="hangUp()">Hang Up</button>
-    <button>Keypad</button>
-  </div>
-</div>
-
-<!-- CALL LOG -->
-<div id="log" class="screen">
-  <div class="log-item"><button onclick="callPast()">Past Me</button></div>
-  <div class="log-item">Future Me</div>
-  <div class="log-item">Mom</div>
-  <div class="log-item">Jordan</div>
-</div>
-
-<script>
-let state = "tap";
-let timerInterval;
-let seconds = 0;
-
-function show(id) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  state = id;
-}
-
-document.getElementById("tap").onclick = async () => {
-  show("lock");
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
-  }
-};
-
-function simulateIncoming() {
-  if (state !== "lock") return;
-  navigator.vibrate(200);
-  show("incoming");
-}
-
-function answer() {
-  show("inCall");
-  startTimer();
-}
-
-function decline() {
-  show("lock");
-}
-
-function startTimer() {
-  seconds = 0;
-  timerInterval = setInterval(() => {
-    seconds++;
-    const m = String(Math.floor(seconds / 60)).padStart(2,"0");
-    const s = String(seconds % 60).padStart(2,"0");
-    document.getElementById("timer").textContent = `${m}:${s}`;
-  },1000);
-}
-
-function hangUp() {
-  clearInterval(timerInterval);
-  show("log");
-}
-
-function callPast() {
-  document.getElementById("callName").textContent = "Past Me";
-  show("inCall");
-  startTimer();
-}
-
-/* flip trigger */
-window.addEventListener("deviceorientation", e => {
-  if (state === "lock" && e.beta < -150) {
-    setTimeout(simulateIncoming, 1000);
-  }
-});
-</script>
-
-</body>
-</html>
