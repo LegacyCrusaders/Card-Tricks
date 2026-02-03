@@ -19,30 +19,16 @@ html,body{
 
 button{border:none;background:none;color:white}
 
-.screen{
-  position:fixed;
-  inset:0;
-  display:none;
-}
-
+.screen{position:fixed;inset:0;display:none}
 .active{display:flex}
-
-.center{
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
+.center{flex-direction:column;align-items:center;justify-content:center}
 
 /* TAP */
 #tap{
   background:radial-gradient(circle at top,#2b2bff,#000);
   font-size:28px;
 }
-#tap .version{
-  font-size:14px;
-  opacity:.7;
-  margin-top:10px;
-}
+#tap .version{font-size:14px;opacity:.7;margin-top:10px}
 
 /* LOCK */
 #lock{
@@ -51,66 +37,34 @@ button{border:none;background:none;color:white}
   justify-content:space-between;
   padding:40px 30px;
 }
-.lock-top{
-  text-align:center;
-}
-.lock-time{
-  font-size:96px;
-  font-weight:300;
-  text-align:center;
-}
-.lock-bottom{
-  display:flex;
-  justify-content:space-between;
-}
-.lock-bottom svg, .lock-top svg{
-  width:42px;
-  height:42px;
-  fill:white;
+.lock-top{text-align:center}
+.lock-time{font-size:96px;font-weight:300;text-align:center}
+.lock-bottom{display:flex;justify-content:space-between}
+.lock-bottom svg,.lock-top svg{
+  width:42px;height:42px;fill:white
 }
 
 /* INCOMING */
-#incoming{
-  background:linear-gradient(#2a2a2a,#000);
-}
-.caller{
-  font-size:34px;
-}
-.label{
-  font-size:18px;
-  opacity:.7;
-  margin-bottom:40px;
-}
+#incoming{background:linear-gradient(#2a2a2a,#000)}
+.caller{font-size:34px}
+.label{font-size:18px;opacity:.7;margin-bottom:40px}
 .call-buttons{
   width:100%;
   display:flex;
   justify-content:space-around;
 }
 .call-btn{
-  width:90px;
-  height:90px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:14px;
+  width:90px;height:90px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
 }
 .answer{background:#2ea043}
 .decline{background:#b00020}
 
 /* CALL */
-#call{
-  background:linear-gradient(#1b1b1b,#000);
-  text-align:center;
-}
-.call-name{
-  font-size:32px;
-  margin-top:60px;
-}
-.timer{
-  font-size:18px;
-  opacity:.7;
-}
+#call{background:linear-gradient(#1b1b1b,#000);text-align:center}
+.call-name{font-size:32px;margin-top:60px}
+.timer{font-size:18px;opacity:.7}
+
 .controls{
   display:grid;
   grid-template-columns:repeat(3,1fr);
@@ -125,55 +79,40 @@ button{border:none;background:none;color:white}
   opacity:.9;
 }
 .ctrl-circle{
-  width:64px;
-  height:64px;
+  width:64px;height:64px;
   border-radius:50%;
   background:#333;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   margin-bottom:6px;
 }
+.ctrl-circle svg{
+  width:28px;height:28px;
+  fill:#cfcfcf;
+}
+
 .hangup{
   margin-top:auto;
   margin-bottom:60px;
-  width:90px;
-  height:90px;
+  width:90px;height:90px;
   border-radius:50%;
   background:#b00020;
 }
 
 /* LOG */
-#log{
-  background:black;
-  flex-direction:column;
-}
-.log-header{
-  padding:20px;
-  font-size:24px;
-  font-weight:600;
-}
-.log-item{
-  padding:18px 20px;
-  border-bottom:1px solid #222;
-}
-.log-name{
-  font-size:20px;
-}
-.log-time{
-  font-size:14px;
-  opacity:.6;
-}
+#log{background:black;flex-direction:column}
+.log-header{padding:20px;font-size:24px;font-weight:600}
+.log-item{padding:18px 20px;border-bottom:1px solid #222}
+.log-name{font-size:20px}
+.log-time{font-size:14px;opacity:.6}
 .log-item button{
   color:#0a84ff;
   font-size:20px;
   padding:0;
 }
-.log-footer{
-  padding:20px;
-  text-align:center;
-}
-.log-footer button{
-  color:#0a84ff;
-  font-size:20px;
-}
+.log-footer{text-align:center;padding:20px}
+.log-footer button{color:#0a84ff;font-size:20px}
 </style>
 </head>
 
@@ -181,7 +120,7 @@ button{border:none;background:none;color:white}
 
 <div id="tap" class="screen active center">
   <div>Tap to Begin</div>
-  <div class="version">Version 7</div>
+  <div class="version">Version 8</div>
 </div>
 
 <div id="lock" class="screen">
@@ -199,8 +138,8 @@ button{border:none;background:none;color:white}
   <div class="caller">Future Me</div>
   <div class="label">Incoming call</div>
   <div class="call-buttons">
-    <button class="call-btn decline" onclick="decline()">Decline</button>
-    <button class="call-btn answer" onclick="answer()">Answer</button>
+    <button class="call-btn decline" onclick="decline()"></button>
+    <button class="call-btn answer" onclick="answer()"></button>
   </div>
 </div>
 
@@ -209,12 +148,12 @@ button{border:none;background:none;color:white}
   <div class="timer" id="timer">00:00</div>
 
   <div class="controls">
-    <div class="ctrl"><div class="ctrl-circle"></div>Mute</div>
-    <div class="ctrl"><div class="ctrl-circle"></div>Keypad</div>
-    <div class="ctrl"><div class="ctrl-circle"></div>Speaker</div>
-    <div class="ctrl"><div class="ctrl-circle"></div>Add Call</div>
-    <div class="ctrl"><div class="ctrl-circle"></div>Text</div>
-    <div class="ctrl"><div class="ctrl-circle"></div>Hold</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm10 0h2v12h-2z"/></svg></div>Mute</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M3 3h6v6H3zm6 6h6v6H9zm6-6h6v6h-6zm-6 6h6v6H9zm-6 6h6v6H3z"/></svg></div>Keypad</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg></div>Speaker</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M15 8h3a2 2 0 012 2v4a2 2 0 01-2 2h-3zM4 9h7v6H4z"/></svg></div>Add Call</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4zM2 20h20v-2H2z"/></svg></div>Text</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm10 0h2v12h-2z"/></svg></div>Hold</div>
   </div>
 
   <button class="hangup" onclick="hangUp()"></button>
@@ -273,7 +212,9 @@ function vibrate(){
 }
 
 function answer(){
+  clearInterval(timerInt);
   secs=0;
+  document.getElementById('timer').textContent="00:00"; // instant reset
   show('call');
   timerInt=setInterval(()=>{
     secs++;
