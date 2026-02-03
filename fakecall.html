@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Future Call – v4.1</title>
+<title>Future Call – v4.2</title>
 
 <style>
 html, body {
@@ -28,15 +28,8 @@ html, body {
   z-index: 20;
 }
 
-#startOverlay .title {
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-#startOverlay .version {
-  font-size: 14px;
-  opacity: 0.7;
-}
+#startOverlay .title { font-size: 28px; margin-bottom: 10px; }
+#startOverlay .version { font-size: 14px; opacity: 0.7; }
 
 /* LOCK SCREEN */
 #lockScreen {
@@ -53,7 +46,8 @@ html, body {
   top: 50px;
   left: 50%;
   transform: translateX(-50%);
-  opacity: 0.9;
+  font-size: 26px;
+  color: white;
 }
 
 .center {
@@ -72,6 +66,23 @@ html, body {
   font-size: 22px;
   margin-top: 6px;
 }
+
+.corner {
+  position: absolute;
+  bottom: 40px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: white;
+}
+
+.phone { left: 40px; }
+.camera { right: 40px; }
 
 /* INCOMING CALL */
 #incomingCall {
@@ -109,10 +120,26 @@ html, body {
   align-items: center;
   justify-content: center;
   font-size: 14px;
+  user-select: none;
 }
 
 .answer { background: #2ecc71; }
 .reject { background: #e74c3c; }
+
+/* ON CALL (placeholder) */
+#onCall {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #2f5f4f, #1f3f3a);
+  color: white;
+  text-align: center;
+}
+
+#onCall h1 {
+  margin-top: 140px;
+  font-size: 34px;
+}
 </style>
 </head>
 
@@ -120,15 +147,19 @@ html, body {
 
 <div id="startOverlay">
   <div class="title">Tap to Begin</div>
-  <div class="version">Version 4.1</div>
+  <div class="version">Version 4.2</div>
 </div>
 
 <div id="lockScreen">
   <div class="lock-icon">🔒</div>
+
   <div class="center">
     <div class="time" id="time">--:--</div>
     <div class="date" id="date"></div>
   </div>
+
+  <div class="corner phone">📞</div>
+  <div class="corner camera">📷</div>
 </div>
 
 <div id="incomingCall">
@@ -136,9 +167,14 @@ html, body {
   <p>Incoming call</p>
 
   <div class="callButtons">
-    <div class="callBtn reject">Decline</div>
-    <div class="callBtn answer">Answer</div>
+    <div class="callBtn reject" id="declineBtn">Decline</div>
+    <div class="callBtn answer" id="answerBtn">Answer</div>
   </div>
+</div>
+
+<div id="onCall">
+  <h1>Future Me</h1>
+  <p>On call…</p>
 </div>
 
 <script>
@@ -167,6 +203,16 @@ window.addEventListener("deviceorientation", e => {
     }, 1000);
   }
 });
+
+document.getElementById("answerBtn").onclick = () => {
+  document.getElementById("incomingCall").style.display = "none";
+  document.getElementById("onCall").style.display = "block";
+};
+
+document.getElementById("declineBtn").onclick = () => {
+  document.getElementById("incomingCall").style.display = "none";
+  document.getElementById("lockScreen").style.display = "block";
+};
 
 document.getElementById("startOverlay").onclick = async () => {
   document.getElementById("startOverlay").style.display = "none";
