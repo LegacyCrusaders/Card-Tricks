@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Future Call – v4.4</title>
+<title>Future Call – v4.5</title>
 
 <style>
 html, body {
@@ -16,7 +16,6 @@ html, body {
   background: black;
   color: white;
 }
-
 .hidden { display: none; }
 
 /* START */
@@ -30,54 +29,41 @@ html, body {
   align-items: center;
   z-index: 20;
 }
-
 #startOverlay .title { font-size: 28px; }
 #startOverlay .version { font-size: 14px; opacity: 0.7; margin-top: 8px; }
 
-/* LOCK */
+/* LOCK SCREEN */
 #lockScreen {
   width: 100vw;
   height: 100vh;
   background: linear-gradient(to bottom, #6a4fff, #2c1e8f);
   position: relative;
 }
-
 .lock-icon {
   position: absolute;
   top: 48px;
   left: 50%;
   transform: translateX(-50%);
 }
-
 .center {
   position: absolute;
   top: 35%;
   width: 100%;
   text-align: center;
 }
-
 .time { font-size: 96px; font-weight: 300; }
 .date { font-size: 22px; margin-top: 6px; }
 
-/* INCOMING / ON CALL */
+/* CALL SCREENS */
 .callScreen {
   position: fixed;
   inset: 0;
   background: linear-gradient(to bottom, #2f5f4f, #1f3f3a);
   text-align: center;
 }
+.caller { margin-top: 120px; font-size: 34px; }
+.timer { margin-top: 6px; opacity: 0.8; }
 
-.caller {
-  margin-top: 120px;
-  font-size: 34px;
-}
-
-.timer {
-  margin-top: 6px;
-  opacity: 0.8;
-}
-
-/* CALL BUTTON GRID */
 .callGrid {
   position: absolute;
   bottom: 180px;
@@ -87,15 +73,12 @@ html, body {
   gap: 24px;
   padding: 0 40px;
 }
-
 .callBtnCol {
   display: flex;
   flex-direction: column;
   align-items: center;
   font-size: 12px;
-  opacity: 0.9;
 }
-
 .callBtnCircle {
   width: 64px;
   height: 64px;
@@ -103,8 +86,6 @@ html, body {
   background: rgba(255,255,255,0.15);
   margin-bottom: 6px;
 }
-
-/* HANG UP */
 .hangup {
   position: absolute;
   bottom: 70px;
@@ -120,23 +101,15 @@ html, body {
 #callLog {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: black;
   padding: 20px;
 }
-
 .logItem {
   padding: 14px 0;
   border-bottom: 1px solid #222;
 }
-
-.logItem .name {
-  font-size: 18px;
-}
-
-.logItem .time {
-  font-size: 13px;
-  opacity: 0.6;
-}
+.logItem .name { font-size: 18px; }
+.logItem .time { font-size: 13px; opacity: 0.6; }
 </style>
 </head>
 
@@ -144,7 +117,7 @@ html, body {
 
 <div id="startOverlay">
   <div class="title">Tap to Begin</div>
-  <div class="version">Version 4.4</div>
+  <div class="version">Version 4.5</div>
 </div>
 
 <div id="lockScreen" class="hidden">
@@ -164,7 +137,7 @@ html, body {
 </div>
 
 <div id="onCall" class="callScreen hidden">
-  <div class="caller">Future Me</div>
+  <div class="caller" id="callName">Future Me</div>
   <div class="timer" id="callTimer">00:00</div>
 
   <div class="callGrid">
@@ -184,9 +157,12 @@ html, body {
 </div>
 
 <script>
+let faceDown = false;
+let triggered = false;
 let callSeconds = 0;
 let timer;
 
+/* CLOCK */
 function updateTime() {
   const d = new Date();
   let h = d.getHours()%12||12;
@@ -196,7 +172,21 @@ function updateTime() {
 }
 setInterval(updateTime,1000);
 
-startOverlay.onclick = async ()=>{
+/* ORIENTATION */
+window.addEventListener("deviceorientation", e => {
+  if (e.beta > 150 || e.beta < -150) faceDown = true;
+  if (faceDown && !triggered && e.beta > -30 && e.beta < 30) {
+    triggered = true;
+    setTimeout(() => {
+      lockScreen.classList.add("hidden");
+      incomingCall.classList.remove("hidden");
+      navigator.vibrate?.([300,200,300]);
+    }, 1000);
+  }
+});
+
+/* START */
+startOverlay.onclick = async () => {
   startOverlay.classList.add("hidden");
   lockScreen.classList.remove("hidden");
   updateTime();
@@ -204,28 +194,30 @@ startOverlay.onclick = async ()=>{
     await document.documentElement.requestFullscreen();
 };
 
-answerBtn.onclick = ()=>{
+/* CALL FLOW */
+answerBtn.onclick = () => {
   incomingCall.classList.add("hidden");
   onCall.classList.remove("hidden");
-  callSeconds=0;
-  timer=setInterval(()=>{
+  callSeconds = 0;
+  timer = setInterval(() => {
     callSeconds++;
-    let m=Math.floor(callSeconds/60).toString().padStart(2,"0");
-    let s=(callSeconds%60).toString().padStart(2,"0");
-    callTimer.textContent=`${m}:${s}`;
-  },1000);
+    let m = String(Math.floor(callSeconds/60)).padStart(2,"0");
+    let s = String(callSeconds%60).padStart(2,"0");
+    callTimer.textContent = `${m}:${s}`;
+  }, 1000);
 };
 
-hangupBtn.onclick = ()=>{
+hangupBtn.onclick = () => {
   clearInterval(timer);
   onCall.classList.add("hidden");
   callLog.classList.remove("hidden");
 };
 
-pastMe.onclick = ()=>{
+pastMe.onclick = () => {
   callLog.classList.add("hidden");
   onCall.classList.remove("hidden");
-  document.querySelector("#onCall .caller").textContent="Past Me";
+  callName.textContent = "Past Me";
+  callTimer.textContent = "00:00";
 };
 </script>
 
