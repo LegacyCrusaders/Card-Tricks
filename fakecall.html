@@ -1,189 +1,180 @@
-<!-- TIME LOOP PHONE – VERSION 4 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Phone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Future Call – v4.1</title>
 
 <style>
-html, body { margin:0; padding:0; height:100%; background:black; font-family:-apple-system,BlinkMacSystemFont,sans-serif; color:white; overflow:hidden;}
-.screen{position:fixed; inset:0; display:none; justify-content:center; align-items:center; flex-direction:column;}
-.active{display:flex;}
-.avatar{width:90px;height:90px;border-radius:50%;background:#555;margin-bottom:15px;}
-h1{margin:6px 0;font-size:26px;}
-p{opacity:0.7;}
-.buttons{position:absolute;bottom:40px;width:100%;display:flex;justify-content:space-around;}
-.btn{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
-.green{background:#2ecc71;color:black;}
-.red{background:#e74c3c;}
-.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px;text-align:center;font-size:14px;}
-.log{padding:20px;align-items:flex-start;}
-.log-item{width:100%;padding:14px 0;border-bottom:1px solid #333;}
-.log-item span{float:right;opacity:0.6;}
-.log-item.callable{cursor:pointer;}
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  background: black;
+}
+
+#startOverlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #6a4fff, #2c1e8f);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 20;
+}
+
+#startOverlay .title {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+#startOverlay .version {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* LOCK SCREEN */
+#lockScreen {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(to bottom, #6a4fff, #2c1e8f);
+  color: white;
+  position: relative;
+}
+
+.lock-icon {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0.9;
+}
+
+.center {
+  position: absolute;
+  top: 35%;
+  width: 100%;
+  text-align: center;
+}
+
+.time {
+  font-size: 96px;
+  font-weight: 300;
+}
+
+.date {
+  font-size: 22px;
+  margin-top: 6px;
+}
+
+/* INCOMING CALL */
+#incomingCall {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(to bottom, #2f5f4f, #1f3f3a);
+  color: white;
+  text-align: center;
+}
+
+#incomingCall h1 {
+  margin-top: 140px;
+  font-size: 36px;
+}
+
+#incomingCall p {
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
+.callButtons {
+  position: absolute;
+  bottom: 80px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+
+.callBtn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.answer { background: #2ecc71; }
+.reject { background: #e74c3c; }
 </style>
 </head>
 
 <body>
 
-<!-- START -->
-<div id="start" class="screen active">
-  <h1>Tap to Begin</h1>
-  <p>Version 4</p>
+<div id="startOverlay">
+  <div class="title">Tap to Begin</div>
+  <div class="version">Version 4.1</div>
 </div>
 
-<!-- ARMED (blank) -->
-<div id="armed" class="screen"></div>
-
-<!-- INCOMING -->
-<div id="incoming" class="screen">
-  <div class="avatar"></div>
-  <h1 id="incomingName">Future Me</h1>
-  <p>Incoming Call</p>
-  <div class="buttons">
-    <div class="btn red" onclick="endToLog()">Decline</div>
-    <div class="btn green" onclick="answerIncoming()">Answer</div>
+<div id="lockScreen">
+  <div class="lock-icon">🔒</div>
+  <div class="center">
+    <div class="time" id="time">--:--</div>
+    <div class="date" id="date"></div>
   </div>
 </div>
 
-<!-- CONNECTED -->
-<div id="call" class="screen">
-  <div class="avatar"></div>
-  <h1 id="callName"></h1>
-  <p id="timer">00:00</p>
+<div id="incomingCall">
+  <h1>Future Me</h1>
+  <p>Incoming call</p>
 
-  <div class="controls">
-    <div>Mute</div><div>Keypad</div><div>Speaker</div>
-    <div>Add</div><div>FaceTime</div><div>Contacts</div>
+  <div class="callButtons">
+    <div class="callBtn reject">Decline</div>
+    <div class="callBtn answer">Answer</div>
   </div>
-
-  <div class="buttons">
-    <div class="btn red" onclick="hangUp()">End</div>
-  </div>
-</div>
-
-<!-- LOG -->
-<div id="log" class="screen log">
-  <h1>Recents</h1>
-  <div id="logItems"></div>
 </div>
 
 <script>
-let mode="idle";
-let faceDown=false;
-let timerInt;
-let seconds=0;
-let currentCaller="";
+let faceDown = false;
+let triggered = false;
 
-// Initial log
-let log=[
-  {name:"Future Me", time:"now", callable:false},
-  {name:"Mom", time:"Yesterday", callable:false},
-  {name:"Jordan", time:"9:14 AM", callable:false}
-];
-
-// Utility: show screen
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function updateTime() {
+  const now = new Date();
+  let h = now.getHours() % 12 || 12;
+  let m = String(now.getMinutes()).padStart(2, "0");
+  document.getElementById("time").textContent = h + ":" + m;
+  document.getElementById("date").textContent =
+    now.toLocaleDateString(undefined, { weekday: "short", month: "long", day: "numeric" });
 }
+setInterval(updateTime, 1000);
 
-// Tap to begin
-async function start(){
-  if(!document.fullscreenElement){await document.documentElement.requestFullscreen();}
-  if('wakeLock' in navigator){try{await navigator.wakeLock.request('screen');}catch{}}
-  show('armed');
-  mode="armed";
-}
-document.getElementById('start').onclick=start;
+window.addEventListener("deviceorientation", e => {
+  if (e.beta > 150 || e.beta < -150) faceDown = true;
 
-// Flip detection
-window.addEventListener('deviceorientation', e=>{
-  if(mode!=="armed") return;
-  if(e.beta>150||e.beta<-150){faceDown=true;}
-  else if(faceDown){
-    faceDown=false;
-    mode="locked";
-    setTimeout(()=>{
-      show('incoming');
-      navigator.vibrate([200,200,200]);
-    },1000);
+  if (faceDown && !triggered && e.beta > -30 && e.beta < 30) {
+    triggered = true;
+    setTimeout(() => {
+      document.getElementById("lockScreen").style.display = "none";
+      document.getElementById("incomingCall").style.display = "block";
+      navigator.vibrate?.([300, 200, 300]);
+    }, 1000);
   }
 });
 
-// Answer incoming
-function answerIncoming(){
-  startCall("Future Me");
-}
-
-// General call starter
-function startCall(caller){
-  clearInterval(timerInt);
-  seconds=0;
-  currentCaller=caller;
-  document.getElementById('callName').innerText=caller;
-  document.getElementById('timer').innerText='00:00';
-  show('call');
-  timerInt=setInterval(()=>{
-    seconds++;
-    let m=String(Math.floor(seconds/60)).padStart(2,'0');
-    let s=String(seconds%60).padStart(2,'0');
-    document.getElementById('timer').innerText=`${m}:${s}`;
-  },1000);
-}
-
-// Hang up
-function hangUp(){
-  clearInterval(timerInt);
-  if(mode==="locked" || mode==="call"){
-    // First call ends, add Past Me at bottom
-    if(currentCaller==="Future Me" && !log.find(x=>x.name==="Past Me")){
-      log.push({name:"Past Me", time:"now", callable:true});
-    }
-  }
-  // Update mode for next interaction
-  mode="log";
-  renderLog();
-  show('log');
-}
-
-// Return to log without answering
-function endToLog(){ renderLog(); show('log'); mode="log"; }
-
-// Render log
-function renderLog(){
-  const el=document.getElementById('logItems');
-  el.innerHTML="";
-  // Sort: most recent first for display
-  let displayLog = [...log];
-  // First log: Future Me at top, Past Me at bottom
-  // Second log: Past Me at top, Future Me below
-  if(log.find(x=>x.name==="Past Me") && mode==="log"){
-    // Swap Past Me to top
-    displayLog = log.filter(x=>x.name==="Past Me").concat(log.filter(x=>x.name!=="Past Me"));
-  } else {
-    // normal ordering
-    displayLog = log;
-  }
-  displayLog.forEach(item=>{
-    const d=document.createElement('div');
-    d.className="log-item"+(item.callable?" callable":"");
-    d.innerHTML=`${item.name}<span>${item.time}</span>`;
-    if(item.callable){ d.onclick=callPast; }
-    el.appendChild(d);
-  });
-}
-
-// Call Past Me
-function callPast(){
-  currentCaller="Past Me";
-  startCall("Past Me");
-  mode="calling";
-}
-
-// Initial render
-renderLog();
+document.getElementById("startOverlay").onclick = async () => {
+  document.getElementById("startOverlay").style.display = "none";
+  document.getElementById("lockScreen").style.display = "block";
+  updateTime();
+  if (document.documentElement.requestFullscreen)
+    await document.documentElement.requestFullscreen();
+};
 </script>
 
 </body>
