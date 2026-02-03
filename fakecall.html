@@ -2,223 +2,214 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<title>Future Call – v4.5</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Future Call</title>
 
 <style>
 html, body {
   margin: 0;
   padding: 0;
-  height: 100vh;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   background: black;
   color: white;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 100%;
+  overflow: hidden;
 }
-.hidden { display: none; }
 
-/* START */
-#startOverlay {
-  position: fixed;
+.screen {
+  display: none;
+  position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, #6a4fff, #2c1e8f);
-  display: flex;
+}
+
+.active { display: flex; }
+
+.center {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 20;
 }
-#startOverlay .title { font-size: 28px; }
-#startOverlay .version { font-size: 14px; opacity: 0.7; margin-top: 8px; }
 
-/* LOCK SCREEN */
-#lockScreen {
-  width: 100vw;
-  height: 100vh;
-  background: linear-gradient(to bottom, #6a4fff, #2c1e8f);
-  position: relative;
+button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
 }
-.lock-icon {
-  position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
+
+.icon {
+  font-size: 28px;
 }
-.center {
-  position: absolute;
-  top: 35%;
-  width: 100%;
+
+/* TAP */
+#tap {
   text-align: center;
 }
-.time { font-size: 96px; font-weight: 300; }
-.date { font-size: 22px; margin-top: 6px; }
 
-/* CALL SCREENS */
-.callScreen {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(to bottom, #2f5f4f, #1f3f3a);
+/* LOCK */
+#lock {
+  justify-content: space-between;
+  padding: 30px;
+}
+
+.lock-top {
   text-align: center;
 }
-.caller { margin-top: 120px; font-size: 34px; }
-.timer { margin-top: 6px; opacity: 0.8; }
 
-.callGrid {
-  position: absolute;
-  bottom: 180px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  padding: 0 40px;
-}
-.callBtnCol {
+.lock-bottom {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
+  justify-content: space-between;
 }
-.callBtnCircle {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  margin-bottom: 6px;
+
+/* INCOMING */
+#incoming {
+  background: linear-gradient(#1a1a1a, black);
+  text-align: center;
 }
-.hangup {
-  position: absolute;
-  bottom: 70px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: #e74c3c;
+
+.call-buttons {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-top: 40px;
+}
+
+/* IN CALL */
+#inCall {
+  text-align: center;
+}
+
+.call-controls {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 40px;
 }
 
 /* CALL LOG */
-#callLog {
-  position: fixed;
-  inset: 0;
-  background: black;
+#log {
   padding: 20px;
+  flex-direction: column;
 }
-.logItem {
-  padding: 14px 0;
-  border-bottom: 1px solid #222;
+
+.log-item {
+  padding: 12px;
+  border-bottom: 1px solid #333;
 }
-.logItem .name { font-size: 18px; }
-.logItem .time { font-size: 13px; opacity: 0.6; }
+.log-item button {
+  width: 100%;
+  text-align: left;
+}
 </style>
 </head>
 
 <body>
 
-<div id="startOverlay">
-  <div class="title">Tap to Begin</div>
-  <div class="version">Version 4.5</div>
+<!-- TAP -->
+<div id="tap" class="screen center active">
+  <div>Tap to Begin</div>
+  <div style="margin-top:10px;font-size:12px;">Version 5</div>
 </div>
 
-<div id="lockScreen" class="hidden">
-  <div class="lock-icon">🔒</div>
-  <div class="center">
-    <div class="time" id="time">--:--</div>
-    <div class="date" id="date"></div>
+<!-- LOCK -->
+<div id="lock" class="screen center">
+  <div class="lock-top">
+    <div class="icon">🔒</div>
+  </div>
+  <div class="lock-bottom">
+    <div class="icon">📞</div>
+    <div class="icon">📷</div>
   </div>
 </div>
 
-<div id="incomingCall" class="callScreen hidden">
-  <div class="caller">Future Me</div>
-  <div style="position:absolute;bottom:80px;width:100%;display:flex;justify-content:space-around">
-    <div id="declineBtn" class="hangup"></div>
-    <div id="answerBtn" style="width:80px;height:80px;border-radius:50%;background:#2ecc71"></div>
+<!-- INCOMING -->
+<div id="incoming" class="screen center">
+  <div>Future Me</div>
+  <div style="margin-top:10px;">Incoming Call</div>
+  <div class="call-buttons">
+    <button onclick="decline()">Decline</button>
+    <button onclick="answer()">Answer</button>
   </div>
 </div>
 
-<div id="onCall" class="callScreen hidden">
-  <div class="caller" id="callName">Future Me</div>
-  <div class="timer" id="callTimer">00:00</div>
-
-  <div class="callGrid">
-    <div class="callBtnCol"><div class="callBtnCircle"></div>Mute</div>
-    <div class="callBtnCol"><div class="callBtnCircle"></div>Keypad</div>
-    <div class="callBtnCol"><div class="callBtnCircle"></div>Speaker</div>
+<!-- IN CALL -->
+<div id="inCall" class="screen center">
+  <div id="callName">Future Me</div>
+  <div id="timer">00:00</div>
+  <div class="call-controls">
+    <button>Mute</button>
+    <button onclick="hangUp()">Hang Up</button>
+    <button>Keypad</button>
   </div>
-
-  <div class="hangup" id="hangupBtn"></div>
 </div>
 
-<div id="callLog" class="hidden">
-  <div class="logItem"><div class="name">Future Me</div><div class="time">Just now</div></div>
-  <div class="logItem"><div class="name">Mom</div><div class="time">Earlier</div></div>
-  <div class="logItem"><div class="name">Jordan</div><div class="time">Yesterday</div></div>
-  <div class="logItem" id="pastMe"><div class="name">Past Me</div><div class="time">Last week</div></div>
+<!-- CALL LOG -->
+<div id="log" class="screen">
+  <div class="log-item"><button onclick="callPast()">Past Me</button></div>
+  <div class="log-item">Future Me</div>
+  <div class="log-item">Mom</div>
+  <div class="log-item">Jordan</div>
 </div>
 
 <script>
-let faceDown = false;
-let triggered = false;
-let callSeconds = 0;
-let timer;
+let state = "tap";
+let timerInterval;
+let seconds = 0;
 
-/* CLOCK */
-function updateTime() {
-  const d = new Date();
-  let h = d.getHours()%12||12;
-  let m = String(d.getMinutes()).padStart(2,"0");
-  time.textContent = h+":"+m;
-  date.textContent = d.toLocaleDateString(undefined,{weekday:"short",month:"long",day:"numeric"});
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  state = id;
 }
-setInterval(updateTime,1000);
 
-/* ORIENTATION */
+document.getElementById("tap").onclick = async () => {
+  show("lock");
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
+  }
+};
+
+function simulateIncoming() {
+  if (state !== "lock") return;
+  navigator.vibrate(200);
+  show("incoming");
+}
+
+function answer() {
+  show("inCall");
+  startTimer();
+}
+
+function decline() {
+  show("lock");
+}
+
+function startTimer() {
+  seconds = 0;
+  timerInterval = setInterval(() => {
+    seconds++;
+    const m = String(Math.floor(seconds / 60)).padStart(2,"0");
+    const s = String(seconds % 60).padStart(2,"0");
+    document.getElementById("timer").textContent = `${m}:${s}`;
+  },1000);
+}
+
+function hangUp() {
+  clearInterval(timerInterval);
+  show("log");
+}
+
+function callPast() {
+  document.getElementById("callName").textContent = "Past Me";
+  show("inCall");
+  startTimer();
+}
+
+/* flip trigger */
 window.addEventListener("deviceorientation", e => {
-  if (e.beta > 150 || e.beta < -150) faceDown = true;
-  if (faceDown && !triggered && e.beta > -30 && e.beta < 30) {
-    triggered = true;
-    setTimeout(() => {
-      lockScreen.classList.add("hidden");
-      incomingCall.classList.remove("hidden");
-      navigator.vibrate?.([300,200,300]);
-    }, 1000);
+  if (state === "lock" && e.beta < -150) {
+    setTimeout(simulateIncoming, 1000);
   }
 });
-
-/* START */
-startOverlay.onclick = async () => {
-  startOverlay.classList.add("hidden");
-  lockScreen.classList.remove("hidden");
-  updateTime();
-  if (document.documentElement.requestFullscreen)
-    await document.documentElement.requestFullscreen();
-};
-
-/* CALL FLOW */
-answerBtn.onclick = () => {
-  incomingCall.classList.add("hidden");
-  onCall.classList.remove("hidden");
-  callSeconds = 0;
-  timer = setInterval(() => {
-    callSeconds++;
-    let m = String(Math.floor(callSeconds/60)).padStart(2,"0");
-    let s = String(callSeconds%60).padStart(2,"0");
-    callTimer.textContent = `${m}:${s}`;
-  }, 1000);
-};
-
-hangupBtn.onclick = () => {
-  clearInterval(timer);
-  onCall.classList.add("hidden");
-  callLog.classList.remove("hidden");
-};
-
-pastMe.onclick = () => {
-  callLog.classList.add("hidden");
-  onCall.classList.remove("hidden");
-  callName.textContent = "Past Me";
-  callTimer.textContent = "00:00";
-};
 </script>
 
 </body>
