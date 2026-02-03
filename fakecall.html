@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Future Call – v4.2</title>
+<title>Future Call – v4.3</title>
 
 <style>
 html, body {
@@ -16,6 +16,7 @@ html, body {
   background: black;
 }
 
+/* START */
 #startOverlay {
   position: fixed;
   inset: 0;
@@ -28,8 +29,8 @@ html, body {
   z-index: 20;
 }
 
-#startOverlay .title { font-size: 28px; margin-bottom: 10px; }
-#startOverlay .version { font-size: 14px; opacity: 0.7; }
+#startOverlay .title { font-size: 28px; }
+#startOverlay .version { font-size: 14px; opacity: 0.7; margin-top: 8px; }
 
 /* LOCK SCREEN */
 #lockScreen {
@@ -43,11 +44,10 @@ html, body {
 
 .lock-icon {
   position: absolute;
-  top: 50px;
+  top: 48px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 26px;
-  color: white;
+  width: 26px;
 }
 
 .center {
@@ -77,14 +77,18 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  color: white;
 }
 
 .phone { left: 40px; }
 .camera { right: 40px; }
 
-/* INCOMING CALL */
+.corner svg,
+.lock-icon svg {
+  fill: white;
+  width: 28px;
+}
+
+/* INCOMING */
 #incomingCall {
   display: none;
   position: fixed;
@@ -97,11 +101,6 @@ html, body {
 #incomingCall h1 {
   margin-top: 140px;
   font-size: 36px;
-}
-
-#incomingCall p {
-  margin-top: 8px;
-  opacity: 0.8;
 }
 
 .callButtons {
@@ -119,14 +118,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  user-select: none;
 }
 
 .answer { background: #2ecc71; }
 .reject { background: #e74c3c; }
 
-/* ON CALL (placeholder) */
+/* ON CALL */
 #onCall {
   display: none;
   position: fixed;
@@ -136,9 +133,42 @@ html, body {
   text-align: center;
 }
 
-#onCall h1 {
-  margin-top: 140px;
+#callName {
+  margin-top: 120px;
   font-size: 34px;
+}
+
+#callTimer {
+  margin-top: 6px;
+  opacity: 0.8;
+}
+
+.callGrid {
+  position: absolute;
+  bottom: 160px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 0 40px;
+}
+
+.callGrid div {
+  opacity: 0.85;
+}
+
+.hangup {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #e74c3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
 </head>
@@ -147,39 +177,54 @@ html, body {
 
 <div id="startOverlay">
   <div class="title">Tap to Begin</div>
-  <div class="version">Version 4.2</div>
+  <div class="version">Version 4.3</div>
 </div>
 
 <div id="lockScreen">
-  <div class="lock-icon">🔒</div>
+  <div class="lock-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 00-5 5v3H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V12a2 2 0 00-2-2h-1V7a5 5 0 00-5-5z"/></svg>
+  </div>
 
   <div class="center">
     <div class="time" id="time">--:--</div>
     <div class="date" id="date"></div>
   </div>
 
-  <div class="corner phone">📞</div>
-  <div class="corner camera">📷</div>
+  <div class="corner phone">
+    <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2a11 11 0 003.6.6 1 1 0 011 1V20a1 1 0 01-1 1C10 21 3 14 3 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1z"/></svg>
+  </div>
+
+  <div class="corner camera">
+    <svg viewBox="0 0 24 24"><path d="M12 5a7 7 0 100 14 7 7 0 000-14z"/></svg>
+  </div>
 </div>
 
 <div id="incomingCall">
   <h1>Future Me</h1>
-  <p>Incoming call</p>
-
   <div class="callButtons">
-    <div class="callBtn reject" id="declineBtn">Decline</div>
-    <div class="callBtn answer" id="answerBtn">Answer</div>
+    <div class="callBtn reject" id="declineBtn"></div>
+    <div class="callBtn answer" id="answerBtn"></div>
   </div>
 </div>
 
 <div id="onCall">
-  <h1>Future Me</h1>
-  <p>On call…</p>
+  <div id="callName">Future Me</div>
+  <div id="callTimer">00:00</div>
+
+  <div class="callGrid">
+    <div>Mute</div>
+    <div>Keypad</div>
+    <div>Speaker</div>
+  </div>
+
+  <div class="hangup" id="hangupBtn"></div>
 </div>
 
 <script>
 let faceDown = false;
 let triggered = false;
+let callSeconds = 0;
+let timerInterval;
 
 function updateTime() {
   const now = new Date();
@@ -193,30 +238,42 @@ setInterval(updateTime, 1000);
 
 window.addEventListener("deviceorientation", e => {
   if (e.beta > 150 || e.beta < -150) faceDown = true;
-
   if (faceDown && !triggered && e.beta > -30 && e.beta < 30) {
     triggered = true;
     setTimeout(() => {
-      document.getElementById("lockScreen").style.display = "none";
-      document.getElementById("incomingCall").style.display = "block";
-      navigator.vibrate?.([300, 200, 300]);
+      lockScreen.style.display = "none";
+      incomingCall.style.display = "block";
+      navigator.vibrate?.([300,200,300]);
     }, 1000);
   }
 });
 
-document.getElementById("answerBtn").onclick = () => {
-  document.getElementById("incomingCall").style.display = "none";
-  document.getElementById("onCall").style.display = "block";
+answerBtn.onclick = () => {
+  incomingCall.style.display = "none";
+  onCall.style.display = "block";
+  callSeconds = 0;
+  timerInterval = setInterval(() => {
+    callSeconds++;
+    let m = String(Math.floor(callSeconds/60)).padStart(2,"0");
+    let s = String(callSeconds%60).padStart(2,"0");
+    callTimer.textContent = `${m}:${s}`;
+  }, 1000);
 };
 
-document.getElementById("declineBtn").onclick = () => {
-  document.getElementById("incomingCall").style.display = "none";
-  document.getElementById("lockScreen").style.display = "block";
+declineBtn.onclick = () => {
+  incomingCall.style.display = "none";
+  lockScreen.style.display = "block";
 };
 
-document.getElementById("startOverlay").onclick = async () => {
-  document.getElementById("startOverlay").style.display = "none";
-  document.getElementById("lockScreen").style.display = "block";
+hangupBtn.onclick = () => {
+  clearInterval(timerInterval);
+  onCall.style.display = "none";
+  lockScreen.style.display = "block";
+};
+
+startOverlay.onclick = async () => {
+  startOverlay.style.display = "none";
+  lockScreen.style.display = "block";
   updateTime();
   if (document.documentElement.requestFullscreen)
     await document.documentElement.requestFullscreen();
