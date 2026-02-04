@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Future Call – Version 5</title>
+<title>Future Call – v5.1</title>
 
 <style>
 html, body {
@@ -30,75 +30,19 @@ html, body {
   text-align: center;
 }
 
-button {
-  border: none;
-  background: none;
-  color: white;
-  font-size: 16px;
-}
-
 .gradient {
   background: linear-gradient(180deg, #0a3d91, #021b3a);
 }
 
-.icon-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 40px;
-}
-
-.icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #ddd;
-}
-
-.call-btns {
-  position: absolute;
-  bottom: 40px;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-}
-
-.circle {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-
-.green { background: #2ecc71; }
-.red { background: #e74c3c; }
-
-.log {
-  padding: 20px;
-  font-size: 18px;
-}
-
-.log div {
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-}
-
-.small {
-  font-size: 14px;
-  opacity: 0.7;
+button {
+  border: none;
+  background: none;
+  color: white;
 }
 
 .top-lock {
   position: absolute;
-  top: 30px;
+  top: 32px;
   width: 100%;
   text-align: center;
   font-size: 24px;
@@ -110,8 +54,77 @@ button {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 40px;
-  font-size: 28px;
+  padding: 0 48px;
+  font-size: 30px;
+  color: white;
+}
+
+.call-btns {
+  position: absolute;
+  bottom: 36px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+}
+
+.circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.green { background: #2ecc71; }
+.red { background: #e74c3c; }
+
+.circle span {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.icon-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  margin-top: 36px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #ddd;
+}
+
+.icon span {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.log {
+  padding: 20px;
+}
+
+.log h2 {
+  margin: 10px 0 20px;
+  font-weight: 500;
+}
+
+.log div {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  font-size: 18px;
 }
 </style>
 </head>
@@ -121,7 +134,7 @@ button {
 <div id="start" class="screen center">
   <div>
     <h1>Tap to Begin</h1>
-    <p>Version 5</p>
+    <p>Version 5.1</p>
   </div>
 </div>
 
@@ -139,8 +152,12 @@ button {
     <p>Incoming call</p>
   </div>
   <div class="call-btns">
-    <div class="circle red" onclick="declineCall()">Decline</div>
-    <div class="circle green" onclick="answerFuture()">Accept</div>
+    <div class="circle red" onclick="declineCall()">
+      <span>✕</span>Decline
+    </div>
+    <div class="circle green" onclick="answerFuture()">
+      <span>✓</span>Accept
+    </div>
   </div>
 </div>
 
@@ -150,17 +167,19 @@ button {
     <p id="timer">00:00</p>
 
     <div class="icon-row">
-      <div class="icon">Mute</div>
-      <div class="icon">Keypad</div>
-      <div class="icon">Speaker</div>
-      <div class="icon">Add</div>
-      <div class="icon">Hold</div>
-      <div class="icon">Text</div>
+      <div class="icon"><span>🔇</span>Mute</div>
+      <div class="icon"><span>⌨️</span>Keypad</div>
+      <div class="icon"><span>🔊</span>Speaker</div>
+      <div class="icon"><span>➕</span>Add</div>
+      <div class="icon"><span>⏸</span>Hold</div>
+      <div class="icon"><span>💬</span>Text</div>
     </div>
   </div>
 
   <div class="call-btns">
-    <div class="circle red" onclick="endCall()">Hang Up</div>
+    <div class="circle red" onclick="endCall()">
+      <span>📞</span>Hang Up
+    </div>
   </div>
 </div>
 
@@ -170,14 +189,21 @@ button {
     <p id="callingStatus">Calling…</p>
   </div>
   <div class="call-btns">
-    <div class="circle red" onclick="cancelOutgoing()">Cancel</div>
+    <div class="circle red" onclick="cancelOutgoing()">
+      <span>✕</span>Cancel
+    </div>
   </div>
 </div>
 
 <div id="log" class="screen">
-  <div class="log" id="logList"></div>
+  <div class="log">
+    <h2>Recent Calls</h2>
+    <div id="logList"></div>
+  </div>
   <div class="call-btns">
-    <div class="circle red" onclick="goLock()">End</div>
+    <div class="circle red" onclick="goLock()">
+      <span>⏹</span>End
+    </div>
   </div>
 </div>
 
@@ -187,7 +213,6 @@ let flipped = false;
 let futureUsed = false;
 let timerInt;
 let seconds = 0;
-let answerDelay = 3000;
 let logs = ["Future Me", "Mom", "Jordan", "Past Me"];
 
 function show(id) {
@@ -237,7 +262,6 @@ function startCall(name) {
 
 function endCall() {
   clearInterval(timerInt);
-  if (!logs.includes("Future Me")) logs.unshift("Future Me");
   renderLog();
   show("log");
 }
@@ -255,8 +279,8 @@ function renderLog() {
 
 function callPast() {
   show("calling");
-  setTimeout(() => document.getElementById("callingStatus").textContent = "Ringing…", 1000);
-  setTimeout(() => startCall("Past Me"), answerDelay);
+  document.getElementById("callingStatus").textContent = "Ringing…";
+  setTimeout(() => startCall("Past Me"), 3000);
 }
 
 function cancelOutgoing() {
