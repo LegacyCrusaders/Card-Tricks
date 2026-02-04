@@ -48,14 +48,22 @@ button{border:none;background:none;color:white}
 #incoming{background:linear-gradient(#2a2a2a,#000)}
 .caller{font-size:34px}
 .label{font-size:18px;opacity:.7;margin-bottom:40px}
+
 .call-buttons{
   width:100%;
   display:flex;
   justify-content:space-around;
 }
+.call-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-size:14px;
+}
 .call-btn{
   width:90px;height:90px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
+  margin-bottom:6px;
 }
 .answer{background:#2ea043}
 .decline{background:#b00020}
@@ -120,7 +128,7 @@ button{border:none;background:none;color:white}
 
 <div id="tap" class="screen active center">
   <div>Tap to Begin</div>
-  <div class="version">Version 8</div>
+  <div class="version">Version 9</div>
 </div>
 
 <div id="lock" class="screen">
@@ -138,8 +146,14 @@ button{border:none;background:none;color:white}
   <div class="caller">Future Me</div>
   <div class="label">Incoming call</div>
   <div class="call-buttons">
-    <button class="call-btn decline" onclick="decline()"></button>
-    <button class="call-btn answer" onclick="answer()"></button>
+    <div class="call-col">
+      <div class="call-btn decline" onclick="decline()"></div>
+      Decline
+    </div>
+    <div class="call-col">
+      <div class="call-btn answer" onclick="answer()"></div>
+      Accept
+    </div>
   </div>
 </div>
 
@@ -149,7 +163,7 @@ button{border:none;background:none;color:white}
 
   <div class="controls">
     <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm10 0h2v12h-2z"/></svg></div>Mute</div>
-    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M3 3h6v6H3zm6 6h6v6H9zm6-6h6v6h-6zm-6 6h6v6H9zm-6 6h6v6H3z"/></svg></div>Keypad</div>
+    <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M3 3h6v6H3zm6 6h6v6H9zm6-6h6v6h-6z"/></svg></div>Keypad</div>
     <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg></div>Speaker</div>
     <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M15 8h3a2 2 0 012 2v4a2 2 0 01-2 2h-3zM4 9h7v6H4z"/></svg></div>Add Call</div>
     <div class="ctrl"><div class="ctrl-circle"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4zM2 20h20v-2H2z"/></svg></div>Text</div>
@@ -187,7 +201,7 @@ button{border:none;background:none;color:white}
 </div>
 
 <script>
-let secs=0,timerInt,faceDown=false;
+let secs=0,timerInt,faceDown=false,callTriggered=false,wakeLock=null;
 
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -201,8 +215,16 @@ function updateTime(){
 }
 setInterval(updateTime,1000);
 
+async function keepAwake(){
+  try{
+    if('wakeLock' in navigator)
+      wakeLock = await navigator.wakeLock.request('screen');
+  }catch(e){}
+}
+
 document.getElementById('tap').onclick=async()=>{
   show('lock');
+  await keepAwake();
   if(document.documentElement.requestFullscreen)
     await document.documentElement.requestFullscreen();
 };
@@ -214,7 +236,7 @@ function vibrate(){
 function answer(){
   clearInterval(timerInt);
   secs=0;
-  document.getElementById('timer').textContent="00:00"; // instant reset
+  document.getElementById('timer').textContent="00:00";
   show('call');
   timerInt=setInterval(()=>{
     secs++;
@@ -239,9 +261,11 @@ function callPast(){
 function backToLock(){ show('lock'); }
 
 window.addEventListener('deviceorientation',e=>{
+  if(callTriggered) return;
   if(e.beta>150||e.beta<-150) faceDown=true;
   if(faceDown && e.beta>-30 && e.beta<30){
     faceDown=false;
+    callTriggered=true;
     vibrate();
     setTimeout(()=>show('incoming'),1000);
   }
