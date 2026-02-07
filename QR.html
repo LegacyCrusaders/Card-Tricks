@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Magic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        /* Start Screen */
+        #startScreen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #startButton {
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        #startButton:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* QR Code Screen */
+        #qrScreen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        #qrScreen h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        #qrScreen h1 span:first-child {
+            cursor: pointer;
+        }
+
+        #qrCode {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        /* Lock Screen */
+        #lockScreen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            position: relative;
+            color: white;
+        }
+
+        .lock-header {
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        .lock-time {
+            font-size: 72px;
+            font-weight: 200;
+            margin-bottom: 5px;
+        }
+
+        .lock-time span:first-child {
+            cursor: pointer;
+        }
+
+        .lock-date {
+            font-size: 18px;
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .lock-status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            font-size: 14px;
+        }
+
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .battery.green {
+            color: #4ade80;
+        }
+
+        .battery.yellow {
+            color: #fbbf24;
+        }
+
+        .lock-pattern-container {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            padding: 30px;
+        }
+
+        .pattern-dot {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            background: transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .pattern-dot.active {
+            background: white;
+            border-color: white;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+        }
+
+        .pattern-dot.start {
+            background: #4ade80;
+            border-color: #4ade80;
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.8);
+            transform: scale(1.2);
+        }
+
+        .pattern-dot.can-complete {
+            background: #fbbf24;
+            border-color: #fbbf24;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.8);
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.2); }
+            50% { transform: scale(1.4); }
+        }
+
+        .pattern-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .lock-instruction {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        /* Hidden elements */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Unlock animation */
+        @keyframes unlock {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .unlocking {
+            animation: unlock 0.5s forwards;
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <button id="startButton">TAP TO BEGIN</button>
+    </div>
+
+    <!-- QR Code Screen -->
+    <div id="qrScreen">
+        <h1><span id="qrTrigger">QR</span> Code Generator</h1>
+        <div id="qrCode"></div>
+    </div>
+
+    <!-- Lock Screen -->
+    <div id="lockScreen">
+        <div class="lock-status-bar">
+            <div class="signal">📶</div>
+            <div class="battery green" id="battery">🔋 61%</div>
+        </div>
+        
+        <div class="lock-header">
+            <div class="lock-time" id="lockTime">12:00</div>
+            <div class="lock-date" id="lockDate">Monday, January 1</div>
+        </div>
+
+        <div class="lock-pattern-container">
+            <canvas class="pattern-canvas" id="patternCanvas"></canvas>
+            <div class="pattern-grid" id="patternGrid"></div>
+        </div>
+
+        <div class="lock-instruction">Draw pattern to unlock</div>
+    </div>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // State management
+        let state = {
+            selectedSuit: null,
+            selectedValue: null,
+            currentQR: null,
+            patternStartDot: null,
+            patternPath: [],
+            isDrawing: false
+        };
+
+        // Card mappings
+        const suits = {
+            'top-left': 'clubs',
+            'top-right': 'hearts',
+            'bottom-left': 'spades',
+            'bottom-right': 'diamonds'
+        };
+
+        const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
+
+        // Elements
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const qrScreen = document.getElementById('qrScreen');
+        const qrCodeDiv = document.getElementById('qrCode');
+        const lockScreen = document.getElementById('lockScreen');
+        const lockTime = document.getElementById('lockTime');
+        const lockDate = document.getElementById('lockDate');
+        const battery = document.getElementById('battery');
+        const patternGrid = document.getElementById('patternGrid');
+        const patternCanvas = document.getElementById('patternCanvas');
+        const ctx = patternCanvas.getContext('2d');
+
+        // Initialize pattern grid (4x4 = 16 dots)
+        function initPatternGrid() {
+            patternGrid.innerHTML = '';
+            for (let i = 0; i < 16; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'pattern-dot';
+                dot.dataset.index = i;
+                patternGrid.appendChild(dot);
+            }
+            
+            // Setup canvas size
+            const container = document.querySelector('.lock-pattern-container');
+            patternCanvas.width = container.offsetWidth;
+            patternCanvas.height = container.offsetHeight;
+        }
+
+        // Update lock screen time
+        function updateLockTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const timeStr = `${hours}:${minutes}`;
+            const firstDigit = timeStr[0];
+            const restOfTime = timeStr.slice(1);
+            lockTime.innerHTML = `<span id="lockTimeTrigger">${firstDigit}</span>${restOfTime}`;
+
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            lockDate.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+            
+            // Re-attach click handler after updating HTML
+            const trigger = document.getElementById('lockTimeTrigger');
+            if (trigger) {
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    // Go back to QR screen (simulate unlocking without pattern)
+                    lockScreen.style.display = 'none';
+                    qrScreen.style.display = 'flex';
+                };
+            }
+        }
+
+        // Generate QR code
+        function generateQR(url) {
+            qrCodeDiv.innerHTML = '';
+            state.currentQR = new QRCode(qrCodeDiv, {
+                text: url,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // Get dot position
+        function getDotPosition(index) {
+            const dots = document.querySelectorAll('.pattern-dot');
+            const dot = dots[index];
+            const rect = dot.getBoundingClientRect();
+            const containerRect = patternCanvas.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - containerRect.left,
+                y: rect.top + rect.height / 2 - containerRect.top
+            };
+        }
+
+        // Draw pattern line
+        function drawPattern() {
+            ctx.clearRect(0, 0, patternCanvas.width, patternCanvas.height);
+            
+            if (state.patternPath.length < 2) return;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            const firstPos = getDotPosition(state.patternPath[0]);
+            ctx.moveTo(firstPos.x, firstPos.y);
+
+            for (let i = 1; i < state.patternPath.length; i++) {
+                const pos = getDotPosition(state.patternPath[i]);
+                ctx.lineTo(pos.x, pos.y);
+            }
+
+            ctx.stroke();
+        }
+
+        // Handle suit selection (corner tap on lock screen)
+        function handleSuitSelection(e) {
+            if (state.selectedSuit) return; // Already selected
+
+            const rect = lockScreen.getBoundingClientRect();
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+
+            const relX = x - rect.left;
+            const relY = y - rect.top;
+
+            const xPercent = relX / rect.width;
+            const yPercent = relY / rect.height;
+
+            let corner = null;
+            const cornerSize = 0.2; // 20% of screen
+
+            if (xPercent < cornerSize && yPercent < cornerSize) {
+                corner = 'top-left'; // Clubs
+            } else if (xPercent > (1 - cornerSize) && yPercent < cornerSize) {
+                corner = 'top-right'; // Hearts
+            } else if (xPercent < cornerSize && yPercent > (1 - cornerSize)) {
+                corner = 'bottom-left'; // Spades
+            } else if (xPercent > (1 - cornerSize) && yPercent > (1 - cornerSize)) {
+                corner = 'bottom-right'; // Diamonds
+            }
+
+            if (corner) {
+                state.selectedSuit = suits[corner];
+                // Visual confirmation: change battery
+                battery.textContent = '🔋 60%';
+                battery.classList.remove('green');
+                battery.classList.add('yellow');
+            }
+        }
+
+        // Handle pattern drawing
+        function handlePatternStart(e) {
+            if (!state.selectedSuit) {
+                console.log('Must select suit first');
+                return; // Must select suit first
+            }
+
+            e.preventDefault();
+            
+            let target;
+            if (e.type === 'mousedown') {
+                target = e.target;
+            } else {
+                const touch = e.touches[0];
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+            }
+
+            if (target && target.classList.contains('pattern-dot')) {
+                state.isDrawing = true;
+                const index = parseInt(target.dataset.index);
+                state.patternStartDot = index;
+                state.patternPath = [index];
+                target.classList.add('active');
+                target.classList.add('start'); // Mark as starting dot
+                console.log('Pattern started at dot:', index);
+            }
+        }
+
+        function handlePatternMove(e) {
+            if (!state.isDrawing) return;
+
+            e.preventDefault();
+            
+            let target;
+            if (e.type === 'mousemove') {
+                target = document.elementFromPoint(e.clientX, e.clientY);
+            } else {
+                const touch = e.touches[0];
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+            }
+
+            if (target && target.classList.contains('pattern-dot')) {
+                const index = parseInt(target.dataset.index);
+                
+                // Check if we're hovering over the start dot again (to complete pattern)
+                const dots = document.querySelectorAll('.pattern-dot');
+                dots.forEach(dot => dot.classList.remove('can-complete'));
+                
+                if (index === state.patternStartDot && state.patternPath.length > 1) {
+                    target.classList.add('can-complete');
+                }
+                
+                // Allow adding dots to path
+                // Special case: allow returning to start dot to complete pattern
+                if (index === state.patternStartDot && state.patternPath.length > 1) {
+                    // Don't add to path yet, just highlight - will add on mouseup
+                } else if (!state.patternPath.includes(index)) {
+                    state.patternPath.push(index);
+                    target.classList.add('active');
+                    drawPattern();
+                    console.log('Pattern path:', state.patternPath);
+                }
+            }
+        }
+
+        function handlePatternEnd(e) {
+            if (!state.isDrawing) return;
+
+            e.preventDefault();
+            state.isDrawing = false;
+
+            // Get the dot we're releasing over
+            let target;
+            if (e.type === 'mouseup') {
+                target = document.elementFromPoint(e.clientX, e.clientY);
+            } else {
+                const touch = e.changedTouches[0];
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+            }
+
+            let releasedOnDot = null;
+            if (target && target.classList.contains('pattern-dot')) {
+                releasedOnDot = parseInt(target.dataset.index);
+            }
+
+            console.log('Pattern ended. Start:', state.patternStartDot, 'Path:', state.patternPath, 'Released on:', releasedOnDot);
+
+            // Check if we released on the starting dot
+            if (releasedOnDot === state.patternStartDot && state.patternPath.length > 1) {
+                // Valid pattern! The starting dot index (0-15) maps to card value (position 1-13 for A-K)
+                // Only use first 13 positions
+                console.log('Valid pattern! Start dot:', state.patternStartDot);
+                if (state.patternStartDot <= 12) {
+                    state.selectedValue = values[state.patternStartDot];
+                    console.log('Selected card:', state.selectedValue, 'of', state.selectedSuit);
+                    unlockPhone();
+                } else {
+                    console.log('Dot index too high (>12)');
+                    resetPattern();
+                }
+            } else {
+                // Invalid pattern
+                console.log('Invalid pattern - did not release on start dot. Released on:', releasedOnDot, 'Started on:', state.patternStartDot);
+                resetPattern();
+            }
+        }
+
+        function resetPattern() {
+            state.patternPath = [];
+            state.patternStartDot = null;
+            ctx.clearRect(0, 0, patternCanvas.width, patternCanvas.height);
+            document.querySelectorAll('.pattern-dot').forEach(dot => {
+                dot.classList.remove('active');
+                dot.classList.remove('start');
+                dot.classList.remove('can-complete');
+            });
+        }
+
+        function unlockPhone() {
+            // Generate new QR code with card search
+            const cardName = `${state.selectedValue} of ${state.selectedSuit}`;
+            const searchURL = `https://www.google.com/search?q=${encodeURIComponent(cardName)}`;
+
+            lockScreen.classList.add('unlocking');
+            
+            setTimeout(() => {
+                lockScreen.style.display = 'none';
+                lockScreen.classList.remove('unlocking');
+                generateQR(searchURL);
+                qrScreen.style.display = 'flex';
+                
+                // Reset state for next time
+                state.selectedSuit = null;
+                state.selectedValue = null;
+                battery.textContent = '🔋 61%';
+                battery.classList.remove('yellow');
+                battery.classList.add('green');
+                resetPattern();
+            }, 500);
+        }
+
+        // Device orientation detection for face down/up
+        let lastOrientation = null;
+
+        function handleOrientation(e) {
+            const beta = e.beta; // Front-to-back tilt (-180 to 180)
+            
+            // Face down: beta close to 180 or -180
+            // Face up: beta close to 0
+            
+            if (Math.abs(beta) > 150) {
+                // Face down
+                if (lastOrientation !== 'down') {
+                    lastOrientation = 'down';
+                }
+            } else if (Math.abs(beta) < 30) {
+                // Face up
+                if (lastOrientation === 'down') {
+                    // Just flipped from face down to face up
+                    if (qrScreen.style.display === 'flex') {
+                        // Show lock screen
+                        qrScreen.style.display = 'none';
+                        lockScreen.style.display = 'block';
+                        updateLockTime();
+                        setInterval(updateLockTime, 1000);
+                    }
+                }
+                lastOrientation = 'up';
+            }
+        }
+
+        // Start button
+        startButton.addEventListener('click', async () => {
+            // Request fullscreen
+            try {
+                await document.documentElement.requestFullscreen();
+            } catch (err) {
+                console.log('Fullscreen not available');
+            }
+
+            // Request wake lock
+            try {
+                if ('wakeLock' in navigator) {
+                    await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake lock not available');
+            }
+
+            // Request device orientation permission (iOS)
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                } catch (err) {
+                    console.log('Orientation permission denied');
+                }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+
+            // Show QR screen with default code
+            startScreen.style.display = 'none';
+            qrScreen.style.display = 'flex';
+            generateQR('https://www.google.com/search?q=magic+trick');
+            
+            // Initialize pattern grid
+            initPatternGrid();
+        });
+
+        // Lock screen touch events
+        lockScreen.addEventListener('click', handleSuitSelection);
+        
+        // Click trigger for testing (click first word to go back to QR or lock screen)
+        document.getElementById('qrTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Simulate face down/up - go to lock screen
+            qrScreen.style.display = 'none';
+            lockScreen.style.display = 'block';
+            updateLockTime();
+            setInterval(updateLockTime, 1000);
+        });
+        
+        // Pattern touch events
+        patternGrid.addEventListener('touchstart', handlePatternStart, { passive: false });
+        patternGrid.addEventListener('touchmove', handlePatternMove, { passive: false });
+        patternGrid.addEventListener('touchend', handlePatternEnd, { passive: false });
+        
+        // Mouse events for testing on desktop - use document to capture movement outside grid
+        patternGrid.addEventListener('mousedown', handlePatternStart);
+        document.addEventListener('mousemove', (e) => {
+            if (state.isDrawing) {
+                handlePatternMove(e);
+            }
+        });
+        document.addEventListener('mouseup', (e) => {
+            if (state.isDrawing) {
+                handlePatternEnd(e);
+            }
+        });
+    </script>
+</body>
+</html>
