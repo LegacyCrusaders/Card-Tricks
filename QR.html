@@ -148,7 +148,7 @@
         .pattern-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 40px;
+            gap: 25px;
             padding: 30px;
         }
 
@@ -224,7 +224,7 @@
     <!-- Start Screen -->
     <div id="startScreen">
         <button id="startButton">TAP TO BEGIN</button>
-        <div style="position: absolute; bottom: 20px; color: rgba(255,255,255,0.5); font-size: 12px;">v1.0.3</div>
+        <div style="position: absolute; bottom: 20px; color: rgba(255,255,255,0.5); font-size: 12px;">v1.0.5</div>
     </div>
 
     <!-- QR Code Screen -->
@@ -292,7 +292,7 @@
             'bottom-right': 'diamonds'
         };
 
-        const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king'];
+        const values = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'joker', 'joker', 'joker'];
 
         // Elements
         const startScreen = document.getElementById('startScreen');
@@ -432,9 +432,9 @@
             let corner = null;
             const cornerSize = 0.2; // 20% of screen
             
-            // Exclude the pattern grid area (roughly middle 60% vertically)
-            const patternTopPercent = 0.4; // Pattern area starts at 40% down
-            const patternBottomPercent = 0.9; // Pattern area ends at 90% down
+            // Exclude the pattern grid area (roughly middle 50% vertically)
+            const patternTopPercent = 0.35; // Pattern area starts at 35% down
+            const patternBottomPercent = 0.80; // Pattern area ends at 80% down (allowing 20% at bottom)
             
             // Only allow suit selection above or below the pattern grid
             if (yPercent >= patternTopPercent && yPercent <= patternBottomPercent) {
@@ -456,25 +456,20 @@
                 state.selectedSuit = suits[corner];
                 state.suitClickCount++;
                 
-                // Visual confirmation: change battery progressively
-                const batteryPercentages = ['60%', '59%', '58%', '57%', '56%'];
-                const percentIndex = Math.min(state.suitClickCount - 1, batteryPercentages.length - 1);
+                // Visual confirmation: change battery progressively (no limit)
+                const basePercent = 60;
+                const newPercent = basePercent - (state.suitClickCount - 1);
                 
-                document.getElementById('batteryPercent').textContent = batteryPercentages[percentIndex];
+                document.getElementById('batteryPercent').textContent = `${newPercent}%`;
                 document.getElementById('batteryFill').setAttribute('fill-opacity', '0.5');
                 battery.classList.add('dimmed');
                 
-                console.log('Suit selected:', state.selectedSuit, 'Click count:', state.suitClickCount);
+                console.log('Suit selected:', state.selectedSuit, 'Click count:', state.suitClickCount, 'Battery:', newPercent + '%');
             }
         }
 
         // Handle pattern drawing
         function handlePatternStart(e) {
-            if (!state.selectedSuit) {
-                console.log('Must select suit first');
-                return; // Must select suit first
-            }
-
             e.preventDefault();
             
             let target;
@@ -559,17 +554,50 @@
 
             console.log('Pattern ended. Start:', state.patternStartDot, 'Path:', state.patternPath, 'Released on:', releasedOnDot);
 
+            // Check if suit was selected
+            if (!state.selectedSuit) {
+                console.log('Invalid pattern - no suit selected');
+                resetPattern();
+                return;
+            }
+
             // Check if we released on the starting dot
             if (releasedOnDot === state.patternStartDot && state.patternPath.length > 1) {
-                // Valid pattern! The starting dot index (0-15) maps to card value (position 1-13 for A-K)
-                // Only use first 13 positions
+                // Valid pattern! The starting dot index (0-15) maps to card values
+                // 0-12: Ace through King
+                // 13-15: Joker (any of these three dots can be used for Joker)
                 console.log('Valid pattern! Start dot:', state.patternStartDot);
-                if (state.patternStartDot <= 12) {
+                if (state.patternStartDot <= 15) {
                     state.selectedValue = values[state.patternStartDot];
-                    console.log('Selected card:', state.selectedValue, 'of', state.selectedSuit);
-                    unlockPhone();
+                    
+                    // Special handling for Joker - don't include suit
+                    if (state.selectedValue === 'joker') {
+                        const searchURL = `https://www.google.com/search?q=${encodeURIComponent('joker card')}`;
+                        console.log('Selected card: Joker');
+                        
+                        lockScreen.classList.add('unlocking');
+                        
+                        setTimeout(() => {
+                            lockScreen.style.display = 'none';
+                            lockScreen.classList.remove('unlocking');
+                            generateQR(searchURL);
+                            qrScreen.style.display = 'flex';
+                            
+                            // Reset state for next time
+                            state.selectedSuit = null;
+                            state.selectedValue = null;
+                            state.suitClickCount = 0;
+                            document.getElementById('batteryPercent').textContent = '61%';
+                            document.getElementById('batteryFill').setAttribute('fill-opacity', '0.9');
+                            battery.classList.remove('dimmed');
+                            resetPattern();
+                        }, 500);
+                    } else {
+                        console.log('Selected card:', state.selectedValue, 'of', state.selectedSuit);
+                        unlockPhone();
+                    }
                 } else {
-                    console.log('Dot index too high (>12)');
+                    console.log('Dot index too high (>15)');
                     resetPattern();
                 }
             } else {
