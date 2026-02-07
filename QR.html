@@ -77,6 +77,7 @@
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            cursor: pointer;
         }
 
         /* Lock Screen */
@@ -262,6 +263,7 @@
             selectedSuit: null,
             selectedValue: null,
             currentQR: null,
+            currentQRUrl: null,
             patternStartDot: null,
             patternPath: [],
             isDrawing: false
@@ -335,6 +337,7 @@
         // Generate QR code
         function generateQR(url) {
             qrCodeDiv.innerHTML = '';
+            state.currentQRUrl = url;
             state.currentQR = new QRCode(qrCodeDiv, {
                 text: url,
                 width: 256,
@@ -343,6 +346,11 @@
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
+            
+            // Add click handler to open URL
+            qrCodeDiv.onclick = () => {
+                window.open(state.currentQRUrl, '_blank');
+            };
         }
 
         // Get dot position
@@ -567,22 +575,17 @@
             // Face up: beta close to 0
             
             if (Math.abs(beta) > 150) {
-                // Face down
-                if (lastOrientation !== 'down') {
-                    lastOrientation = 'down';
+                // Face down - show lock screen immediately
+                if (lastOrientation !== 'down' && qrScreen.style.display === 'flex') {
+                    // Show lock screen when going face down
+                    qrScreen.style.display = 'none';
+                    lockScreen.style.display = 'block';
+                    updateLockTime();
+                    setInterval(updateLockTime, 1000);
                 }
+                lastOrientation = 'down';
             } else if (Math.abs(beta) < 30) {
                 // Face up
-                if (lastOrientation === 'down') {
-                    // Just flipped from face down to face up
-                    if (qrScreen.style.display === 'flex') {
-                        // Show lock screen
-                        qrScreen.style.display = 'none';
-                        lockScreen.style.display = 'block';
-                        updateLockTime();
-                        setInterval(updateLockTime, 1000);
-                    }
-                }
                 lastOrientation = 'up';
             }
         }
