@@ -1,9 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Running Card Choice Statistics</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -123,9 +125,19 @@
       color: #777;
       display: none;
     }
+    /* QR container flex centering */
+    #qrWrapper {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
   </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
+
 <body>
+
   <h1 id="title">
     <span>Running Card</span>
     <span>Choice Statistics</span>
@@ -156,6 +168,11 @@
   <div id="loading">Querying database...</div>
   <div id="result">Select a number and card, then submit to see likelihood of being chosen.</div>
 
+  <!-- QR code wrapper -->
+  <div id="qrWrapper">
+    <div id="qrContainer"></div>
+  </div>
+
   <script>
     const mnemonicaStack = [
       "4♣","2♦","7♦","3♣","9♠","Q♦","6♠","5♠","Q♣","2♠",
@@ -166,8 +183,8 @@
       "J♣","J♠"
     ];
 
-    const cardToPosition = Object.fromEntries(mnemonicaStack.map((card, i) => [card, i + 1]));
-    const numberToCard = Object.fromEntries(mnemonicaStack.map((card, i) => [i + 1, card]));
+    const cardToPosition = Object.fromEntries(mnemonicaStack.map((c, i) => [c, i + 1]));
+    const numberToCard = Object.fromEntries(mnemonicaStack.map((c, i) => [i + 1, c]));
 
     const numberSelect = document.getElementById('numberSelect');
     const cardSelect = document.getElementById('cardSelect');
@@ -192,7 +209,6 @@
         opt.textContent = i;
         numberSelect.appendChild(opt);
       }
-
       for (let card of mnemonicaStack) {
         const opt = document.createElement('option');
         opt.value = card;
@@ -234,12 +250,10 @@
     function randomizeCard(force = false) {
       let card;
       if (force && lastNumberSelected) {
-        const number = parseInt(numberSelect.value);
-        card = numberToCard[number];
+        card = numberToCard[numberSelect.value];
         lastNumberSelected = false;
       } else {
-        const index = Math.floor(Math.random() * 52);
-        card = mnemonicaStack[index];
+        card = mnemonicaStack[Math.floor(Math.random() * 52)];
         lastCardSelected = true;
       }
       cardSelect.value = card;
@@ -250,8 +264,7 @@
     function randomizeNumber(force = false) {
       let number;
       if (force && lastCardSelected) {
-        const card = cardSelect.value;
-        number = cardToPosition[card];
+        number = cardToPosition[cardSelect.value];
         lastCardSelected = false;
       } else {
         number = Math.floor(Math.random() * 52) + 1;
@@ -264,73 +277,68 @@
     cardSelect.addEventListener('change', () => {
       lastCardSelected = true;
       updateCardDisplay(cardSelect.value);
-      hideStack();
+      stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
     });
 
     numberSelect.addEventListener('change', () => {
       lastNumberSelected = true;
-      hideStack();
+      stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
     });
 
-    document.getElementById('randomCardBtn').onclick = () => { randomizeCard(true); hideStack(); };
-    document.getElementById('randomNumberBtn').onclick = () => { randomizeNumber(true); hideStack(); };
+    document.getElementById('randomCardBtn').onclick = () => randomizeCard(true);
+    document.getElementById('randomNumberBtn').onclick = () => randomizeNumber(true);
 
     cardDisplay.onclick = () => {
       clickCount++;
       if (clickCount % 3 === 0) {
-        const index = Math.floor(Math.random() * 52);
-        const card = mnemonicaStack[index];
-        const number = index + 1;
-        cardSelect.value = card;
-        numberSelect.value = number;
-        updateCardDisplay(card);
-        updateResultDisplay(card, number, true);
+        const i = Math.floor(Math.random() * 52);
+        cardSelect.value = mnemonicaStack[i];
+        numberSelect.value = i + 1;
+        updateCardDisplay(mnemonicaStack[i]);
+        updateResultDisplay(mnemonicaStack[i], i + 1, true);
       } else {
         randomizeCard();
         randomizeNumber();
       }
-      hideStack();
+      stackDisplay.style.display = 'none';
     };
 
     submitBtn.onclick = () => {
       const card = cardSelect.value;
-      const number = parseInt(numberSelect.value);
+      const number = numberSelect.value;
       const key = `${card}-${number}`;
       if (!(key in stats)) stats[key] = getLikelihood(card, number);
-      const increment = Math.random() < 0.5 ? 0.01 : 0.02;
-      stats[key] = Math.min(5.0, +(stats[key] + increment).toFixed(2));
+      stats[key] = Math.min(5, +(stats[key] + (Math.random() < 0.5 ? 0.01 : 0.02)).toFixed(2));
       updateResultDisplay(card, number, false, stats[key]);
     };
-
-    function hideStack() {
-      stackDisplay.style.display = 'none';
-    }
 
     title.addEventListener('click', () => {
       const now = Date.now();
       titleClicks = titleClicks.filter(t => now - t < 700);
       titleClicks.push(now);
       if (titleClicks.length >= 3) {
-        if (stackDisplay.style.display === 'block') {
-          stackDisplay.style.display = 'none';
-        } else {
-          stackDisplay.textContent = mnemonicaStack.map((card, i) => `${i + 1}: ${card}`).join('\n');
-          stackDisplay.style.display = 'block';
-        }
+        stackDisplay.textContent = mnemonicaStack.map((c, i) => `${i + 1}: ${c}`).join('\n');
+        stackDisplay.style.display = stackDisplay.style.display === 'block' ? 'none' : 'block';
         titleClicks = [];
       }
     });
 
     populateDropdowns();
-    const randIndex = Math.floor(Math.random() * 52);
-    cardSelect.value = mnemonicaStack[randIndex];
-    numberSelect.value = randIndex + 1;
-    updateCardDisplay(mnemonicaStack[randIndex]);
+    const start = Math.floor(Math.random() * 52);
+    cardSelect.value = mnemonicaStack[start];
+    numberSelect.value = start + 1;
+    updateCardDisplay(mnemonicaStack[start]);
     updateResultDisplay(cardSelect.value, numberSelect.value);
-  </script>
-</body>
-  <img src="https://legacycrusaders.github.io/Card-Tricks/QR.png" alt="QR Code to this site" style="display:block; margin: 30px auto 0; max-width: 200px;" />
 
+    // Generate QR code to new page
+    new QRCode(document.getElementById("qrContainer"), {
+      text: "https://legacycrusaders.github.io/Card-Tricks/stat.html",
+      width: 180,
+      height: 180
+    });
+  </script>
+
+</body>
 </html>
