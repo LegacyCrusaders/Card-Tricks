@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magician View</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            background: #2a2a2a;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 24px;
+            color: #667eea;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            background: #333;
+        }
+
+        .status.waiting {
+            color: #fbbf24;
+        }
+
+        .status.ready {
+            color: #4ade80;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .card-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card-name {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .card-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .number-display {
+            background: #333;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .number-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #4ade80;
+            margin-bottom: 10px;
+        }
+
+        .number-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .refresh-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 16px;
+            color: white;
+            background: #667eea;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .debug {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #888;
+            text-align: left;
+        }
+
+        .auto-refresh {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Magician View</h1>
+        
+        <div id="status" class="status waiting">
+            Waiting for spectator selection...
+        </div>
+
+        <div id="result" class="result">
+            <div class="card-display">
+                <div class="card-label">Previous Card (Si Stebbins):</div>
+                <div class="card-name" id="previousCard">-</div>
+            </div>
+
+            <div class="number-display">
+                <div class="number-label">Adjusted Number (their number - 13):</div>
+                <div class="number-value" id="adjustedNumber">-</div>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="checkForData()">Check Now</button>
+        
+        <div class="auto-refresh">Auto-checking every 2 seconds</div>
+
+        <div class="debug" id="debug">
+            <strong>Debug Info:</strong><br>
+            Last check: <span id="lastCheck">-</span><br>
+            Spectator chose: <span id="spectatorCard">-</span><br>
+            Spectator number: <span id="spectatorNumber">-</span>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZU-2QSO1YD4ogNSUPaxQ3LmVx26OJUGL77JSeBO8AzyQt9Pyx8ryoTwWmKZpM5OPH/exec';
+
+        // Si Stebbins deck order (same as spectator page)
+        const sistebbinsOrder = [
+            'Ace of Clubs', '4 of Hearts', '7 of Spades', '10 of Diamonds',
+            'King of Clubs', '3 of Hearts', '6 of Spades', '9 of Diamonds',
+            'Queen of Clubs', '2 of Hearts', '5 of Spades', '8 of Diamonds',
+            'Jack of Clubs', 'Ace of Hearts', '4 of Spades', '7 of Diamonds',
+            '10 of Clubs', 'King of Hearts', '3 of Spades', '6 of Diamonds',
+            '9 of Clubs', 'Queen of Hearts', '2 of Spades', '5 of Diamonds',
+            '8 of Clubs', 'Jack of Hearts', 'Ace of Spades', '4 of Diamonds',
+            '7 of Clubs', '10 of Hearts', 'King of Spades', '3 of Diamonds',
+            '6 of Clubs', '9 of Hearts', 'Queen of Spades', '2 of Diamonds',
+            '5 of Clubs', '8 of Hearts', 'Jack of Spades', 'Ace of Diamonds',
+            '4 of Clubs', '7 of Hearts', '10 of Spades', 'King of Diamonds',
+            '3 of Clubs', '6 of Hearts', '9 of Spades', 'Queen of Diamonds',
+            '2 of Clubs', '5 of Hearts', '8 of Spades', 'Jack of Diamonds'
+        ];
+
+        function getPreviousCard(currentCard) {
+            const index = sistebbinsOrder.indexOf(currentCard);
+            if (index === -1) return 'Unknown Card';
+            if (index === 0) return sistebbinsOrder[51]; // Wrap around to last card
+            return sistebbinsOrder[index - 1];
+        }
+
+        function getAdjustedNumber(number) {
+            return number - 13;
+        }
+
+        async function checkForData() {
+            const statusDiv = document.getElementById('status');
+            const resultDiv = document.getElementById('result');
+            const lastCheckSpan = document.getElementById('lastCheck');
+            
+            lastCheckSpan.textContent = new Date().toLocaleTimeString();
+
+            try {
+                const response = await fetch(SHEET_URL);
+                const data = await response.json();
+
+                console.log('Received data:', data);
+
+                if (data.card && data.number) {
+                    // Update debug info
+                    document.getElementById('spectatorCard').textContent = data.card;
+                    document.getElementById('spectatorNumber').textContent = data.number;
+
+                    // Calculate results
+                    const previousCard = getPreviousCard(data.card);
+                    const adjustedNumber = getAdjustedNumber(parseInt(data.number));
+
+                    // Update display
+                    document.getElementById('previousCard').textContent = previousCard;
+                    document.getElementById('adjustedNumber').textContent = adjustedNumber;
+
+                    // Show results
+                    statusDiv.textContent = 'Selection received!';
+                    statusDiv.className = 'status ready';
+                    resultDiv.classList.add('show');
+
+                } else {
+                    // No data yet
+                    statusDiv.textContent = 'Waiting for spectator selection...';
+                    statusDiv.className = 'status waiting';
+                    resultDiv.classList.remove('show');
+                }
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                statusDiv.textContent = 'Error checking for data';
+                statusDiv.className = 'status waiting';
+            }
+        }
+
+        // Auto-check every 2 seconds
+        setInterval(checkForData, 2000);
+
+        // Check immediately on load
+        checkForData();
+    </script>
+</body>
+</html>
