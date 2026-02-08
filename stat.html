@@ -124,7 +124,6 @@
       color: #777;
       display: none;
     }
-    /* QR container flex centering */
     #qrWrapper {
       display: flex;
       justify-content: center;
@@ -167,12 +166,13 @@
   <div id="loading">Querying database...</div>
   <div id="result">Select a number and card, then submit to see likelihood of being chosen.</div>
 
-  <!-- QR code wrapper -->
   <div id="qrWrapper">
     <div id="qrContainer"></div>
   </div>
 
   <script>
+    const SHEET_URL = 'https://script.google.com/macros/s/AKfycby3IIZk26_giu6v6EEO42QA2ogTFPE1S3oboRRhTDb2_ZjWDjL4UuhRGL20WtGgoNOukA/exec';
+    
     const mnemonicaStack = [
       "4♣","2♦","7♦","3♣","9♠","Q♦","6♠","5♠","Q♣","2♠",
       "J♦","8♣","3♠","7♣","5♥","10♠","K♦","2♣","3♥","8♠",
@@ -180,6 +180,14 @@
       "3♦","8♥","6♣","10♥","9♣","4♥","Q♠","A♥","7♠","8♦",
       "A♠","9♦","K♣","6♥","Q♥","2♥","7♥","5♦","4♦","A♦",
       "J♣","J♠"
+    ];
+
+    // Si Stebbins order for conversion
+    const sistebbinsOrder = [
+      'A♣','4♥','7♠','10♦','K♣','3♥','6♠','9♦','Q♣','2♥','5♠','8♦','J♣',
+      'A♥','4♠','7♦','10♣','K♥','3♠','6♦','9♣','Q♥','2♠','5♦','8♣','J♥',
+      'A♠','4♦','7♣','10♥','K♠','3♦','6♣','9♥','Q♠','2♦','5♣','8♥','J♠',
+      'A♦','4♣','7♥','10♠','K♦','3♣','6♥','9♠','Q♦','2♣','5♥','8♠','J♦'
     ];
 
     const cardToPosition = Object.fromEntries(mnemonicaStack.map((c, i) => [c, i + 1]));
@@ -199,7 +207,100 @@
     let lastNumberSelected = false;
     let stats = {};
     let titleClicks = [];
+    let qrClicks = [];
     let updateTimeout;
+    let lastReceivedData = null;
+    let userHasChangedAfterUpdate = false;
+    let isFaceDown = false;
+
+    // Device orientation detection
+    function handleOrientation(e) {
+      const beta = e.beta; // Front-to-back tilt
+      
+      if (Math.abs(beta) > 150) {
+        isFaceDown = true;
+      } else if (Math.abs(beta) < 30) {
+        isFaceDown = false;
+      }
+    }
+
+    // Si Stebbins conversion functions
+    function getPreviousSistebbinsCard(card) {
+      const index = sistebbinsOrder.indexOf(card);
+      if (index === -1) return card; // Not found, return same card
+      if (index === 0) return sistebbinsOrder[51]; // Wrap to end
+      return sistebbinsOrder[index - 1];
+    }
+
+    function getAdjustedNumber(number) {
+      const num = parseInt(number);
+      if (num <= 13) {
+        return num + 39; // 1→40, 13→52
+      } else {
+        return num - 13; // 14→1, 52→39
+      }
+    }
+
+    // Check for spectator data
+    async function checkForSpectatorData() {
+      if (!isFaceDown) return; // Only update when face down
+      
+      try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.json();
+        
+        if (data.current && data.current.card && data.current.number) {
+          const spectatorCard = data.current.card;
+          const spectatorNumber = data.current.number;
+          
+          // Check if this is new data
+          const dataKey = `${spectatorCard}-${spectatorNumber}`;
+          if (lastReceivedData !== dataKey) {
+            lastReceivedData = dataKey;
+            userHasChangedAfterUpdate = false;
+            
+            // Convert to Si Stebbins code
+            const codedCard = getPreviousSistebbinsCard(spectatorCard);
+            const codedNumber = getAdjustedNumber(spectatorNumber);
+            
+            // Update dropdowns
+            cardSelect.value = codedCard;
+            numberSelect.value = codedNumber;
+            updateCardDisplay(codedCard);
+            updateResultDisplay(codedCard, codedNumber);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching spectator data:', error);
+      }
+    }
+
+    // Show history popup (triple-click QR)
+    async function showHistory() {
+      try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.json();
+        
+        if (data.history && data.history.length > 0) {
+          const entries = data.history.slice(-3).reverse(); // Get last 3, newest first
+          let historyText = 'SPECTATOR ENTRIES:\n\n';
+          
+          entries.forEach((entry, index) => {
+            const position = entries.length - index;
+            const ordinal = position === 1 ? '1st' : position === 2 ? '2nd' : '3rd';
+            historyText += `${ordinal}: ${entry.card}, ${entry.number}\n`;
+          });
+          
+          stackDisplay.textContent = historyText;
+          stackDisplay.style.display = 'block';
+        } else {
+          stackDisplay.textContent = 'No spectator entries yet.';
+          stackDisplay.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error fetching history:', error);
+      }
+    }
 
     function populateDropdowns() {
       for (let i = 1; i <= 52; i++) {
@@ -208,12 +309,25 @@
         opt.textContent = i;
         numberSelect.appendChild(opt);
       }
-      for (let card of mnemonicaStack) {
-        const opt = document.createElement('option');
-        opt.value = card;
-        opt.textContent = card;
-        if (card.includes('♥') || card.includes('♦')) opt.classList.add('red');
-        cardSelect.appendChild(opt);
+      
+      // Natural card order: A-K for each suit (Clubs, Hearts, Spades, Diamonds)
+      const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+      const suits = [
+        {symbol: '♣', isRed: false},
+        {symbol: '♥', isRed: true},
+        {symbol: '♠', isRed: false},
+        {symbol: '♦', isRed: true}
+      ];
+      
+      for (let suit of suits) {
+        for (let value of values) {
+          const card = value + suit.symbol;
+          const opt = document.createElement('option');
+          opt.value = card;
+          opt.textContent = card;
+          if (suit.isRed) opt.classList.add('red');
+          cardSelect.appendChild(opt);
+        }
       }
     }
 
@@ -258,6 +372,7 @@
       cardSelect.value = card;
       updateCardDisplay(card);
       updateResultDisplay(card, numberSelect.value);
+      userHasChangedAfterUpdate = true;
     }
 
     function randomizeNumber(force = false) {
@@ -271,6 +386,7 @@
       }
       numberSelect.value = number;
       updateResultDisplay(cardSelect.value, number);
+      userHasChangedAfterUpdate = true;
     }
 
     cardSelect.addEventListener('change', () => {
@@ -278,12 +394,14 @@
       updateCardDisplay(cardSelect.value);
       stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
+      userHasChangedAfterUpdate = true;
     });
 
     numberSelect.addEventListener('change', () => {
       lastNumberSelected = true;
       stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
+      userHasChangedAfterUpdate = true;
     });
 
     document.getElementById('randomCardBtn').onclick = () => randomizeCard(true);
@@ -302,6 +420,7 @@
         randomizeNumber();
       }
       stackDisplay.style.display = 'none';
+      userHasChangedAfterUpdate = true;
     };
 
     submitBtn.onclick = () => {
@@ -313,6 +432,7 @@
       updateResultDisplay(card, number, false, stats[key]);
     };
 
+    // Triple-click title to show Mnemonica stack
     title.addEventListener('click', () => {
       const now = Date.now();
       titleClicks = titleClicks.filter(t => now - t < 700);
@@ -324,6 +444,33 @@
       }
     });
 
+    // Triple-click QR to show spectator history
+    document.getElementById('qrContainer').addEventListener('click', () => {
+      const now = Date.now();
+      qrClicks = qrClicks.filter(t => now - t < 700);
+      qrClicks.push(now);
+      if (qrClicks.length >= 3) {
+        showHistory();
+        qrClicks = [];
+      }
+    });
+
+    // Request device orientation permission and start monitoring
+    async function initOrientation() {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        } catch (err) {
+          console.log('Orientation permission denied');
+        }
+      } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    }
+
     populateDropdowns();
     const start = Math.floor(Math.random() * 52);
     cardSelect.value = mnemonicaStack[start];
@@ -331,9 +478,15 @@
     updateCardDisplay(mnemonicaStack[start]);
     updateResultDisplay(cardSelect.value, numberSelect.value);
 
-    // Generate QR code to new page
+    // Start checking for spectator data every 2 seconds
+    setInterval(checkForSpectatorData, 2000);
+    
+    // Initialize orientation on first user interaction
+    document.body.addEventListener('click', initOrientation, { once: true });
+
+    // Generate QR code pointing to stat2.html
     new QRCode(document.getElementById("qrContainer"), {
-      text: "https://legacycrusaders.github.io/Card-Tricks/stat.html",
+      text: "https://legacycrusaders.github.io/Card-Tricks/stat2.html",
       width: 180,
       height: 180
     });
