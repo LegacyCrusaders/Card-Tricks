@@ -208,18 +208,28 @@
     let stats = {};
     let titleClicks = [];
     let qrClicks = [];
+    let cardDisplayClicks = [];
     let updateTimeout;
     let lastReceivedData = null;
     let userHasChangedAfterUpdate = false;
     let isFaceDown = false;
+    let testMode = false; // Bypass face-down check for testing
 
     // Device orientation detection
     function handleOrientation(e) {
       const beta = e.beta; // Front-to-back tilt
       
+      console.log('Orientation beta:', beta, 'isFaceDown:', isFaceDown);
+      
       if (Math.abs(beta) > 150) {
+        if (!isFaceDown) {
+          console.log('Phone turned FACE DOWN');
+        }
         isFaceDown = true;
       } else if (Math.abs(beta) < 30) {
+        if (isFaceDown) {
+          console.log('Phone turned FACE UP');
+        }
         isFaceDown = false;
       }
     }
@@ -243,15 +253,24 @@
 
     // Check for spectator data
     async function checkForSpectatorData() {
-      if (!isFaceDown) return; // Only update when face down
+      console.log('Checking for spectator data... isFaceDown:', isFaceDown, 'testMode:', testMode);
+      
+      if (!isFaceDown && !testMode) {
+        console.log('Phone not face down and not in test mode, skipping update');
+        return; // Only update when face down or in test mode
+      }
       
       try {
         const response = await fetch(SHEET_URL);
         const data = await response.json();
         
+        console.log('Received data from sheet:', data);
+        
         if (data.current && data.current.card && data.current.number) {
           const spectatorCard = data.current.card;
           const spectatorNumber = data.current.number;
+          
+          console.log('Spectator chose:', spectatorCard, 'at', spectatorNumber);
           
           // Check if this is new data
           const dataKey = `${spectatorCard}-${spectatorNumber}`;
@@ -263,12 +282,18 @@
             const codedCard = getPreviousSistebbinsCard(spectatorCard);
             const codedNumber = getAdjustedNumber(spectatorNumber);
             
+            console.log('Updating to coded values:', codedCard, codedNumber);
+            
             // Update dropdowns
             cardSelect.value = codedCard;
             numberSelect.value = codedNumber;
             updateCardDisplay(codedCard);
             updateResultDisplay(codedCard, codedNumber);
+          } else {
+            console.log('Same data as before, not updating');
           }
+        } else {
+          console.log('No valid data in sheet yet');
         }
       } catch (error) {
         console.error('Error fetching spectator data:', error);
@@ -408,6 +433,25 @@
     document.getElementById('randomNumberBtn').onclick = () => randomizeNumber(true);
 
     cardDisplay.onclick = () => {
+      // Check for triple-click to toggle test mode
+      const now = Date.now();
+      cardDisplayClicks = cardDisplayClicks.filter(t => now - t < 700);
+      cardDisplayClicks.push(now);
+      
+      if (cardDisplayClicks.length >= 3) {
+        testMode = !testMode;
+        console.log('TEST MODE:', testMode ? 'ENABLED (auto-update without face-down)' : 'DISABLED (requires face-down)');
+        if (testMode) {
+          resultDiv.textContent = '🔧 TEST MODE ENABLED';
+          setTimeout(() => {
+            updateResultDisplay(cardSelect.value, numberSelect.value);
+          }, 1000);
+        }
+        cardDisplayClicks = [];
+        return;
+      }
+      
+      // Normal click behavior
       clickCount++;
       if (clickCount % 3 === 0) {
         const i = Math.floor(Math.random() * 52);
@@ -432,31 +476,62 @@
       updateResultDisplay(card, number, false, stats[key]);
     };
 
-    // Triple-click title to show Mnemonica stack
+    // Triple-click title to show Mnemonica stack (TOGGLE)
     title.addEventListener('click', () => {
       const now = Date.now();
       titleClicks = titleClicks.filter(t => now - t < 700);
       titleClicks.push(now);
       if (titleClicks.length >= 3) {
-        stackDisplay.textContent = mnemonicaStack.map((c, i) => `${i + 1}: ${c}`).join('\n');
-        stackDisplay.style.display = stackDisplay.style.display === 'block' ? 'none' : 'block';
+        if (stackDisplay.style.display === 'block') {
+          // Already showing - close it
+          stackDisplay.style.display = 'none';
+        } else {
+          // Not showing - show stack
+          stackDisplay.textContent = mnemonicaStack.map((c, i) => `${i + 1}: ${c}`).join('\n');
+          stackDisplay.style.display = 'block';
+        }
         titleClicks = [];
       }
     });
 
-    // Triple-click QR to show spectator history
+    // Triple-click QR to show spectator history (TOGGLE)
     document.getElementById('qrContainer').addEventListener('click', () => {
       const now = Date.now();
       qrClicks = qrClicks.filter(t => now - t < 700);
       qrClicks.push(now);
       if (qrClicks.length >= 3) {
-        showHistory();
+        if (stackDisplay.style.display === 'block') {
+          // Already showing - close it
+          stackDisplay.style.display = 'none';
+        } else {
+          // Not showing - show history
+          showHistory();
+        }
         qrClicks = [];
       }
     });
 
     // Request device orientation permission and start monitoring
     async function initOrientation() {
+      // Request wake lock to prevent screen from sleeping
+      try {
+        if ('wakeLock' in navigator) {
+          const wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Wake lock acquired');
+          
+          // Re-acquire wake lock if it's released
+          wakeLock.addEventListener('release', async () => {
+            console.log('Wake lock released, re-acquiring...');
+            if ('wakeLock' in navigator) {
+              await navigator.wakeLock.request('screen');
+            }
+          });
+        }
+      } catch (err) {
+        console.log('Wake lock not available:', err);
+      }
+
+      // Request orientation permission
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         try {
           const permission = await DeviceOrientationEvent.requestPermission();
@@ -481,7 +556,7 @@
     // Start checking for spectator data every 2 seconds
     setInterval(checkForSpectatorData, 2000);
     
-    // Initialize orientation on first user interaction
+    // Initialize orientation and wake lock on first user interaction
     document.body.addEventListener('click', initOrientation, { once: true });
 
     // Generate QR code pointing to stat2.html
