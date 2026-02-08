@@ -124,17 +124,14 @@
       color: #777;
       display: none;
     }
-    #qrContainer {
+    /* QR container flex centering */
+    #qrWrapper {
+      display: flex;
+      justify-content: center;
       margin-top: 30px;
-      text-align: center;
-    }
-    /* Center QR code generated canvas or div */
-    #qrContainer > div, #qrContainer > canvas {
-      display: inline-block;
     }
   </style>
 
-  <!-- QR code generator -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
@@ -170,8 +167,10 @@
   <div id="loading">Querying database...</div>
   <div id="result">Select a number and card, then submit to see likelihood of being chosen.</div>
 
-  <!-- QR code will appear here -->
-  <div id="qrContainer"></div>
+  <!-- QR code wrapper -->
+  <div id="qrWrapper">
+    <div id="qrContainer"></div>
+  </div>
 
   <script>
     const mnemonicaStack = [
@@ -332,9 +331,9 @@
     updateCardDisplay(mnemonicaStack[start]);
     updateResultDisplay(cardSelect.value, numberSelect.value);
 
-    // Generate QR code to self
+    // Generate QR code to new page
     new QRCode(document.getElementById("qrContainer"), {
-      text: "https://legacycrusaders.github.io/Card-Tricks/",
+      text: "https://legacycrusaders.github.io/Card-Tricks/stat.html",
       width: 180,
       height: 180
     });
