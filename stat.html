@@ -100,6 +100,8 @@
       color: #333;
       min-height: 28px;
       position: relative;
+      cursor: pointer;
+      user-select: none;
     }
     #pendingIndicator {
       position: absolute;
@@ -545,6 +547,26 @@
       debugLog('[TEST] Manual apply clicked');
       applyPendingUpdate();
       document.getElementById('testApplyBtn').style.display = 'none';
+    };
+
+    // Secret: Click the result percentage to toggle face down/up
+    resultDiv.onclick = () => {
+      if (isFaceDown) {
+        // Currently face down → flip to face up
+        debugLog('[SIM] 📱 Face UP');
+        const wasDown = isFaceDown;
+        isFaceDown = false;
+        
+        if (wasDown && pendingUpdate) {
+          debugLog('[SIM] Applying pending update!');
+          applyPendingUpdate();
+        }
+      } else {
+        // Currently face up → flip to face down
+        debugLog('[SIM] 📱 Face DOWN');
+        isFaceDown = true;
+        wasFaceDown = true;
+      }
     };
 
     // Triple-click title to show Mnemonica stack (TOGGLE)
