@@ -10,22 +10,24 @@
     margin: 0;
     background: black;
     color: white;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    font-family: system-ui, -apple-system;
     height: 100vh;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
+    touch-action: none;
   }
 
   .app {
     width: 100%;
-    max-width: 390px; /* iPhone width */
+    max-width: 390px;
     text-align: center;
   }
 
   .scene {
-    width: 60vw;
-    max-width: 180px;
+    width: 65vw;
+    max-width: 190px;
     aspect-ratio: 7 / 10;
     perspective: 900px;
     margin: 30px auto;
@@ -52,7 +54,7 @@
     justify-content: center;
     align-items: center;
     font-size: 3rem;
-    border: 2px solid #111;
+    border: 2px solid #222;
   }
 
   .front {
@@ -66,54 +68,14 @@
   }
 
   .back {
-    background: repeating-linear-gradient(
-      45deg,
-      #111,
-      #111 10px,
-      #222 10px,
-      #222 20px
-    );
-  }
-
-  .controls {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 10px;
-  }
-
-  button {
-    background: #111;
-    color: white;
-    border: 1px solid #333;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-size: 16px;
-  }
-
-  /* Overlay menu */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .menu {
-    width: 90%;
-    max-width: 320px;
-    background: #111;
-    padding: 20px;
-    border-radius: 14px;
-  }
-
-  select {
-    width: 100%;
-    font-size: 18px;
-    padding: 10px;
-    margin-bottom: 12px;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        #999,
+        #999 10px,
+        #b91c1c 10px,
+        #b91c1c 20px
+      );
   }
 </style>
 </head>
@@ -126,94 +88,105 @@
       <div class="card-face back"></div>
     </div>
   </div>
-
-  <div class="controls">
-    <button onclick="shuffleCard()">Shuffle</button>
-    <button onclick="openMenu()">Choose</button>
-  </div>
-</div>
-
-<div id="overlay" class="overlay">
-  <div class="menu">
-    <select id="valueSelect">
-      <option value="">Value</option>
-    </select>
-    <select id="suitSelect">
-      <option value="">Suit</option>
-    </select>
-    <button style="width:100%;" onclick="confirmCard()">Confirm</button>
-  </div>
 </div>
 
 <script>
-const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K","Joker"];
-const suits = [
-  { symbol:"♠", color:"black", name:"Spades" },
-  { symbol:"♥", color:"red", name:"Hearts" },
-  { symbol:"♦", color:"red", name:"Diamonds" },
-  { symbol:"♣", color:"black", name:"Clubs" }
+/* Wake Lock */
+if ("wakeLock" in navigator) {
+  navigator.wakeLock.request("screen").catch(()=>{});
+}
+
+/* Card data */
+const valueGrid = [
+  ["A","2","3"],
+  ["4","5","6"],
+  ["7","8","9"],
+  ["10","J","Q"],
+  ["K","RANDOM","JOKER"]
 ];
 
-let currentCard = null;
-let faceUp = false;
-
-const front = document.getElementById("front");
-const card = document.getElementById("card");
-const overlay = document.getElementById("overlay");
-const valueSelect = document.getElementById("valueSelect");
-const suitSelect = document.getElementById("suitSelect");
-
-values.forEach(v => {
-  const o = document.createElement("option");
-  o.value = v;
-  o.textContent = v;
-  valueSelect.appendChild(o);
-});
-
-suits.forEach(s => {
-  const o = document.createElement("option");
-  o.value = s.symbol;
-  o.textContent = s.name;
-  suitSelect.appendChild(o);
-});
-
-valueSelect.onchange = () => {
-  suitSelect.disabled = valueSelect.value === "Joker";
+const suits = {
+  up:    { symbol:"♣", color:"black" },
+  right: { symbol:"♥", color:"red"   },
+  down:  { symbol:"♠", color:"black" },
+  left:  { symbol:"♦", color:"red"   }
 };
 
-function openMenu() {
-  overlay.style.display = "flex";
-}
+let chosenSuit = null;
+let faceUp = false;
+let currentCard = null;
 
-function confirmCard() {
-  const v = valueSelect.value;
-  if (!v) return;
+/* Touch tracking */
+let startX = 0;
+let startY = 0;
+let suitLocked = false;
 
-  if (v === "Joker") {
-    currentCard = { label:"🃏", color:"black" };
+const card = document.getElementById("card");
+const front = document.getElementById("front");
+
+/* Capture drag for suit */
+document.body.addEventListener("touchstart", e => {
+  const t = e.touches[0];
+  startX = t.clientX;
+  startY = t.clientY;
+});
+
+document.body.addEventListener("touchend", e => {
+  if (suitLocked) return;
+
+  const t = e.changedTouches[0];
+  const dx = t.clientX - startX;
+  const dy = t.clientY - startY;
+
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    chosenSuit = dx > 0 ? suits.right : suits.left;
   } else {
-    const s = suits.find(x => x.symbol === suitSelect.value);
-    if (!s) return;
-    currentCard = { label: v + s.symbol, color: s.color };
+    chosenSuit = dy < 0 ? suits.up : suits.down;
   }
 
-  faceUp = false;
-  updateCard();
-  overlay.style.display = "none";
-}
+  suitLocked = true;
+});
 
-function shuffleCard() {
-  const v = values[Math.floor(Math.random() * values.length)];
-  if (v === "Joker") {
+/* Tap card = select value + flip */
+card.addEventListener("click", e => {
+  if (faceUp) {
+    faceUp = false;
+    updateCard();
+    return;
+  }
+
+  const rect = card.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  const col = Math.floor(x / (rect.width / 3));
+  const row = Math.floor(y / (rect.height / 5));
+
+  let value = valueGrid[row]?.[col];
+  if (!value) return;
+
+  if (value === "RANDOM") {
+    const allValues = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    value = allValues[Math.floor(Math.random()*allValues.length)];
+  }
+
+  if (value === "JOKER") {
     currentCard = { label:"🃏", color:"black" };
   } else {
-    const s = suits[Math.floor(Math.random() * suits.length)];
-    currentCard = { label: v + s.symbol, color: s.color };
+    if (!chosenSuit) return;
+    currentCard = {
+      label: value + chosenSuit.symbol,
+      color: chosenSuit.color
+    };
   }
-  faceUp = false;
-  updateCard();
-}
 
+  faceUp = true;
+  updateCard();
+});
+
+/* Render */
 function updateCard() {
   if (faceUp && currentCard) {
     front.textContent = currentCard.label;
@@ -223,11 +196,6 @@ function updateCard() {
   }
   card.classList.toggle("face-up", faceUp);
 }
-
-card.onclick = () => {
-  faceUp = !faceUp;
-  updateCard();
-};
 </script>
 
 </body>
