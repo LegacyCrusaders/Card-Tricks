@@ -21,7 +21,6 @@
       margin-bottom: 8px;
       line-height: 1.2;
       margin-top: 0;
-      cursor: pointer;
       user-select: none;
     }
     h1 span {
@@ -33,20 +32,6 @@
       color: #555;
       margin-bottom: 12px;
       font-style: italic;
-    }
-    #stackDisplay {
-      font-family: monospace;
-      font-size: 14px;
-      background: #fff;
-      border: 1px solid #ccc;
-      padding: 12px;
-      margin-bottom: 20px;
-      max-height: 160px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      display: none;
-      user-select: text;
-      line-height: 1.3;
     }
     .input-area {
       display: flex;
@@ -145,8 +130,6 @@
     An ever updating data set on the commonality of named card and number combinations and the probability of it being at their position.
   </div>
 
-  <div id="stackDisplay"></div>
-
   <div class="input-area">
     <div class="dropdowns">
       <div class="controls">
@@ -172,7 +155,7 @@
 
   <script>
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycby3IIZk26_giu6v6EEO42QA2ogTFPE1S3oboRRhTDb2_ZjWDjL4UuhRGL20WtGgoNOukA/exec';
-    
+
     const mnemonicaStack = [
       "4♣","2♦","7♦","3♣","9♠","Q♦","6♠","5♠","Q♣","2♠",
       "J♦","8♣","3♠","7♣","5♥","10♠","K♦","2♣","3♥","8♠",
@@ -180,14 +163,6 @@
       "3♦","8♥","6♣","10♥","9♣","4♥","Q♠","A♥","7♠","8♦",
       "A♠","9♦","K♣","6♥","Q♥","2♥","7♥","5♦","4♦","A♦",
       "J♣","J♠"
-    ];
-
-    // Si Stebbins order for conversion
-    const sistebbinsOrder = [
-      'A♣','4♥','7♠','10♦','K♣','3♥','6♠','9♦','Q♣','2♥','5♠','8♦','J♣',
-      'A♥','4♠','7♦','10♣','K♥','3♠','6♦','9♣','Q♥','2♠','5♦','8♣','J♥',
-      'A♠','4♦','7♣','10♥','K♠','3♦','6♣','9♥','Q♠','2♦','5♣','8♥','J♠',
-      'A♦','4♣','7♥','10♠','K♦','3♣','6♥','9♠','Q♦','2♣','5♥','8♠','J♦'
     ];
 
     const cardToPosition = Object.fromEntries(mnemonicaStack.map((c, i) => [c, i + 1]));
@@ -199,131 +174,29 @@
     const loadingDiv = document.getElementById('loading');
     const cardDisplay = document.getElementById('cardDisplay');
     const submitBtn = document.getElementById('submitBtn');
-    const stackDisplay = document.getElementById('stackDisplay');
-    const title = document.getElementById('title');
 
     let clickCount = 0;
     let lastCardSelected = false;
     let lastNumberSelected = false;
     let stats = {};
-    let titleClicks = [];
-    let qrClicks = [];
-    let cardDisplayClicks = [];
     let updateTimeout;
-    let lastReceivedData = null;
-    let userHasChangedAfterUpdate = false;
-    let isFaceDown = false;
-    let testMode = false; // Bypass face-down check for testing
 
-    // Device orientation detection
-    function handleOrientation(e) {
-      const beta = e.beta; // Front-to-back tilt
-      
-      console.log('Orientation beta:', beta, 'isFaceDown:', isFaceDown);
-      
-      if (Math.abs(beta) > 150) {
-        if (!isFaceDown) {
-          console.log('Phone turned FACE DOWN');
-        }
-        isFaceDown = true;
-      } else if (Math.abs(beta) < 30) {
-        if (isFaceDown) {
-          console.log('Phone turned FACE UP');
-        }
-        isFaceDown = false;
-      }
-    }
-
-    // Si Stebbins conversion functions
-    function getPreviousSistebbinsCard(card) {
-      const index = sistebbinsOrder.indexOf(card);
-      if (index === -1) return card; // Not found, return same card
-      if (index === 0) return sistebbinsOrder[51]; // Wrap to end
-      return sistebbinsOrder[index - 1];
-    }
-
-    function getAdjustedNumber(number) {
-      const num = parseInt(number);
-      if (num <= 13) {
-        return num + 39; // 1→40, 13→52
-      } else {
-        return num - 13; // 14→1, 52→39
-      }
-    }
-
-    // Check for spectator data
-    async function checkForSpectatorData() {
-      console.log('Checking for spectator data... isFaceDown:', isFaceDown, 'testMode:', testMode);
-      
-      if (!isFaceDown && !testMode) {
-        console.log('Phone not face down and not in test mode, skipping update');
-        return; // Only update when face down or in test mode
-      }
-      
+    // Send data to Google Sheets
+    async function sendToSheet(card, number) {
       try {
-        const response = await fetch(SHEET_URL);
-        const data = await response.json();
-        
-        console.log('Received data from sheet:', data);
-        
-        if (data.current && data.current.card && data.current.number) {
-          const spectatorCard = data.current.card;
-          const spectatorNumber = data.current.number;
-          
-          console.log('Spectator chose:', spectatorCard, 'at', spectatorNumber);
-          
-          // Check if this is new data
-          const dataKey = `${spectatorCard}-${spectatorNumber}`;
-          if (lastReceivedData !== dataKey) {
-            lastReceivedData = dataKey;
-            userHasChangedAfterUpdate = false;
-            
-            // Convert to Si Stebbins code
-            const codedCard = getPreviousSistebbinsCard(spectatorCard);
-            const codedNumber = getAdjustedNumber(spectatorNumber);
-            
-            console.log('Updating to coded values:', codedCard, codedNumber);
-            
-            // Update dropdowns
-            cardSelect.value = codedCard;
-            numberSelect.value = codedNumber;
-            updateCardDisplay(codedCard);
-            updateResultDisplay(codedCard, codedNumber);
-          } else {
-            console.log('Same data as before, not updating');
-          }
-        } else {
-          console.log('No valid data in sheet yet');
-        }
+        await fetch(SHEET_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            card: card,
+            number: parseInt(number)
+          })
+        });
       } catch (error) {
-        console.error('Error fetching spectator data:', error);
-      }
-    }
-
-    // Show history popup (triple-click QR)
-    async function showHistory() {
-      try {
-        const response = await fetch(SHEET_URL);
-        const data = await response.json();
-        
-        if (data.history && data.history.length > 0) {
-          const entries = data.history.slice(-3).reverse(); // Get last 3, newest first
-          let historyText = 'SPECTATOR ENTRIES:\n\n';
-          
-          entries.forEach((entry, index) => {
-            const position = entries.length - index;
-            const ordinal = position === 1 ? '1st' : position === 2 ? '2nd' : '3rd';
-            historyText += `${ordinal}: ${entry.card}, ${entry.number}\n`;
-          });
-          
-          stackDisplay.textContent = historyText;
-          stackDisplay.style.display = 'block';
-        } else {
-          stackDisplay.textContent = 'No spectator entries yet.';
-          stackDisplay.style.display = 'block';
-        }
-      } catch (error) {
-        console.error('Error fetching history:', error);
+        console.error('Error sending to sheet:', error);
       }
     }
 
@@ -335,7 +208,6 @@
         numberSelect.appendChild(opt);
       }
       
-      // Natural card order: A-K for each suit (Clubs, Hearts, Spades, Diamonds)
       const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
       const suits = [
         {symbol: '♣', isRed: false},
@@ -388,83 +260,77 @@
     function randomizeCard(force = false) {
       let card;
       if (force && lastNumberSelected) {
+        // FORCE: Give the card at the selected position
         card = numberToCard[numberSelect.value];
         lastNumberSelected = false;
       } else {
+        // Random card from stack
         card = mnemonicaStack[Math.floor(Math.random() * 52)];
         lastCardSelected = true;
       }
       cardSelect.value = card;
       updateCardDisplay(card);
       updateResultDisplay(card, numberSelect.value);
-      userHasChangedAfterUpdate = true;
+      
+      // Send to sheet
+      sendToSheet(card, numberSelect.value);
     }
 
     function randomizeNumber(force = false) {
       let number;
       if (force && lastCardSelected) {
+        // FORCE: Give the position of the selected card
         number = cardToPosition[cardSelect.value];
         lastCardSelected = false;
       } else {
+        // Random number
         number = Math.floor(Math.random() * 52) + 1;
         lastNumberSelected = true;
       }
       numberSelect.value = number;
       updateResultDisplay(cardSelect.value, number);
-      userHasChangedAfterUpdate = true;
+      
+      // Send to sheet
+      sendToSheet(cardSelect.value, number);
     }
 
     cardSelect.addEventListener('change', () => {
       lastCardSelected = true;
       updateCardDisplay(cardSelect.value);
-      stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
-      userHasChangedAfterUpdate = true;
+      
+      // Send to sheet on every change
+      sendToSheet(cardSelect.value, numberSelect.value);
     });
 
     numberSelect.addEventListener('change', () => {
       lastNumberSelected = true;
-      stackDisplay.style.display = 'none';
       updateResultDisplay(cardSelect.value, numberSelect.value);
-      userHasChangedAfterUpdate = true;
+      
+      // Send to sheet on every change
+      sendToSheet(cardSelect.value, numberSelect.value);
     });
 
     document.getElementById('randomCardBtn').onclick = () => randomizeCard(true);
     document.getElementById('randomNumberBtn').onclick = () => randomizeNumber(true);
 
     cardDisplay.onclick = () => {
-      // Check for triple-click to toggle test mode
-      const now = Date.now();
-      cardDisplayClicks = cardDisplayClicks.filter(t => now - t < 700);
-      cardDisplayClicks.push(now);
-      
-      if (cardDisplayClicks.length >= 3) {
-        testMode = !testMode;
-        console.log('TEST MODE:', testMode ? 'ENABLED (auto-update without face-down)' : 'DISABLED (requires face-down)');
-        if (testMode) {
-          resultDiv.textContent = '🔧 TEST MODE ENABLED';
-          setTimeout(() => {
-            updateResultDisplay(cardSelect.value, numberSelect.value);
-          }, 1000);
-        }
-        cardDisplayClicks = [];
-        return;
-      }
-      
-      // Normal click behavior
       clickCount++;
       if (clickCount % 3 === 0) {
+        // Every 3rd click: give matching card/number from stack
         const i = Math.floor(Math.random() * 52);
         cardSelect.value = mnemonicaStack[i];
         numberSelect.value = i + 1;
         updateCardDisplay(mnemonicaStack[i]);
         updateResultDisplay(mnemonicaStack[i], i + 1, true);
       } else {
+        // Otherwise randomize both
         randomizeCard();
         randomizeNumber();
       }
-      stackDisplay.style.display = 'none';
-      userHasChangedAfterUpdate = true;
+      
+      // Send to sheet
+      sendToSheet(cardSelect.value, numberSelect.value);
     };
 
     submitBtn.onclick = () => {
@@ -474,75 +340,25 @@
       if (!(key in stats)) stats[key] = getLikelihood(card, number);
       stats[key] = Math.min(5, +(stats[key] + (Math.random() < 0.5 ? 0.01 : 0.02)).toFixed(2));
       updateResultDisplay(card, number, false, stats[key]);
+      
+      // Also send to sheet on submit
+      sendToSheet(card, number);
     };
 
-    // Triple-click title to show Mnemonica stack (TOGGLE)
-    title.addEventListener('click', () => {
-      const now = Date.now();
-      titleClicks = titleClicks.filter(t => now - t < 700);
-      titleClicks.push(now);
-      if (titleClicks.length >= 3) {
-        if (stackDisplay.style.display === 'block') {
-          // Already showing - close it
-          stackDisplay.style.display = 'none';
-        } else {
-          // Not showing - show stack
-          stackDisplay.textContent = mnemonicaStack.map((c, i) => `${i + 1}: ${c}`).join('\n');
-          stackDisplay.style.display = 'block';
-        }
-        titleClicks = [];
-      }
-    });
-
-    // Triple-click QR to show spectator history (TOGGLE)
-    document.getElementById('qrContainer').addEventListener('click', () => {
-      const now = Date.now();
-      qrClicks = qrClicks.filter(t => now - t < 700);
-      qrClicks.push(now);
-      if (qrClicks.length >= 3) {
-        if (stackDisplay.style.display === 'block') {
-          // Already showing - close it
-          stackDisplay.style.display = 'none';
-        } else {
-          // Not showing - show history
-          showHistory();
-        }
-        qrClicks = [];
-      }
-    });
-
-    // Request device orientation permission and start monitoring
-    async function initOrientation() {
-      // Request wake lock to prevent screen from sleeping
+    // Request wake lock
+    async function initWakeLock() {
       try {
         if ('wakeLock' in navigator) {
           const wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Wake lock acquired');
           
-          // Re-acquire wake lock if it's released
           wakeLock.addEventListener('release', async () => {
-            console.log('Wake lock released, re-acquiring...');
             if ('wakeLock' in navigator) {
               await navigator.wakeLock.request('screen');
             }
           });
         }
       } catch (err) {
-        console.log('Wake lock not available:', err);
-      }
-
-      // Request orientation permission
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        try {
-          const permission = await DeviceOrientationEvent.requestPermission();
-          if (permission === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-          }
-        } catch (err) {
-          console.log('Orientation permission denied');
-        }
-      } else {
-        window.addEventListener('deviceorientation', handleOrientation);
+        console.log('Wake lock not available');
       }
     }
 
@@ -553,13 +369,10 @@
     updateCardDisplay(mnemonicaStack[start]);
     updateResultDisplay(cardSelect.value, numberSelect.value);
 
-    // Start checking for spectator data every 2 seconds
-    setInterval(checkForSpectatorData, 2000);
-    
-    // Initialize orientation and wake lock on first user interaction
-    document.body.addEventListener('click', initOrientation, { once: true });
+    // Initialize wake lock on first click
+    document.body.addEventListener('click', initWakeLock, { once: true });
 
-    // Generate QR code pointing to stat2.html
+    // Generate QR code pointing to stat2.html (spectators share among themselves)
     new QRCode(document.getElementById("qrContainer"), {
       text: "https://legacycrusaders.github.io/Card-Tricks/stat2.html",
       width: 180,
