@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Playing Card Demo</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .container {
+    text-align: center;
+  }
+
+  .card {
+    width: 140px;
+    height: 200px;
+    border-radius: 12px;
+    border: 2px solid #111;
+    background: white;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    margin: 20px auto;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+
+  .card.red {
+    color: #b91c1c;
+  }
+
+  .card.back {
+    background: repeating-linear-gradient(
+      45deg,
+      #1e293b,
+      #1e293b 10px,
+      #334155 10px,
+      #334155 20px
+    );
+    color: transparent;
+  }
+
+  select, button {
+    font-size: 16px;
+    padding: 6px 10px;
+    margin: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div id="card" class="card back"></div>
+
+  <div>
+    <select id="cardSelect"></select>
+  </div>
+
+  <div>
+    <button onclick="shuffleCard()">Shuffle</button>
+    <button onclick="flipCard()">Flip</button>
+  </div>
+</div>
+
+<script>
+const suits = [
+  { symbol: "♠", color: "black", name: "Spades" },
+  { symbol: "♥", color: "red", name: "Hearts" },
+  { symbol: "♦", color: "red", name: "Diamonds" },
+  { symbol: "♣", color: "black", name: "Clubs" }
+];
+
+const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+
+let deck = [];
+let currentCard = null;
+let faceUp = false;
+
+function buildDeck() {
+  deck = [];
+  suits.forEach(suit => {
+    values.forEach(value => {
+      deck.push({
+        label: value + suit.symbol,
+        color: suit.color,
+        name: `${value} of ${suit.name}`
+      });
+    });
+  });
+}
+
+function populateDropdown() {
+  const select = document.getElementById("cardSelect");
+  select.innerHTML = "";
+  deck.forEach((card, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = card.name;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", () => {
+    currentCard = deck[select.value];
+    faceUp = true;
+    renderCard();
+  });
+}
+
+function shuffleCard() {
+  const index = Math.floor(Math.random() * deck.length);
+  currentCard = deck[index];
+  faceUp = true;
+  document.getElementById("cardSelect").value = index;
+  renderCard();
+}
+
+function flipCard() {
+  faceUp = !faceUp;
+  renderCard();
+}
+
+function renderCard() {
+  const cardDiv = document.getElementById("card");
+  if (!faceUp || !currentCard) {
+    cardDiv.className = "card back";
+    cardDiv.textContent = "";
+    return;
+  }
+
+  cardDiv.className = "card " + (currentCard.color === "red" ? "red" : "");
+  cardDiv.textContent = currentCard.label;
+}
+
+buildDeck();
+populateDropdown();
+shuffleCard();
+
+document.getElementById("card").addEventListener("click", flipCard);
+</script>
+
+</body>
+</html>
