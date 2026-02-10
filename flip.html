@@ -17,12 +17,7 @@
     justify-content: center;
     align-items: center;
     touch-action: none;
-  }
-
-  .app {
-    width: 100%;
-    max-width: 390px;
-    text-align: center;
+    flex-direction: column;
   }
 
   .scene {
@@ -30,7 +25,7 @@
     max-width: 190px;
     aspect-ratio: 7 / 10;
     perspective: 900px;
-    margin: 30px auto;
+    margin: 20px auto;
   }
 
   .card {
@@ -39,6 +34,7 @@
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.55s ease;
+    border-radius: 14px;
   }
 
   .card.face-up {
@@ -80,44 +76,54 @@
 
   .controls {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+    width: 95%;
+    max-width: 380px;
+  }
+
+  .btn-row {
+    display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-top: 12px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   button {
     background: #111;
     color: white;
     border: 1px solid #333;
-    padding: 10px 14px;
-    border-radius: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
     font-size: 16px;
+    flex: 1 1 20%;
+    min-width: 40px;
   }
 </style>
 </head>
 <body>
 
-<div class="app">
-  <div class="scene">
-    <div id="card" class="card">
-      <div id="front" class="card-face front"></div>
-      <div class="card-face back"></div>
-    </div>
+<div class="scene">
+  <div id="card" class="card">
+    <div id="front" class="card-face front"></div>
+    <div class="card-face back"></div>
   </div>
+</div>
 
-  <div class="controls">
+<div class="controls">
+  <div class="btn-row" id="value-buttons"></div>
+  <div class="btn-row" id="suit-buttons"></div>
+  <div class="btn-row">
     <button onclick="shuffleCard()">Shuffle</button>
-    <button onclick="chooseCard()">Choose</button>
   </div>
 </div>
 
 <script>
 /* Wake Lock */
-if ("wakeLock" in navigator) {
-  navigator.wakeLock.request("screen").catch(()=>{});
-}
+if ("wakeLock" in navigator) navigator.wakeLock.request("screen").catch(()=>{});
 
-/* Value Grid */
+/* Card grid mapping for tap zones */
 const valueGrid = [
   ["A","2","3"],
   ["4","5","6"],
@@ -126,16 +132,16 @@ const valueGrid = [
   ["K","RANDOM","JOKER"]
 ];
 
-/* Suits mapped to drag directions */
+/* Suits mapping */
 const suits = {
-  up:    { symbol:"♣", color:"black" },
-  right: { symbol:"♥", color:"red"   },
-  down:  { symbol:"♠", color:"black" },
-  left:  { symbol:"♦", color:"red"   }
+  "♣": {symbol:"♣", color:"black"},
+  "♥": {symbol:"♥", color:"red"},
+  "♠": {symbol:"♠", color:"black"},
+  "♦": {symbol:"♦", color:"red"}
 };
 
-let currentCard = null; // set by shuffle or choose
-let chosenSuit = null;  // set by drag
+let currentCard = null;       // The card to reveal (from shuffle or choose)
+let chosenSuit = suits["♥"];  // Default to Hearts
 let faceUp = false;
 
 let startX=0, startY=0, suitLocked=false;
@@ -143,7 +149,48 @@ let startX=0, startY=0, suitLocked=false;
 const card = document.getElementById("card");
 const front = document.getElementById("front");
 
-/* Track drag for suit */
+/* Create value buttons A-K + Joker */
+const valueContainer = document.getElementById("value-buttons");
+const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K","JOKER"];
+values.forEach(v=>{
+  const b = document.createElement("button");
+  b.textContent = v;
+  b.onclick = ()=>selectValue(v);
+  valueContainer.appendChild(b);
+});
+
+/* Create suit buttons C/H/S/D */
+const suitContainer = document.getElementById("suit-buttons");
+const suitSymbols = ["♣","♥","♠","♦"];
+suitSymbols.forEach(s=>{
+  const b = document.createElement("button");
+  b.textContent = s;
+  b.onclick = ()=>{ chosenSuit = suits[s]; suitLocked=true; };
+  suitContainer.appendChild(b);
+});
+
+/* Select value from buttons (sets currentCard, flips) */
+function selectValue(val){
+  if(val==="JOKER") currentCard={label:"🃏", color:"black"};
+  else{
+    currentCard={label:val+chosenSuit.symbol, color:chosenSuit.color};
+  }
+  faceUp=true;
+  updateCard();
+}
+
+/* Shuffle assigns a random card for Random zone */
+function shuffleCard(){
+  const allValues = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const value = allValues[Math.floor(Math.random()*allValues.length)];
+  const suitKeys = Object.keys(suits);
+  const suit = suits[suitKeys[Math.floor(Math.random()*suitKeys.length)]];
+  currentCard = { label:value+suit.symbol, color:suit.color };
+  faceUp=false;
+  updateCard();
+}
+
+/* Drag anywhere to override suit */
 document.body.addEventListener("touchstart", e=>{
   const t = e.touches[0];
   startX = t.clientX;
@@ -156,68 +203,31 @@ document.body.addEventListener("touchend", e=>{
   const t = e.changedTouches[0];
   const dx = t.clientX - startX;
   const dy = t.clientY - startY;
+  if(Math.abs(dx)<20 && Math.abs(dy)<20) return;
 
-  if (Math.abs(dx)<20 && Math.abs(dy)<20) return; // too small, ignore
-
-  if (Math.abs(dx)>Math.abs(dy)) chosenSuit = dx>0?suits.right:suits.left;
-  else chosenSuit = dy<0?suits.up:suits.down;
-
-  suitLocked = true;
+  if(Math.abs(dx)>Math.abs(dy)) chosenSuit = dx>0?suits["♥"]:suits["♦"];
+  else chosenSuit = dy<0?suits["♣"]:suits["♠"];
+  suitLocked=true;
 });
 
-/* Shuffle assigns a random card (for RANDOM tap zone) */
-function shuffleCard(){
-  const allValues = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-  const value = allValues[Math.floor(Math.random()*allValues.length)];
-  const suitKeys = Object.keys(suits);
-  const suit = suits[suitKeys[Math.floor(Math.random()*suitKeys.length)]];
-  currentCard = { label:value+suit.symbol, color:suit.color };
-  faceUp=false;
-  updateCard();
-}
-
-/* Choose menu (simplified prompt version for demonstration) */
-function chooseCard(){
-  const val = prompt("Enter value (A-10,J,Q,K,JOKER):");
-  if(!val) return;
-  let chosenVal = val.toUpperCase();
-
-  if(chosenVal === "JOKER") currentCard={label:"🃏", color:"black"};
-  else {
-    let suitPrompt = prompt("Enter suit (♠,♥,♦,♣) or leave blank:");
-    let suitObj = Object.values(suits).find(s=>s.symbol===suitPrompt);
-    if(!suitObj) suitObj = {symbol:"♠", color:"black"}; // default
-    currentCard={label:chosenVal+suitObj.symbol, color:suitObj.color};
-  }
-
-  faceUp=false;
-  updateCard();
-}
-
-/* Tap card to select value and flip */
+/* Tap card to flip. Random zone shows currentCard. */
 card.addEventListener("click", e=>{
-  if(faceUp){
-    faceUp=false;
-    updateCard();
-    return;
-  }
+  if(faceUp){ faceUp=false; updateCard(); return; }
 
   const rect = card.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  const col = Math.floor(x/(rect.width/3));
+  const row = Math.floor(y/(rect.height/5));
 
-  const col = Math.floor(x / (rect.width/3));
-  const row = Math.floor(y / (rect.height/5));
   let value = valueGrid[row]?.[col];
   if(!value) return;
 
   if(value==="RANDOM"){
-    if(!currentCard) return; // no card set yet
-    // just reveal whatever card is currently set (shuffle or choose)
+    if(!currentCard) return; // nothing to reveal
   } else if(value==="JOKER"){
     currentCard={label:"🃏", color:"black"};
   } else {
-    if(!chosenSuit) return; // must drag first to set suit
     currentCard={label:value+chosenSuit.symbol, color:chosenSuit.color};
   }
 
