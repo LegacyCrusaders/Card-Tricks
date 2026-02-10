@@ -19,11 +19,11 @@ body {
 }
 
 .scene {
-  width:70vw;
-  max-width:200px;
+  width:80vw;
+  max-width:300px;
   aspect-ratio:7/10;
   perspective:900px;
-  padding:40px; /* subtle padding for nudges */
+  padding:30px;
   box-sizing:border-box;
 }
 
@@ -48,7 +48,7 @@ body {
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:3rem;
+  font-size:3.5rem;
   border:2px solid #222;
 }
 
@@ -78,9 +78,10 @@ button {
   background:#111;
   color:white;
   border:1px solid #333;
-  padding:10px 14px;
+  padding:10px 12px;
   border-radius:10px;
   font-size:16px;
+  cursor:pointer;
 }
 
 .modal {
@@ -110,7 +111,7 @@ button {
   min-width:40px;
 }
 
-.suit-selected {
+.selected {
   border:2px solid #fff;
 }
 </style>
@@ -132,7 +133,7 @@ button {
 <div id="modal" class="modal">
   <div class="btn-row" id="value-buttons"></div>
   <div class="btn-row" id="suit-buttons"></div>
-  <button onclick="closeModal()">Done</button>
+  <button id="doneBtn">Done</button>
 </div>
 
 <script>
@@ -143,8 +144,9 @@ if("wakeLock" in navigator) navigator.wakeLock.request("screen").catch(()=>{});
 const valueGrid=[["A","2","3"],["4","5","6"],["7","8","9"],["10","J","Q"],["K","RANDOM","JOKER"]];
 const suits={"♣":{symbol:"♣",color:"black"},"♥":{symbol:"♥",color:"red"},"♠":{symbol:"♠",color:"black"},"♦":{symbol:"♦",color:"red"}};
 
-let currentCard=null;   // what is revealed
-let revealCard=null;    // pre-selected from shuffle or choose
+let currentCard=null;   
+let revealCard=null;    
+let chosenValue=null;
 let chosenSuit=suits["♥"]; // default Hearts
 let faceUp=false;
 let suitLocked=false;
@@ -163,7 +165,12 @@ const values=["A","2","3","4","5","6","7","8","9","10","J","Q","K","JOKER"];
 values.forEach(v=>{
   const b=document.createElement("button");
   b.textContent=v;
-  b.onclick=()=>{ selectValue(v); closeModal(); };
+  b.onclick=()=>{
+    chosenValue=v;
+    // highlight selected
+    document.querySelectorAll("#value-buttons button").forEach(btn=>btn.classList.remove("selected"));
+    b.classList.add("selected");
+  };
   valueContainer.appendChild(b);
 });
 
@@ -175,25 +182,25 @@ suitSymbols.forEach(s=>{
   b.onclick=()=>{
     chosenSuit=suits[s];
     suitLocked=true;
-    // highlight selected suit
-    document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("suit-selected"));
-    b.classList.add("suit-selected");
+    // highlight selected
+    document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("selected"));
+    b.classList.add("selected");
   };
-  if(s==="♥") b.classList.add("suit-selected");
+  if(s==="♥") b.classList.add("selected");
   suitContainer.appendChild(b);
 });
 
 // Modal functions
 document.getElementById("chooseBtn").onclick=()=>modal.classList.add("active");
-function closeModal(){ modal.classList.remove("active"); }
-
-// Select value
-function selectValue(val){
-  if(val==="JOKER") currentCard={label:"🃏",color:"black"};
-  else currentCard={label:val+chosenSuit.symbol,color:chosenSuit.color};
-  revealCard=currentCard;
-  faceUp=false;
-  updateCard();
+document.getElementById("doneBtn").onclick=()=>{
+  if(chosenValue){
+    if(chosenValue==="JOKER") currentCard={label:"🃏",color:"black"};
+    else currentCard={label:chosenValue+chosenSuit.symbol,color:chosenSuit.color};
+    revealCard=currentCard;
+    faceUp=false;
+    updateCard();
+    modal.classList.remove("active");
+  }
 }
 
 // Shuffle button
@@ -226,8 +233,8 @@ function handleDragClick(x,y){
   if(Math.abs(dx)>Math.abs(dy)) chosenSuit=dx>0?suits["♥"]:suits["♦"];
   else chosenSuit=dy<0?suits["♣"]:suits["♠"];
   suitLocked=true;
-  document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("suit-selected"));
-  for(const s in suits){ if(suits[s]===chosenSuit) document.querySelectorAll("#suit-buttons button").forEach(btn=>{ if(btn.textContent===s) btn.classList.add("suit-selected"); }); }
+  document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("selected"));
+  for(const s in suits){ if(suits[s]===chosenSuit) document.querySelectorAll("#suit-buttons button").forEach(btn=>{ if(btn.textContent===s) btn.classList.add("selected"); }); }
 }
 
 // Tap card to flip
