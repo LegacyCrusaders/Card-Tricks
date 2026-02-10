@@ -12,10 +12,11 @@ body {
   height:100vh;
   display:flex;
   flex-direction:column;
-  justify-content:center;
+  justify-content:flex-start; /* move card up */
   align-items:center;
   overflow:hidden;
   touch-action:none;
+  padding-top:30px; /* extra top space */
 }
 
 .scene {
@@ -25,6 +26,7 @@ body {
   perspective:900px;
   padding:30px; /* padding for drag zones */
   box-sizing:border-box;
+  margin-bottom:20px; /* space below card */
 }
 
 .card {
@@ -71,7 +73,8 @@ body {
 .controls {
   display:flex;
   gap:12px;
-  margin-top:12px;
+  margin-top:auto; /* push down */
+  margin-bottom:30px; /* space for bottom drag */
 }
 
 button {
