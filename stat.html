@@ -141,6 +141,27 @@
       justify-content: center;
       margin-top: 30px;
     }
+    #debugPanel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.9);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+    }
+    #debugPanel.show {
+      display: block;
+    }
+    #debugPanel div {
+      margin: 2px 0;
+    }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -187,6 +208,8 @@
     <div id="qrContainer"></div>
   </div>
 
+  <div id="debugPanel"></div>
+
   <script>
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycby3IIZk26_giu6v6EEO42QA2ogTFPE1S3oboRRhTDb2_ZjWDjL4UuhRGL20WtGgoNOukA/exec';
     
@@ -230,6 +253,27 @@
     let pendingUpdate = null; // Stores update to apply when face up
     let isFaceDown = false;
     let wasFaceDown = false;
+    let debugLogs = [];
+
+    // Debug logging function (shows on screen)
+    function debugLog(message) {
+      console.log(message); // Still log to console
+      const panel = document.getElementById('debugPanel');
+      const now = new Date().toLocaleTimeString();
+      debugLogs.push(`[${now}] ${message}`);
+      if (debugLogs.length > 20) debugLogs.shift(); // Keep last 20
+      panel.innerHTML = debugLogs.map(log => `<div>${log}</div>`).join('');
+      panel.scrollTop = panel.scrollHeight; // Auto-scroll to bottom
+    }
+
+    // Toggle debug panel with triple-click on description
+    document.getElementById('description').addEventListener('click', () => {
+      const panel = document.getElementById('debugPanel');
+      panel.classList.toggle('show');
+      if (panel.classList.contains('show')) {
+        debugLog('Debug panel enabled');
+      }
+    });
 
     // Device orientation detection
     function handleOrientation(e) {
@@ -239,7 +283,7 @@
       
       if (Math.abs(beta) > 150) {
         if (!isFaceDown) {
-          console.log('[ORIENTATION] Phone turned FACE DOWN (beta:', beta, ')');
+          debugLog(`[ORI] FACE DOWN (beta: ${beta.toFixed(1)})`);
         }
         isFaceDown = true;
         wasFaceDown = true;
@@ -249,10 +293,10 @@
         
         // Just turned face up - apply pending update
         if (wasDown && pendingUpdate) {
-          console.log('[ORIENTATION] Phone turned FACE UP - applying pending update!');
+          debugLog('[ORI] FACE UP - Applying update!');
           applyPendingUpdate();
         } else if (wasDown) {
-          console.log('[ORIENTATION] Phone turned FACE UP (no pending update)');
+          debugLog('[ORI] FACE UP (no update pending)');
         }
       }
     }
@@ -277,13 +321,13 @@
     // Apply pending update when phone turns face up
     function applyPendingUpdate() {
       if (!pendingUpdate) {
-        console.log('[SYNC] No pending update to apply');
+        debugLog('[SYNC] No pending update');
         return;
       }
       
       const { codedCard, codedNumber } = pendingUpdate;
       
-      console.log('[SYNC] APPLYING UPDATE:', codedCard, 'at', codedNumber);
+      debugLog(`[SYNC] APPLYING: ${codedCard} at ${codedNumber}`);
       
       cardSelect.value = codedCard;
       numberSelect.value = codedNumber;
@@ -295,7 +339,7 @@
       document.getElementById('testApplyBtn').style.display = 'none';
       
       pendingUpdate = null;
-      console.log('[SYNC] Update applied!');
+      debugLog('[SYNC] ✓ Update applied');
     }
 
     // Check for spectator data continuously
@@ -304,13 +348,13 @@
         const response = await fetch(SHEET_URL);
         const data = await response.json();
         
-        console.log('[SYNC] Checking Google Sheets...', data);
+        debugLog('[SYNC] Checked sheet');
         
         if (data.current && data.current.card && data.current.number) {
           const spectatorCard = data.current.card;
           const spectatorNumber = data.current.number;
           
-          console.log('[SYNC] Spectator data:', spectatorCard, 'at', spectatorNumber);
+          debugLog(`[SYNC] Found: ${spectatorCard} at ${spectatorNumber}`);
           
           // Check if this is new data
           const dataKey = `${spectatorCard}-${spectatorNumber}`;
@@ -321,8 +365,8 @@
             const codedCard = getPreviousSistebbinsCard(spectatorCard);
             const codedNumber = getAdjustedNumber(spectatorNumber);
             
-            console.log('[SYNC] NEW DATA! Coded as:', codedCard, 'at', codedNumber);
-            console.log('[SYNC] Phone face down:', isFaceDown, '| Was face down:', wasFaceDown);
+            debugLog(`[SYNC] NEW! Coded: ${codedCard} at ${codedNumber}`);
+            debugLog(`[SYNC] FaceDown: ${isFaceDown} | Was: ${wasFaceDown}`);
             
             // Store as pending update
             pendingUpdate = { codedCard, codedNumber };
@@ -333,19 +377,15 @@
             
             // If phone is currently face up and was previously face down, apply immediately
             if (!isFaceDown && wasFaceDown) {
-              console.log('[SYNC] Applying update immediately (phone is face up)');
+              debugLog('[SYNC] Applying immediately (face up)');
               applyPendingUpdate();
             } else {
-              console.log('[SYNC] Update pending - waiting for face up');
+              debugLog('[SYNC] Update pending - waiting for flip');
             }
-          } else {
-            console.log('[SYNC] Same data as before, ignoring');
           }
-        } else {
-          console.log('[SYNC] No data in sheet yet');
         }
       } catch (error) {
-        console.error('[SYNC] Error fetching spectator data:', error);
+        debugLog(`[SYNC] ERROR: ${error.message}`);
       }
     }
 
@@ -502,7 +542,7 @@
 
     // Test button to manually apply pending update
     document.getElementById('testApplyBtn').onclick = () => {
-      console.log('[TEST] Manual apply button clicked');
+      debugLog('[TEST] Manual apply clicked');
       applyPendingUpdate();
       document.getElementById('testApplyBtn').style.display = 'none';
     };
