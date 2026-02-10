@@ -77,6 +77,22 @@
         #b91c1c 20px
       );
   }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  button {
+    background: #111;
+    color: white;
+    border: 1px solid #333;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
 </style>
 </head>
 <body>
@@ -88,6 +104,11 @@
       <div class="card-face back"></div>
     </div>
   </div>
+
+  <div class="controls">
+    <button onclick="shuffleCard()">Shuffle</button>
+    <button onclick="chooseCard()">Choose</button>
+  </div>
 </div>
 
 <script>
@@ -96,7 +117,7 @@ if ("wakeLock" in navigator) {
   navigator.wakeLock.request("screen").catch(()=>{});
 }
 
-/* Card data */
+/* Value Grid */
 const valueGrid = [
   ["A","2","3"],
   ["4","5","6"],
@@ -105,6 +126,7 @@ const valueGrid = [
   ["K","RANDOM","JOKER"]
 ];
 
+/* Suits mapped to drag directions */
 const suits = {
   up:    { symbol:"♣", color:"black" },
   right: { symbol:"♥", color:"red"   },
@@ -112,47 +134,70 @@ const suits = {
   left:  { symbol:"♦", color:"red"   }
 };
 
-let chosenSuit = null;
+let currentCard = null; // set by shuffle or choose
+let chosenSuit = null;  // set by drag
 let faceUp = false;
-let currentCard = null;
 
-/* Touch tracking */
-let startX = 0;
-let startY = 0;
-let suitLocked = false;
+let startX=0, startY=0, suitLocked=false;
 
 const card = document.getElementById("card");
 const front = document.getElementById("front");
 
-/* Capture drag for suit */
-document.body.addEventListener("touchstart", e => {
+/* Track drag for suit */
+document.body.addEventListener("touchstart", e=>{
   const t = e.touches[0];
   startX = t.clientX;
   startY = t.clientY;
 });
 
-document.body.addEventListener("touchend", e => {
+document.body.addEventListener("touchend", e=>{
   if (suitLocked) return;
 
   const t = e.changedTouches[0];
   const dx = t.clientX - startX;
   const dy = t.clientY - startY;
 
-  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+  if (Math.abs(dx)<20 && Math.abs(dy)<20) return; // too small, ignore
 
-  if (Math.abs(dx) > Math.abs(dy)) {
-    chosenSuit = dx > 0 ? suits.right : suits.left;
-  } else {
-    chosenSuit = dy < 0 ? suits.up : suits.down;
-  }
+  if (Math.abs(dx)>Math.abs(dy)) chosenSuit = dx>0?suits.right:suits.left;
+  else chosenSuit = dy<0?suits.up:suits.down;
 
   suitLocked = true;
 });
 
-/* Tap card = select value + flip */
-card.addEventListener("click", e => {
-  if (faceUp) {
-    faceUp = false;
+/* Shuffle assigns a random card (for RANDOM tap zone) */
+function shuffleCard(){
+  const allValues = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const value = allValues[Math.floor(Math.random()*allValues.length)];
+  const suitKeys = Object.keys(suits);
+  const suit = suits[suitKeys[Math.floor(Math.random()*suitKeys.length)]];
+  currentCard = { label:value+suit.symbol, color:suit.color };
+  faceUp=false;
+  updateCard();
+}
+
+/* Choose menu (simplified prompt version for demonstration) */
+function chooseCard(){
+  const val = prompt("Enter value (A-10,J,Q,K,JOKER):");
+  if(!val) return;
+  let chosenVal = val.toUpperCase();
+
+  if(chosenVal === "JOKER") currentCard={label:"🃏", color:"black"};
+  else {
+    let suitPrompt = prompt("Enter suit (♠,♥,♦,♣) or leave blank:");
+    let suitObj = Object.values(suits).find(s=>s.symbol===suitPrompt);
+    if(!suitObj) suitObj = {symbol:"♠", color:"black"}; // default
+    currentCard={label:chosenVal+suitObj.symbol, color:suitObj.color};
+  }
+
+  faceUp=false;
+  updateCard();
+}
+
+/* Tap card to select value and flip */
+card.addEventListener("click", e=>{
+  if(faceUp){
+    faceUp=false;
     updateCard();
     return;
   }
@@ -161,42 +206,33 @@ card.addEventListener("click", e => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
 
-  const col = Math.floor(x / (rect.width / 3));
-  const row = Math.floor(y / (rect.height / 5));
-
+  const col = Math.floor(x / (rect.width/3));
+  const row = Math.floor(y / (rect.height/5));
   let value = valueGrid[row]?.[col];
-  if (!value) return;
+  if(!value) return;
 
-  if (value === "RANDOM") {
-    const allValues = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-    value = allValues[Math.floor(Math.random()*allValues.length)];
-  }
-
-  if (value === "JOKER") {
-    currentCard = { label:"🃏", color:"black" };
+  if(value==="RANDOM"){
+    if(!currentCard) return; // no card set yet
+    // just reveal whatever card is currently set (shuffle or choose)
+  } else if(value==="JOKER"){
+    currentCard={label:"🃏", color:"black"};
   } else {
-    if (!chosenSuit) return;
-    currentCard = {
-      label: value + chosenSuit.symbol,
-      color: chosenSuit.color
-    };
+    if(!chosenSuit) return; // must drag first to set suit
+    currentCard={label:value+chosenSuit.symbol, color:chosenSuit.color};
   }
 
-  faceUp = true;
+  faceUp=true;
   updateCard();
 });
 
-/* Render */
-function updateCard() {
-  if (faceUp && currentCard) {
+/* Render card */
+function updateCard(){
+  if(faceUp && currentCard){
     front.textContent = currentCard.label;
-    front.className = "card-face front " + (currentCard.color === "red" ? "red" : "");
-  } else {
-    front.textContent = "";
-  }
+    front.className = "card-face front "+(currentCard.color==="red"?"red":"");
+  } else front.textContent="";
   card.classList.toggle("face-up", faceUp);
 }
 </script>
-
 </body>
 </html>
