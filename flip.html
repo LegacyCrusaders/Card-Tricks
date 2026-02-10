@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>3D Playing Card</title>
+<title>3D Card</title>
 <style>
   body {
-    font-family: system-ui, sans-serif;
-    background: #0f172a;
+    margin: 0;
+    background: black;
     color: white;
+    font-family: system-ui, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -64,17 +65,41 @@
   .back {
     background: repeating-linear-gradient(
       45deg,
-      #1e293b,
-      #1e293b 10px,
-      #334155 10px,
-      #334155 20px
+      #111,
+      #111 10px,
+      #222 10px,
+      #222 20px
     );
   }
 
-  select, button {
+  button {
     font-size: 16px;
-    padding: 6px 10px;
-    margin: 6px;
+    padding: 8px 14px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+  /* Popup menu */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .menu {
+    background: #111;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  select {
+    font-size: 16px;
+    margin: 8px;
+    padding: 6px;
   }
 </style>
 </head>
@@ -83,22 +108,34 @@
 <div class="container">
   <div class="scene">
     <div id="card" class="card">
-      <div class="card-face front" id="front"></div>
+      <div id="front" class="card-face front"></div>
       <div class="card-face back"></div>
     </div>
   </div>
 
-  <div>
-    <select id="cardSelect"></select>
-  </div>
+  <button onclick="openMenu()">Choose Card</button>
+</div>
 
-  <div>
-    <button onclick="shuffleCard()">Shuffle</button>
-    <button onclick="flipCard()">Flip</button>
+<div id="overlay" class="overlay">
+  <div class="menu">
+    <div>
+      <select id="valueSelect">
+        <option value="">Value</option>
+      </select>
+    </div>
+    <div>
+      <select id="suitSelect">
+        <option value="">Suit</option>
+      </select>
+    </div>
+    <div>
+      <button onclick="confirmCard()">Confirm</button>
+    </div>
   </div>
 </div>
 
 <script>
+const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K","Joker"];
 const suits = [
   { symbol: "♠", color: "black", name: "Spades" },
   { symbol: "♥", color: "red", name: "Hearts" },
@@ -106,47 +143,52 @@ const suits = [
   { symbol: "♣", color: "black", name: "Clubs" }
 ];
 
-const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-
-let deck = [];
 let currentCard = null;
 let faceUp = false;
 
-function buildDeck() {
-  deck = [];
-  suits.forEach(suit => {
-    values.forEach(value => {
-      deck.push({
-        label: value + suit.symbol,
-        color: suit.color,
-        name: `${value} of ${suit.name}`
-      });
-    });
-  });
+const valueSelect = document.getElementById("valueSelect");
+const suitSelect = document.getElementById("suitSelect");
+
+values.forEach(v => {
+  const opt = document.createElement("option");
+  opt.value = v;
+  opt.textContent = v;
+  valueSelect.appendChild(opt);
+});
+
+suits.forEach(s => {
+  const opt = document.createElement("option");
+  opt.value = s.symbol;
+  opt.textContent = s.name;
+  suitSelect.appendChild(opt);
+});
+
+valueSelect.addEventListener("change", () => {
+  suitSelect.disabled = valueSelect.value === "Joker";
+});
+
+function openMenu() {
+  document.getElementById("overlay").style.display = "flex";
 }
 
-function populateDropdown() {
-  const select = document.getElementById("cardSelect");
-  deck.forEach((card, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = card.name;
-    select.appendChild(opt);
-  });
+function confirmCard() {
+  const value = valueSelect.value;
+  if (!value) return;
 
-  select.addEventListener("change", () => {
-    currentCard = deck[select.value];
-    faceUp = true;
-    updateCard();
-  });
-}
+  if (value === "Joker") {
+    currentCard = { label: "🃏", color: "black" };
+  } else {
+    const suit = suits.find(s => s.symbol === suitSelect.value);
+    if (!suit) return;
+    currentCard = {
+      label: value + suit.symbol,
+      color: suit.color
+    };
+  }
 
-function shuffleCard() {
-  const i = Math.floor(Math.random() * deck.length);
-  currentCard = deck[i];
-  document.getElementById("cardSelect").value = i;
-  faceUp = true;
+  faceUp = false;
   updateCard();
+  document.getElementById("overlay").style.display = "none";
 }
 
 function flipCard() {
@@ -158,17 +200,15 @@ function updateCard() {
   const card = document.getElementById("card");
   const front = document.getElementById("front");
 
-  if (!currentCard) return;
-
-  front.textContent = currentCard.label;
-  front.className = "card-face front " + (currentCard.color === "red" ? "red" : "");
+  if (faceUp && currentCard) {
+    front.textContent = currentCard.label;
+    front.className = "card-face front " + (currentCard.color === "red" ? "red" : "");
+  } else {
+    front.textContent = "";
+  }
 
   card.classList.toggle("face-up", faceUp);
 }
-
-buildDeck();
-populateDropdown();
-shuffleCard();
 
 document.getElementById("card").addEventListener("click", flipCard);
 </script>
