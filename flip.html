@@ -24,7 +24,7 @@ body {
   aspect-ratio:7/10;
   perspective:900px;
   margin:30px;
-  padding:20px; /* subtle padding for nudges */
+  padding:40px; /* subtle padding for nudges */
   box-sizing:border-box;
 }
 
@@ -114,7 +114,7 @@ button {
 </head>
 <body>
 
-<div class="scene">
+<div class="scene" id="card-area">
   <div id="card" class="card">
     <div id="front" class="card-face front"></div>
     <div class="card-face back"></div>
@@ -152,7 +152,8 @@ const suits={
   "♦":{symbol:"♦",color:"red"}
 };
 
-let currentCard=null;
+let currentCard=null;     // card chosen or shuffled
+let revealCard=null;      // actual card to reveal on flip
 let chosenSuit=suits["♥"]; // default Hearts
 let faceUp=false;
 
@@ -191,50 +192,69 @@ function closeModal(){ modal.classList.remove("active"); }
 function selectValue(val){
   if(val==="JOKER") currentCard={label:"🃏", color:"black"};
   else currentCard={label:val+chosenSuit.symbol,color:chosenSuit.color};
+  revealCard=currentCard; // set the card to be revealed when flipped
   faceUp=false;
   updateCard();
+  closeModal();
 }
 
-/* Shuffle */
+/* Shuffle pre-selects a random card for reveal on bottom-center */
 function shuffleCard(){
   const allValues=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
   const value=allValues[Math.floor(Math.random()*allValues.length)];
   const suitKeys=Object.keys(suits);
   const suit=suits[suitKeys[Math.floor(Math.random()*suitKeys.length)]];
-  currentCard={label:value+suit.symbol,color:suit.color};
+  revealCard={label:value+suit.symbol,color:suit.color};
   faceUp=false;
   updateCard();
 }
 
-/* Drag anywhere to override suit */
-document.body.addEventListener("touchstart",e=>{
+/* Drag anywhere or click on padding to override suit */
+const cardArea=document.getElementById("card-area");
+cardArea.addEventListener("touchstart",e=>{
   const t=e.touches[0]; startX=t.clientX; startY=t.clientY;
 });
-document.body.addEventListener("touchend",e=>{
+cardArea.addEventListener("touchend",e=>{
   if(suitLocked) return;
   const t=e.changedTouches[0];
-  const dx=t.clientX-startX;
-  const dy=t.clientY-startY;
-  if(Math.abs(dx)<20 && Math.abs(dy)<20) return;
+  handleDragOrClick(t.clientX,t.clientY);
+});
+
+cardArea.addEventListener("mousedown",e=>{
+  if(suitLocked) return;
+  handleDragOrClick(e.clientX,e.clientY);
+});
+
+function handleDragOrClick(x,y){
+  const rect=cardArea.getBoundingClientRect();
+  const dx=x-(rect.left+rect.width/2);
+  const dy=y-(rect.top+rect.height/2);
   if(Math.abs(dx)>Math.abs(dy)) chosenSuit=dx>0?suits["♥"]:suits["♦"];
   else chosenSuit=dy<0?suits["♣"]:suits["♠"];
   suitLocked=true;
-});
+}
 
-/* Tap card to flip; Random zone reveals currentCard */
+/* Tap card to flip; bottom-center "Random" shows revealCard */
 card.addEventListener("click",e=>{
   if(faceUp){ faceUp=false; updateCard(); return; }
+
   const rect=card.getBoundingClientRect();
   const x=e.clientX-rect.left;
   const y=e.clientY-rect.top;
   const col=Math.floor(x/(rect.width/3));
   const row=Math.floor(y/(rect.height/5));
+
   let value=valueGrid[row]?.[col];
   if(!value) return;
-  if(value==="RANDOM"){ if(!currentCard) return; }
-  else if(value==="JOKER"){ currentCard={label:"🃏",color:"black"}; }
+
+  if(value==="RANDOM"){
+    if(!revealCard) return; // nothing to reveal
+    currentCard=revealCard;  // reveal the pre-set card (shuffle or choose)
+  } else if(value==="JOKER"){ currentCard={label:"🃏",color:"black"}; }
   else{ currentCard={label:value+chosenSuit.symbol,color:chosenSuit.color}; }
-  faceUp=true; updateCard();
+
+  faceUp=true;
+  updateCard();
 });
 
 /* Update card display */
