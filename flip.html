@@ -26,7 +26,7 @@ body {
   perspective:900px;
   padding:30px; /* padding for drag zones */
   box-sizing:border-box;
-  margin-bottom:20px; /* space below card */
+  margin-bottom:40px; /* space below card before buttons */
 }
 
 .card {
@@ -73,8 +73,8 @@ body {
 .controls {
   display:flex;
   gap:12px;
-  margin-top:auto; /* push down */
-  margin-bottom:30px; /* space for bottom drag */
+  margin-top:0; /* remove auto so buttons stay visible */
+  margin-bottom:30px; /* extra space at bottom for clicks */
 }
 
 button {
