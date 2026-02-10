@@ -156,6 +156,18 @@
   <script>
     const SHEET_URL = 'https://script.google.com/macros/s/AKfycby3IIZk26_giu6v6EEO42QA2ogTFPE1S3oboRRhTDb2_ZjWDjL4UuhRGL20WtGgoNOukA/exec';
 
+    const mnemonicaStack = [
+      "4♣","2♦","7♦","3♣","9♠","Q♦","6♠","5♠","Q♣","2♠",
+      "J♦","8♣","3♠","7♣","5♥","10♠","K♦","2♣","3♥","8♠",
+      "6♦","5♣","K♠","9♥","A♣","4♠","J♥","10♦","10♣","K♥",
+      "3♦","8♥","6♣","10♥","9♣","4♥","Q♠","A♥","7♠","8♦",
+      "A♠","9♦","K♣","6♥","Q♥","2♥","7♥","5♦","4♦","A♦",
+      "J♣","J♠"
+    ];
+
+    const cardToPosition = Object.fromEntries(mnemonicaStack.map((c, i) => [c, i + 1]));
+    const numberToCard = Object.fromEntries(mnemonicaStack.map((c, i) => [i + 1, c]));
+
     const numberSelect = document.getElementById('numberSelect');
     const cardSelect = document.getElementById('cardSelect');
     const resultDiv = document.getElementById('result');
@@ -163,6 +175,9 @@
     const cardDisplay = document.getElementById('cardDisplay');
     const submitBtn = document.getElementById('submitBtn');
 
+    let clickCount = 0;
+    let lastCardSelected = false;
+    let lastNumberSelected = false;
     let stats = {};
     let updateTimeout;
 
@@ -193,7 +208,6 @@
         numberSelect.appendChild(opt);
       }
       
-      // Natural card order: A-K for each suit (Clubs, Hearts, Spades, Diamonds)
       const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
       const suits = [
         {symbol: '♣', isRed: false},
@@ -221,8 +235,11 @@
 
     function getLikelihood(card, number, alwaysNew = false) {
       const key = `${card}-${number}`;
+      const isCorrect = cardToPosition[card] === parseInt(number);
       if (!(key in stats) || alwaysNew) {
-        stats[key] = +(1 + Math.random() * 4).toFixed(2);
+        stats[key] = isCorrect
+          ? +(0.13 + Math.random() * 0.16).toFixed(2)
+          : +(1 + Math.random() * 4).toFixed(2);
       }
       return stats[key];
     }
@@ -240,13 +257,17 @@
       }, 250);
     }
 
-    function randomizeCard() {
-      const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-      const suits = ['♣', '♥', '♠', '♦'];
-      const randomValue = values[Math.floor(Math.random() * values.length)];
-      const randomSuit = suits[Math.floor(Math.random() * suits.length)];
-      const card = randomValue + randomSuit;
-      
+    function randomizeCard(force = false) {
+      let card;
+      if (force && lastNumberSelected) {
+        // FORCE: Give the card at the selected position
+        card = numberToCard[numberSelect.value];
+        lastNumberSelected = false;
+      } else {
+        // Random card from stack
+        card = mnemonicaStack[Math.floor(Math.random() * 52)];
+        lastCardSelected = true;
+      }
       cardSelect.value = card;
       updateCardDisplay(card);
       updateResultDisplay(card, numberSelect.value);
@@ -255,8 +276,17 @@
       sendToSheet(card, numberSelect.value);
     }
 
-    function randomizeNumber() {
-      const number = Math.floor(Math.random() * 52) + 1;
+    function randomizeNumber(force = false) {
+      let number;
+      if (force && lastCardSelected) {
+        // FORCE: Give the position of the selected card
+        number = cardToPosition[cardSelect.value];
+        lastCardSelected = false;
+      } else {
+        // Random number
+        number = Math.floor(Math.random() * 52) + 1;
+        lastNumberSelected = true;
+      }
       numberSelect.value = number;
       updateResultDisplay(cardSelect.value, number);
       
@@ -265,6 +295,7 @@
     }
 
     cardSelect.addEventListener('change', () => {
+      lastCardSelected = true;
       updateCardDisplay(cardSelect.value);
       updateResultDisplay(cardSelect.value, numberSelect.value);
       
@@ -273,18 +304,33 @@
     });
 
     numberSelect.addEventListener('change', () => {
+      lastNumberSelected = true;
       updateResultDisplay(cardSelect.value, numberSelect.value);
       
       // Send to sheet on every change
       sendToSheet(cardSelect.value, numberSelect.value);
     });
 
-    document.getElementById('randomCardBtn').onclick = () => randomizeCard();
-    document.getElementById('randomNumberBtn').onclick = () => randomizeNumber();
+    document.getElementById('randomCardBtn').onclick = () => randomizeCard(true);
+    document.getElementById('randomNumberBtn').onclick = () => randomizeNumber(true);
 
     cardDisplay.onclick = () => {
-      randomizeCard();
-      randomizeNumber();
+      clickCount++;
+      if (clickCount % 3 === 0) {
+        // Every 3rd click: give matching card/number from stack
+        const i = Math.floor(Math.random() * 52);
+        cardSelect.value = mnemonicaStack[i];
+        numberSelect.value = i + 1;
+        updateCardDisplay(mnemonicaStack[i]);
+        updateResultDisplay(mnemonicaStack[i], i + 1, true);
+      } else {
+        // Otherwise randomize both
+        randomizeCard();
+        randomizeNumber();
+      }
+      
+      // Send to sheet
+      sendToSheet(cardSelect.value, numberSelect.value);
     };
 
     submitBtn.onclick = () => {
@@ -299,16 +345,32 @@
       sendToSheet(card, number);
     };
 
+    // Request wake lock
+    async function initWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          const wakeLock = await navigator.wakeLock.request('screen');
+          
+          wakeLock.addEventListener('release', async () => {
+            if ('wakeLock' in navigator) {
+              await navigator.wakeLock.request('screen');
+            }
+          });
+        }
+      } catch (err) {
+        console.log('Wake lock not available');
+      }
+    }
+
     populateDropdowns();
-    const randomStart = Math.floor(Math.random() * 52);
-    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const suits = ['♣', '♥', '♠', '♦'];
-    const startCard = values[randomStart % 13] + suits[Math.floor(randomStart / 13)];
-    
-    cardSelect.value = startCard;
-    numberSelect.value = randomStart + 1;
-    updateCardDisplay(startCard);
-    updateResultDisplay(startCard, randomStart + 1);
+    const start = Math.floor(Math.random() * 52);
+    cardSelect.value = mnemonicaStack[start];
+    numberSelect.value = start + 1;
+    updateCardDisplay(mnemonicaStack[start]);
+    updateResultDisplay(cardSelect.value, numberSelect.value);
+
+    // Initialize wake lock on first click
+    document.body.addEventListener('click', initWakeLock, { once: true });
 
     // Generate QR code pointing to stat2.html (spectators share among themselves)
     new QRCode(document.getElementById("qrContainer"), {
