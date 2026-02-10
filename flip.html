@@ -149,7 +149,6 @@ let revealCard=null;
 let chosenValue=null;
 let chosenSuit=suits["♥"]; // default Hearts
 let faceUp=false;
-let suitLocked=false;
 
 const card=document.getElementById("card");
 const front=document.getElementById("front");
@@ -167,7 +166,6 @@ values.forEach(v=>{
   b.textContent=v;
   b.onclick=()=>{
     chosenValue=v;
-    // highlight selected
     document.querySelectorAll("#value-buttons button").forEach(btn=>btn.classList.remove("selected"));
     b.classList.add("selected");
   };
@@ -181,8 +179,6 @@ suitSymbols.forEach(s=>{
   b.textContent=s;
   b.onclick=()=>{
     chosenSuit=suits[s];
-    suitLocked=true;
-    // highlight selected
     document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("selected"));
     b.classList.add("selected");
   };
@@ -214,31 +210,32 @@ document.getElementById("shuffleBtn").onclick=()=>{
   updateCard();
 };
 
-// Drag or mouse click for suit override
-let startX=0,startY=0;
-cardArea.addEventListener("touchstart",e=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; });
-cardArea.addEventListener("touchend",e=>{
-  if(suitLocked) return;
-  const t=e.changedTouches[0]; handleDragClick(t.clientX,t.clientY);
+// Secret drag/mouse suit override
+cardArea.addEventListener("touchstart", e => { const t=e.touches[0]; startX=t.clientX; startY=t.clientY; });
+cardArea.addEventListener("touchend", e => { 
+  const t=e.changedTouches[0]; handleDragOrClick(t.clientX, t.clientY);
 });
-cardArea.addEventListener("mousedown",e=>{
-  if(suitLocked) return;
-  handleDragClick(e.clientX,e.clientY);
-});
+cardArea.addEventListener("mousedown", e => { handleDragOrClick(e.clientX, e.clientY); });
 
-function handleDragClick(x,y){
-  const rect=cardArea.getBoundingClientRect();
-  const dx=x-(rect.left+rect.width/2);
-  const dy=y-(rect.top+rect.height/2);
-  if(Math.abs(dx)>Math.abs(dy)) chosenSuit=dx>0?suits["♥"]:suits["♦"];
-  else chosenSuit=dy<0?suits["♣"]:suits["♠"];
-  suitLocked=true;
+function handleDragOrClick(x, y){
+  const rect = cardArea.getBoundingClientRect();
+  const dx = x - (rect.left + rect.width/2);
+  const dy = y - (rect.top + rect.height/2);
+
+  if(Math.abs(dx) > Math.abs(dy)) chosenSuit = dx>0 ? suits["♥"] : suits["♦"];
+  else chosenSuit = dy<0 ? suits["♣"] : suits["♠"];
+
+  // Update modal highlighting
   document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("selected"));
-  for(const s in suits){ if(suits[s]===chosenSuit) document.querySelectorAll("#suit-buttons button").forEach(btn=>{ if(btn.textContent===s) btn.classList.add("selected"); }); }
+  for(const s in suits){
+    if(suits[s]===chosenSuit){
+      document.querySelectorAll("#suit-buttons button").forEach(btn=>{ if(btn.textContent===s) btn.classList.add("selected"); });
+    }
+  }
 }
 
 // Tap card to flip
-card.addEventListener("click",e=>{
+card.addEventListener("click", e=>{
   if(faceUp){ faceUp=false; updateCard(); return; }
   const rect=card.getBoundingClientRect();
   const x=e.clientX-rect.left;
