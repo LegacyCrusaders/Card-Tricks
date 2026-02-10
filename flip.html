@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Card App</title>
-
 <style>
 body {
   margin:0;
@@ -15,6 +14,7 @@ body {
   flex-direction:column;
   justify-content:center;
   align-items:center;
+  overflow:hidden;
   touch-action:none;
 }
 
@@ -23,7 +23,6 @@ body {
   max-width:200px;
   aspect-ratio:7/10;
   perspective:900px;
-  margin:30px;
   padding:40px; /* subtle padding for nudges */
   box-sizing:border-box;
 }
@@ -62,8 +61,7 @@ body {
 .front.red { color:#b91c1c; }
 
 .back {
-  background:
-    repeating-linear-gradient(
+  background:repeating-linear-gradient(
       45deg,
       #999,#999 10px,
       #b91c1c 10px,#b91c1c 20px
@@ -88,12 +86,13 @@ button {
 .modal {
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.8);
+  background:rgba(0,0,0,0.85);
   display:none;
   justify-content:center;
   align-items:center;
   flex-direction:column;
   z-index:10;
+  padding:20px;
 }
 
 .modal.active { display:flex; }
@@ -107,8 +106,12 @@ button {
 }
 
 .modal button {
-  flex:1 1 18%;
+  flex:1 1 20%;
   min-width:40px;
+}
+
+.suit-selected {
+  border:2px solid #fff;
 }
 </style>
 </head>
@@ -122,8 +125,8 @@ button {
 </div>
 
 <div class="controls">
-  <button onclick="shuffleCard()">Shuffle</button>
-  <button onclick="showModal()">Choose</button>
+  <button id="shuffleBtn">Shuffle</button>
+  <button id="chooseBtn">Choose</button>
 </div>
 
 <div id="modal" class="modal">
@@ -133,73 +136,68 @@ button {
 </div>
 
 <script>
-/* Wake Lock */
+// Wake lock
 if("wakeLock" in navigator) navigator.wakeLock.request("screen").catch(()=>{});
 
-/* Card setup */
-const valueGrid=[
-  ["A","2","3"],
-  ["4","5","6"],
-  ["7","8","9"],
-  ["10","J","Q"],
-  ["K","RANDOM","JOKER"]
-];
+// Card setup
+const valueGrid=[["A","2","3"],["4","5","6"],["7","8","9"],["10","J","Q"],["K","RANDOM","JOKER"]];
+const suits={"♣":{symbol:"♣",color:"black"},"♥":{symbol:"♥",color:"red"},"♠":{symbol:"♠",color:"black"},"♦":{symbol:"♦",color:"red"}};
 
-const suits={
-  "♣":{symbol:"♣",color:"black"},
-  "♥":{symbol:"♥",color:"red"},
-  "♠":{symbol:"♠",color:"black"},
-  "♦":{symbol:"♦",color:"red"}
-};
-
-let currentCard=null;     // card chosen or shuffled
-let revealCard=null;      // actual card to reveal on flip
+let currentCard=null;   // what is revealed
+let revealCard=null;    // pre-selected from shuffle or choose
 let chosenSuit=suits["♥"]; // default Hearts
 let faceUp=false;
-
-let startX=0,startY=0,suitLocked=false;
+let suitLocked=false;
 
 const card=document.getElementById("card");
 const front=document.getElementById("front");
+const cardArea=document.getElementById("card-area");
 
-/* Modal setup */
+// Modal setup
 const modal=document.getElementById("modal");
 const valueContainer=document.getElementById("value-buttons");
 const suitContainer=document.getElementById("suit-buttons");
 
-/* Value buttons */
+// Value buttons
 const values=["A","2","3","4","5","6","7","8","9","10","J","Q","K","JOKER"];
 values.forEach(v=>{
   const b=document.createElement("button");
   b.textContent=v;
-  b.onclick=()=>selectValue(v);
+  b.onclick=()=>{ selectValue(v); closeModal(); };
   valueContainer.appendChild(b);
 });
 
-/* Suit buttons */
+// Suit buttons
 const suitSymbols=["♣","♥","♠","♦"];
 suitSymbols.forEach(s=>{
   const b=document.createElement("button");
   b.textContent=s;
-  b.onclick=()=>{ chosenSuit=suits[s]; suitLocked=true; };
+  b.onclick=()=>{
+    chosenSuit=suits[s];
+    suitLocked=true;
+    // highlight selected suit
+    document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("suit-selected"));
+    b.classList.add("suit-selected");
+  };
+  if(s==="♥") b.classList.add("suit-selected");
   suitContainer.appendChild(b);
 });
 
-function showModal(){ modal.classList.add("active"); }
+// Modal functions
+document.getElementById("chooseBtn").onclick=()=>modal.classList.add("active");
 function closeModal(){ modal.classList.remove("active"); }
 
-/* Select value from modal */
+// Select value
 function selectValue(val){
-  if(val==="JOKER") currentCard={label:"🃏", color:"black"};
+  if(val==="JOKER") currentCard={label:"🃏",color:"black"};
   else currentCard={label:val+chosenSuit.symbol,color:chosenSuit.color};
-  revealCard=currentCard; // set the card to be revealed when flipped
+  revealCard=currentCard;
   faceUp=false;
   updateCard();
-  closeModal();
 }
 
-/* Shuffle pre-selects a random card for reveal on bottom-center */
-function shuffleCard(){
+// Shuffle button
+document.getElementById("shuffleBtn").onclick=()=>{ 
   const allValues=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
   const value=allValues[Math.floor(Math.random()*allValues.length)];
   const suitKeys=Object.keys(suits);
@@ -207,57 +205,53 @@ function shuffleCard(){
   revealCard={label:value+suit.symbol,color:suit.color};
   faceUp=false;
   updateCard();
-}
+};
 
-/* Drag anywhere or click on padding to override suit */
-const cardArea=document.getElementById("card-area");
-cardArea.addEventListener("touchstart",e=>{
-  const t=e.touches[0]; startX=t.clientX; startY=t.clientY;
-});
+// Drag or mouse click for suit override
+let startX=0,startY=0;
+cardArea.addEventListener("touchstart",e=>{ const t=e.touches[0]; startX=t.clientX; startY=t.clientY; });
 cardArea.addEventListener("touchend",e=>{
   if(suitLocked) return;
-  const t=e.changedTouches[0];
-  handleDragOrClick(t.clientX,t.clientY);
+  const t=e.changedTouches[0]; handleDragClick(t.clientX,t.clientY);
 });
-
 cardArea.addEventListener("mousedown",e=>{
   if(suitLocked) return;
-  handleDragOrClick(e.clientX,e.clientY);
+  handleDragClick(e.clientX,e.clientY);
 });
 
-function handleDragOrClick(x,y){
+function handleDragClick(x,y){
   const rect=cardArea.getBoundingClientRect();
   const dx=x-(rect.left+rect.width/2);
   const dy=y-(rect.top+rect.height/2);
   if(Math.abs(dx)>Math.abs(dy)) chosenSuit=dx>0?suits["♥"]:suits["♦"];
   else chosenSuit=dy<0?suits["♣"]:suits["♠"];
   suitLocked=true;
+  document.querySelectorAll("#suit-buttons button").forEach(btn=>btn.classList.remove("suit-selected"));
+  for(const s in suits){ if(suits[s]===chosenSuit) document.querySelectorAll("#suit-buttons button").forEach(btn=>{ if(btn.textContent===s) btn.classList.add("suit-selected"); }); }
 }
 
-/* Tap card to flip; bottom-center "Random" shows revealCard */
+// Tap card to flip
 card.addEventListener("click",e=>{
   if(faceUp){ faceUp=false; updateCard(); return; }
-
   const rect=card.getBoundingClientRect();
   const x=e.clientX-rect.left;
   const y=e.clientY-rect.top;
   const col=Math.floor(x/(rect.width/3));
   const row=Math.floor(y/(rect.height/5));
-
   let value=valueGrid[row]?.[col];
   if(!value) return;
 
   if(value==="RANDOM"){
-    if(!revealCard) return; // nothing to reveal
-    currentCard=revealCard;  // reveal the pre-set card (shuffle or choose)
+    if(!revealCard) return;
+    currentCard=revealCard;
   } else if(value==="JOKER"){ currentCard={label:"🃏",color:"black"}; }
-  else{ currentCard={label:value+chosenSuit.symbol,color:chosenSuit.color}; }
+  else currentCard={label:value+chosenSuit.symbol,color:chosenSuit.color};
 
   faceUp=true;
   updateCard();
 });
 
-/* Update card display */
+// Update display
 function updateCard(){
   if(faceUp && currentCard){
     front.textContent=currentCard.label;
