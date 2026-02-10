@@ -23,7 +23,7 @@ body {
   max-width:300px;
   aspect-ratio:7/10;
   perspective:900px;
-  padding:30px;
+  padding:30px; /* padding for drag zones */
   box-sizing:border-box;
 }
 
@@ -210,12 +210,15 @@ document.getElementById("shuffleBtn").onclick=()=>{
   updateCard();
 };
 
-// Secret drag/mouse suit override
+// Secret drag/mouse suit override (only triggers outside card)
 cardArea.addEventListener("touchstart", e => { const t=e.touches[0]; startX=t.clientX; startY=t.clientY; });
 cardArea.addEventListener("touchend", e => { 
-  const t=e.changedTouches[0]; handleDragOrClick(t.clientX, t.clientY);
+  const t = e.changedTouches[0]; 
+  if(!e.target.closest("#card")) handleDragOrClick(t.clientX, t.clientY);
 });
-cardArea.addEventListener("mousedown", e => { handleDragOrClick(e.clientX, e.clientY); });
+cardArea.addEventListener("mousedown", e => { 
+  if(!e.target.closest("#card")) handleDragOrClick(e.clientX, e.clientY);
+});
 
 function handleDragOrClick(x, y){
   const rect = cardArea.getBoundingClientRect();
@@ -234,7 +237,7 @@ function handleDragOrClick(x, y){
   }
 }
 
-// Tap card to flip
+// Tap card to flip (value selection)
 card.addEventListener("click", e=>{
   if(faceUp){ faceUp=false; updateCard(); return; }
   const rect=card.getBoundingClientRect();
