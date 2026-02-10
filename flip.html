@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Playing Card Demo</title>
+<title>3D Playing Card</title>
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -18,28 +18,50 @@
     text-align: center;
   }
 
-  .card {
+  .scene {
     width: 140px;
     height: 200px;
+    perspective: 800px;
+    margin: 20px auto;
+  }
+
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+    cursor: pointer;
+  }
+
+  .card.face-up {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
     border-radius: 12px;
-    border: 2px solid #111;
-    background: white;
-    color: black;
+    backface-visibility: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 42px;
-    margin: 20px auto;
-    cursor: pointer;
-    user-select: none;
-    position: relative;
+    border: 2px solid #111;
   }
 
-  .card.red {
+  .front {
+    background: white;
+    color: black;
+    transform: rotateY(180deg);
+  }
+
+  .front.red {
     color: #b91c1c;
   }
 
-  .card.back {
+  .back {
     background: repeating-linear-gradient(
       45deg,
       #1e293b,
@@ -47,7 +69,6 @@
       #334155 10px,
       #334155 20px
     );
-    color: transparent;
   }
 
   select, button {
@@ -60,7 +81,12 @@
 <body>
 
 <div class="container">
-  <div id="card" class="card back"></div>
+  <div class="scene">
+    <div id="card" class="card">
+      <div class="card-face front" id="front"></div>
+      <div class="card-face back"></div>
+    </div>
+  </div>
 
   <div>
     <select id="cardSelect"></select>
@@ -101,44 +127,43 @@ function buildDeck() {
 
 function populateDropdown() {
   const select = document.getElementById("cardSelect");
-  select.innerHTML = "";
-  deck.forEach((card, index) => {
-    const option = document.createElement("option");
-    option.value = index;
-    option.textContent = card.name;
-    select.appendChild(option);
+  deck.forEach((card, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = card.name;
+    select.appendChild(opt);
   });
 
   select.addEventListener("change", () => {
     currentCard = deck[select.value];
     faceUp = true;
-    renderCard();
+    updateCard();
   });
 }
 
 function shuffleCard() {
-  const index = Math.floor(Math.random() * deck.length);
-  currentCard = deck[index];
+  const i = Math.floor(Math.random() * deck.length);
+  currentCard = deck[i];
+  document.getElementById("cardSelect").value = i;
   faceUp = true;
-  document.getElementById("cardSelect").value = index;
-  renderCard();
+  updateCard();
 }
 
 function flipCard() {
   faceUp = !faceUp;
-  renderCard();
+  updateCard();
 }
 
-function renderCard() {
-  const cardDiv = document.getElementById("card");
-  if (!faceUp || !currentCard) {
-    cardDiv.className = "card back";
-    cardDiv.textContent = "";
-    return;
-  }
+function updateCard() {
+  const card = document.getElementById("card");
+  const front = document.getElementById("front");
 
-  cardDiv.className = "card " + (currentCard.color === "red" ? "red" : "");
-  cardDiv.textContent = currentCard.label;
+  if (!currentCard) return;
+
+  front.textContent = currentCard.label;
+  front.className = "card-face front " + (currentCard.color === "red" ? "red" : "");
+
+  card.classList.toggle("face-up", faceUp);
 }
 
 buildDeck();
