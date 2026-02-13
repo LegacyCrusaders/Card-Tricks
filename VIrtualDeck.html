@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Deck</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            margin-top: 0;
+            cursor: pointer;
+            user-select: none;
+            font-size: 24px;
+        }
+
+        .card-container {
+            margin: 20px 0;
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 260px;
+            height: 364px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+            cursor: pointer;
+            margin: 0 auto;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 72px;
+            font-weight: bold;
+            border: 3px solid #333;
+        }
+
+        .card-face {
+            background: white;
+            transform: rotateY(180deg);
+            flex-direction: column;
+        }
+
+        .card-back {
+            background: #c41e3a;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(139,0,0,.3) 10px, rgba(139,0,0,.3) 20px),
+                repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(139,0,0,.3) 10px, rgba(139,0,0,.3) 20px);
+            border: 3px solid #8b0000;
+        }
+
+        .card-value {
+            font-size: 72px;
+        }
+
+        .card-suit {
+            font-size: 64px;
+        }
+
+        .red {
+            color: #c41e3a;
+        }
+
+        .black {
+            color: #000;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #shuffleBtn {
+            background: #2196F3;
+        }
+
+        #shuffleBtn:hover {
+            background: #0b7dda;
+        }
+
+        #chooseBtn {
+            background: #ff9800;
+        }
+
+        #chooseBtn:hover {
+            background: #e68900;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .card-selector {
+            margin: 20px 0;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .cancel-btn {
+            background: #f44336;
+        }
+
+        .cancel-btn:hover {
+            background: #da190b;
+        }
+
+        .secret-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background: rgba(255, 215, 0, 0.3);
+            border-radius: 5px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .practice-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+        }
+
+        .practice-overlay.active {
+            display: block;
+        }
+
+        .value-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+            gap: 2px;
+        }
+
+        .grid-cell {
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 3px black;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .grid-cell.center {
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid rgba(0, 255, 0, 0.5);
+        }
+
+        .direction-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+        }
+
+        .direction-label {
+            position: absolute;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 5px black;
+        }
+
+        .direction-label.up {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .direction-label.down {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .direction-label.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .direction-label.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .hint {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <h1 onclick="handleTitleClick()">Virtual Deck</h1>
+        
+        <div class="card-container">
+            <div class="card" id="card" onclick="handleCardClick(event)">
+                <div class="card-back">
+                    <div class="practice-overlay" id="practiceOverlay">
+                        <div class="value-grid">
+                            <div class="grid-cell">A</div>
+                            <div class="grid-cell">2</div>
+                            <div class="grid-cell">3</div>
+                            <div class="grid-cell">4</div>
+                            <div class="grid-cell">5</div>
+                            <div class="grid-cell">6</div>
+                            <div class="grid-cell">7</div>
+                            <div class="grid-cell">8</div>
+                            <div class="grid-cell">9</div>
+                            <div class="grid-cell">10</div>
+                            <div class="grid-cell">J</div>
+                            <div class="grid-cell">Q</div>
+                            <div class="grid-cell">K</div>
+                            <div class="grid-cell center">FLIP<br/><small>↑♣ →♥<br/>↓♠ ←♦</small></div>
+                            <div class="grid-cell">🃏</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-face" id="cardFace">
+                    <span class="card-value" id="cardValue">A</span>
+                    <span class="card-suit" id="cardSuit">♠</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
+            <button id="chooseBtn" onclick="openChooseModal()">Choose Card</button>
+        </div>
+
+    </div>
+
+    <div id="chooseModal" class="modal">
+        <div class="modal-content">
+            <h2>Choose a Card</h2>
+            <div class="card-selector">
+                <select id="valueSelect">
+                    <option value="A">Ace</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="J">Jack</option>
+                    <option value="Q">Queen</option>
+                    <option value="K">King</option>
+                    <option value="🃏">Joker</option>
+                </select>
+                
+                <select id="suitSelect">
+                    <option value="♠">Spades ♠</option>
+                    <option value="♥">Hearts ♥</option>
+                    <option value="♦">Diamonds ♦</option>
+                    <option value="♣">Clubs ♣</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeChooseModal()">Cancel</button>
+                <button onclick="setChosenCard()">Set Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Card definitions
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const suits = ['♠', '♥', '♦', '♣'];
+        
+        let currentCard = { value: 'A', suit: '♠' };
+        let isFaceUp = false;
+        let secretNextCard = null;
+
+        // Initialize random card
+        function getRandomCard() {
+            const value = values[Math.floor(Math.random() * values.length)];
+            const suit = suits[Math.floor(Math.random() * suits.length)];
+            return { value, suit };
+        }
+
+        function updateCardDisplay() {
+            const cardValue = document.getElementById('cardValue');
+            const cardSuit = document.getElementById('cardSuit');
+            const cardFace = document.getElementById('cardFace');
+            
+            if (currentCard.value === '🃏') {
+                cardValue.textContent = '🃏';
+                cardSuit.textContent = '';
+                cardFace.className = 'card-face';
+            } else {
+                cardValue.textContent = currentCard.value;
+                cardSuit.textContent = currentCard.suit;
+                
+                // Set color based on suit
+                if (currentCard.suit === '♥' || currentCard.suit === '♦') {
+                    cardFace.className = 'card-face red';
+                } else {
+                    cardFace.className = 'card-face black';
+                }
+            }
+        }
+
+        function flipCard() {
+            const card = document.getElementById('card');
+            card.classList.toggle('flipped');
+            isFaceUp = !isFaceUp;
+        }
+
+        function shuffleCard() {
+            // Check if there's a secret card set
+            if (secretNextCard) {
+                currentCard = { ...secretNextCard };
+                secretNextCard = null;
+            } else {
+                currentCard = getRandomCard();
+            }
+            
+            updateCardDisplay();
+            
+            // Don't flip the card - just update the card that will be shown
+            // If face up, user sees the new card immediately
+            // If face down, new card is hidden until they flip it
+        }
+
+        function openChooseModal() {
+            document.getElementById('chooseModal').style.display = 'block';
+            
+            // Update suit select visibility
+            const valueSelect = document.getElementById('valueSelect');
+            if (valueSelect.value === '🃏') {
+                document.getElementById('suitSelect').disabled = true;
+            }
+        }
+
+        function closeChooseModal() {
+            document.getElementById('chooseModal').style.display = 'none';
+        }
+
+        function setChosenCard() {
+            const value = document.getElementById('valueSelect').value;
+            const suit = document.getElementById('suitSelect').value;
+            
+            if (value === '🃏') {
+                currentCard = { value: '🃏', suit: '' };
+            } else {
+                currentCard = { value, suit };
+            }
+            
+            updateCardDisplay();
+            
+            // Don't flip the card - just update the card that will be shown
+            // If face up, user sees the new card immediately
+            // If face down, new card is hidden until they flip it
+            
+            closeChooseModal();
+        }
+
+        // Handle joker selection
+        document.getElementById('valueSelect').addEventListener('change', function() {
+            const suitSelect = document.getElementById('suitSelect');
+            if (this.value === '🃏') {
+                suitSelect.disabled = true;
+            } else {
+                suitSelect.disabled = false;
+            }
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('chooseModal');
+            if (event.target === modal) {
+                closeChooseModal();
+            }
+        }
+
+        // SECRET CONTROL MECHANISM
+        // Click and drag on the card back to secretly set the next card
+        // Grid: 4 columns (suits) x 13 rows (values)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isDragging = false;
+        let dragStartTime = 0;
+
+        function handleCardClick(event) {
+            // Normal flip behavior
+            if (!isDragging) {
+                flipCard();
+            }
+        }
+
+        // Touch/Mouse start
+        document.getElementById('card').addEventListener('mousedown', handleDragStart);
+        document.getElementById('card').addEventListener('touchstart', handleDragStart);
+
+        function handleDragStart(e) {
+            if (isFaceUp) return; // Only works on face down card
+            
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = e.currentTarget.getBoundingClientRect();
+            
+            touchStartX = touch.clientX - rect.left;
+            touchStartY = touch.clientY - rect.top;
+            dragStartTime = Date.now();
+            isDragging = false;
+        }
+
+        // Touch/Mouse end
+        document.getElementById('card').addEventListener('mouseup', handleDragEnd);
+        document.getElementById('card').addEventListener('touchend', handleDragEnd);
+
+        function handleDragEnd(e) {
+            if (isFaceUp) return;
+            
+            const touch = e.changedTouches ? e.changedTouches[0] : e;
+            const rect = e.currentTarget.getBoundingClientRect();
+            
+            const touchEndX = touch.clientX - rect.left;
+            const touchEndY = touch.clientY - rect.top;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const duration = Date.now() - dragStartTime;
+            
+            // Determine grid position from start position (3x5 grid)
+            const cardWidth = rect.width;
+            const cardHeight = rect.height;
+            const col = Math.floor((touchStartX / cardWidth) * 3); // 0, 1, 2
+            const row = Math.floor((touchStartY / cardHeight) * 5); // 0, 1, 2, 3, 4
+            
+            // Grid layout: 
+            // [A] [2] [3]
+            // [4] [5] [6]
+            // [7] [8] [9]
+            // [10][J] [Q]
+            // [K][FLIP][🃏]
+            
+            const gridMap = [
+                ['A', '2', '3'],
+                ['4', '5', '6'],
+                ['7', '8', '9'],
+                ['10', 'J', 'Q'],
+                ['K', 'FLIP', '🃏']
+            ];
+            
+            const gridValue = gridMap[row][col];
+            
+            // Center cell (row 4, col 1) is the flip zone - only flip if minimal drag
+            if (row === 4 && col === 1) {
+                if (distance < 30) {
+                    // Just flip
+                    setTimeout(() => {
+                        isDragging = false;
+                    }, 50);
+                } else {
+                    // Dragged from center - determine suit from direction (CHaSeD)
+                    isDragging = true;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+                    let suit;
+                    if (angle >= -45 && angle < 45) {
+                        suit = '♥'; // Right = Hearts
+                    } else if (angle >= 45 && angle < 135) {
+                        suit = '♠'; // Down = Spades
+                    } else if (angle >= -135 && angle < -45) {
+                        suit = '♣'; // Up = Clubs
+                    } else {
+                        suit = '♦'; // Left = Diamonds
+                    }
+                    
+                    // Get a random value since center was clicked
+                    const randomValue = values[Math.floor(Math.random() * values.length)];
+                    
+                    secretNextCard = { value: randomValue, suit };
+                    
+                    // Auto-shuffle to reveal the card
+                    setTimeout(() => {
+                        shuffleCard();
+                        // Flip the card after shuffle to look like a normal click
+                        setTimeout(() => {
+                            flipCard();
+                        }, 150);
+                    }, 100);
+                    
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                    
+                    setTimeout(() => {
+                        isDragging = false;
+                    }, 100);
+                }
+                return;
+            }
+            
+            // If dragged more than 30 pixels and held for more than 200ms, it's a secret gesture
+            if (distance > 30 && duration > 200 && gridValue !== 'FLIP') {
+                isDragging = true;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                let value = gridValue;
+                let suit = null;
+                
+                // Joker doesn't need a suit
+                if (value === '🃏') {
+                    secretNextCard = { value: '🃏', suit: '' };
+                } else {
+                    // Determine suit from drag direction (CHaSeD)
+                    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+                    if (angle >= -45 && angle < 45) {
+                        suit = '♥'; // Right = Hearts
+                    } else if (angle >= 45 && angle < 135) {
+                        suit = '♠'; // Down = Spades
+                    } else if (angle >= -135 && angle < -45) {
+                        suit = '♣'; // Up = Clubs
+                    } else {
+                        suit = '♦'; // Left = Diamonds
+                    }
+                    
+                    secretNextCard = { value, suit };
+                }
+                
+                // Auto-shuffle to reveal the card
+                setTimeout(() => {
+                    shuffleCard();
+                    // Flip the card after shuffle to look like a normal click
+                    setTimeout(() => {
+                        flipCard();
+                    }, 150);
+                }, 100);
+                
+                // Vibrate if supported (subtle feedback)
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                
+                setTimeout(() => {
+                    isDragging = false;
+                }, 100);
+            } else {
+                // Normal tap - wait a moment to ensure it's not a drag
+                setTimeout(() => {
+                    isDragging = false;
+                }, 50);
+            }
+        }
+
+        // Initialize
+        currentCard = getRandomCard();
+        updateCardDisplay();
+
+        // PRACTICE MODE TOGGLE
+        let practiceMode = false;
+        let titleClickCount = 0;
+        let titleClickTimer = null;
+
+        function handleTitleClick() {
+            titleClickCount++;
+            
+            if (titleClickCount === 1) {
+                titleClickTimer = setTimeout(() => {
+                    // Reset if not triple-clicked in time
+                    titleClickCount = 0;
+                }, 500);
+            } else if (titleClickCount === 3) {
+                clearTimeout(titleClickTimer);
+                titleClickCount = 0;
+                togglePracticeMode();
+            }
+        }
+
+        function togglePracticeMode() {
+            practiceMode = !practiceMode;
+            const overlay = document.getElementById('practiceOverlay');
+            if (practiceMode) {
+                overlay.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        // WAKE LOCK - Keep screen awake
+        let wakeLock = null;
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock activated');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock released');
+                    });
+                }
+            } catch (err) {
+                console.log('Wake Lock error:', err);
+            }
+        }
+
+        // Request wake lock on page load
+        requestWakeLock();
+
+        // Re-request wake lock when page becomes visible again
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+    </script>
+</body>
+</html>
