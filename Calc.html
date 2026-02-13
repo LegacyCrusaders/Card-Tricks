@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 400px;
+            background: #000;
+            border-radius: 0;
+        }
+
+        .display {
+            background: #000;
+            padding: 30px 20px;
+            text-align: right;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .display-equation {
+            color: #888;
+            font-size: 20px;
+            margin-bottom: 10px;
+            min-height: 24px;
+        }
+
+        .display-result {
+            color: #fff;
+            font-size: 48px;
+            font-weight: 300;
+            word-wrap: break-word;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #1a1a1a;
+            padding: 1px;
+        }
+
+        button {
+            background: #2a2a2a;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            padding: 28px;
+            cursor: pointer;
+            transition: background 0.1s;
+            font-weight: 400;
+        }
+
+        button:active {
+            background: #3a3a3a;
+        }
+
+        button.operator {
+            background: #1e88e5;
+            color: #fff;
+        }
+
+        button.operator:active {
+            background: #1976d2;
+        }
+
+        button.function {
+            background: #2a2a2a;
+            color: #1e88e5;
+        }
+
+        button.function:active {
+            background: #3a3a3a;
+        }
+
+        button.zero {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="display-equation" id="equation"></div>
+            <div class="display-result" id="result">0</div>
+        </div>
+
+        <div class="buttons">
+            <button class="function" onclick="clearAll()">C</button>
+            <button class="function" onclick="setForce()">+/-</button>
+            <button class="function" onclick="showNumbers()">%</button>
+            <button class="operator" onclick="addOperator('÷')">÷</button>
+
+            <button onclick="addDigit('7')">7</button>
+            <button onclick="addDigit('8')">8</button>
+            <button onclick="addDigit('9')">9</button>
+            <button class="operator" onclick="addOperator('×')">×</button>
+
+            <button onclick="addDigit('4')">4</button>
+            <button onclick="addDigit('5')">5</button>
+            <button onclick="addDigit('6')">6</button>
+            <button class="operator" onclick="addOperator('-')">−</button>
+
+            <button onclick="addDigit('1')">1</button>
+            <button onclick="addDigit('2')">2</button>
+            <button onclick="addDigit('3')">3</button>
+            <button class="operator" onclick="addOperator('+')">+</button>
+
+            <button class="zero" onclick="addDigit('0')">0</button>
+            <button onclick="addDigit('.')">.</button>
+            <button class="operator" onclick="equals()">=</button>
+        </div>
+    </div>
+
+    <script>
+        let display = '0';
+        let equation = '';
+        let forceNumber = null;
+        let allNumbers = [];
+        let newNumber = true;
+
+        function updateDisplay() {
+            document.getElementById('result').textContent = display;
+            document.getElementById('equation').textContent = equation;
+        }
+
+        function addDigit(digit) {
+            if (newNumber) {
+                display = digit;
+                newNumber = false;
+            } else {
+                if (display === '0' && digit !== '.') {
+                    display = digit;
+                } else if (digit === '.' && display.includes('.')) {
+                    return;
+                } else {
+                    display += digit;
+                }
+            }
+            updateDisplay();
+        }
+
+        function addOperator(op) {
+            if (!newNumber && display !== '0') {
+                allNumbers.push(display);
+            }
+            equation = display + ' ' + op;
+            newNumber = true;
+            updateDisplay();
+        }
+
+        function equals() {
+            if (!newNumber && display !== '0') {
+                allNumbers.push(display);
+            }
+            
+            // If force is set, show force number
+            if (forceNumber !== null) {
+                display = forceNumber;
+                forceNumber = null; // Reset force after use
+            } else {
+                // Normal calculation - evaluate the equation
+                try {
+                    let calc = equation + ' ' + display;
+                    calc = calc.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+                    let result = eval(calc);
+                    display = result.toString();
+                } catch (e) {
+                    display = 'Error';
+                }
+            }
+            
+            equation = '';
+            newNumber = true;
+            updateDisplay();
+        }
+
+        function setForce() {
+            // Save current display as the force number
+            if (display !== '0' && display !== 'Error') {
+                forceNumber = display;
+                // Reset to clean state
+                display = '0';
+                equation = '';
+                newNumber = true;
+                updateDisplay();
+            }
+        }
+
+        function showNumbers() {
+            // Show all collected numbers
+            if (allNumbers.length === 0) {
+                display = '0';
+            } else {
+                display = allNumbers.join(', ');
+            }
+            newNumber = true;
+            updateDisplay();
+        }
+
+        function clearAll() {
+            display = '0';
+            equation = '';
+            forceNumber = null;
+            allNumbers = [];
+            newNumber = true;
+            updateDisplay();
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
