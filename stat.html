@@ -99,20 +99,8 @@
       font-weight: bold;
       color: #333;
       min-height: 28px;
-      position: relative;
       cursor: pointer;
       user-select: none;
-    }
-    #pendingIndicator {
-      position: absolute;
-      top: -30px;
-      right: 0;
-      background: #fbbf24;
-      color: #000;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      display: none;
     }
     option.red {
       color: red;
@@ -198,13 +186,8 @@
 
   <button id="submitBtn">Submit</button>
 
-  <button id="testApplyBtn" style="display:none; margin-top:10px; background:#f59e0b;">Apply Pending Update (TEST)</button>
-
   <div id="loading">Querying database...</div>
-  <div id="result">
-    <div id="pendingIndicator">UPDATE READY</div>
-    Select a number and card, then submit to see likelihood of being chosen.
-  </div>
+  <div id="result">Select a number and card, then submit to see likelihood of being chosen.</div>
 
   <div id="qrWrapper">
     <div id="qrContainer"></div>
@@ -252,7 +235,6 @@
     let qrClicks = [];
     let updateTimeout;
     let lastReceivedData = null;
-    let pendingUpdate = null; // Stores update to apply when face up
     let isFaceDown = false;
     let wasFaceDown = false;
     let debugLogs = [];
@@ -281,8 +263,6 @@
     function handleOrientation(e) {
       const beta = e.beta; // Front-to-back tilt
       
-      const previouslyFaceDown = isFaceDown;
-      
       if (Math.abs(beta) > 150) {
         if (!isFaceDown) {
           debugLog(`[ORI] FACE DOWN (beta: ${beta.toFixed(1)})`);
@@ -290,16 +270,10 @@
         isFaceDown = true;
         wasFaceDown = true;
       } else if (Math.abs(beta) < 30) {
-        const wasDown = isFaceDown;
-        isFaceDown = false;
-        
-        // Just turned face up - apply pending update
-        if (wasDown && pendingUpdate) {
-          debugLog('[ORI] FACE UP - Applying update!');
-          applyPendingUpdate();
-        } else if (wasDown) {
-          debugLog('[ORI] FACE UP (no update pending)');
+        if (isFaceDown) {
+          debugLog('[ORI] FACE UP');
         }
+        isFaceDown = false;
       }
     }
 
@@ -356,33 +330,30 @@
           const spectatorCard = data.current.card;
           const spectatorNumber = data.current.number;
           
-          debugLog(`[SYNC] Found: ${spectatorCard} at ${spectatorNumber}`);
-          
           // Check if this is new data
           const dataKey = `${spectatorCard}-${spectatorNumber}`;
           if (lastReceivedData !== dataKey) {
             lastReceivedData = dataKey;
+            
+            debugLog(`[SYNC] Found: ${spectatorCard} at ${spectatorNumber}`);
             
             // Convert to Si Stebbins code
             const codedCard = getPreviousSistebbinsCard(spectatorCard);
             const codedNumber = getAdjustedNumber(spectatorNumber);
             
             debugLog(`[SYNC] NEW! Coded: ${codedCard} at ${codedNumber}`);
-            debugLog(`[SYNC] FaceDown: ${isFaceDown} | Was: ${wasFaceDown}`);
             
-            // Store as pending update
-            pendingUpdate = { codedCard, codedNumber };
-            
-            // Show pending indicator and test button
-            document.getElementById('pendingIndicator').style.display = 'block';
-            document.getElementById('testApplyBtn').style.display = 'block';
-            
-            // If phone is currently face up and was previously face down, apply immediately
-            if (!isFaceDown && wasFaceDown) {
-              debugLog('[SYNC] Applying immediately (face up)');
-              applyPendingUpdate();
+            // If phone is face DOWN, update immediately
+            // If phone is face UP, ignore the update (already showing to spectator)
+            if (isFaceDown || wasFaceDown) {
+              debugLog('[SYNC] Phone DOWN - updating now!');
+              cardSelect.value = codedCard;
+              numberSelect.value = codedNumber;
+              updateCardDisplay(codedCard);
+              updateResultDisplay(codedCard, codedNumber);
+              debugLog('[SYNC] ✓ Updated while face down');
             } else {
-              debugLog('[SYNC] Update pending - waiting for flip');
+              debugLog('[SYNC] Phone UP - ignoring update');
             }
           }
         }
@@ -542,25 +513,14 @@
       updateResultDisplay(card, number, false, stats[key]);
     };
 
-    // Test button to manually apply pending update
-    document.getElementById('testApplyBtn').onclick = () => {
-      debugLog('[TEST] Manual apply clicked');
-      applyPendingUpdate();
-      document.getElementById('testApplyBtn').style.display = 'none';
-    };
-
+    // Test button removed - no longer needed
+    
     // Secret: Click the result percentage to toggle face down/up
     resultDiv.onclick = () => {
       if (isFaceDown) {
         // Currently face down → flip to face up
         debugLog('[SIM] 📱 Face UP');
-        const wasDown = isFaceDown;
         isFaceDown = false;
-        
-        if (wasDown && pendingUpdate) {
-          debugLog('[SIM] Applying pending update!');
-          applyPendingUpdate();
-        }
       } else {
         // Currently face up → flip to face down
         debugLog('[SIM] 📱 Face DOWN');
