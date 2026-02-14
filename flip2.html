@@ -761,25 +761,43 @@
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = false;
+                recognition.continuous = true; // Keep listening
                 recognition.interimResults = false;
                 recognition.lang = 'en-US';
 
                 recognition.onresult = function(event) {
-                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
                     console.log('Heard:', transcript);
-                    processVoiceCommand(transcript);
+                    const cardDetected = processVoiceCommand(transcript);
+                    
+                    // Stop listening only if a card was detected
+                    if (cardDetected && isListening) {
+                        recognition.stop();
+                        isListening = false;
+                        document.getElementById('secretMicZone').classList.remove('listening');
+                    }
                 };
 
                 recognition.onend = function() {
-                    isListening = false;
-                    document.getElementById('secretMicZone').classList.remove('listening');
+                    // If still supposed to be listening but recognition ended, restart it
+                    if (isListening) {
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.log('Could not restart recognition:', e);
+                            isListening = false;
+                            document.getElementById('secretMicZone').classList.remove('listening');
+                        }
+                    }
                 };
 
                 recognition.onerror = function(event) {
                     console.error('Speech recognition error:', event.error);
-                    isListening = false;
-                    document.getElementById('secretMicZone').classList.remove('listening');
+                    // Only stop on actual errors, not on 'no-speech'
+                    if (event.error !== 'no-speech' && event.error !== 'audio-capture') {
+                        isListening = false;
+                        document.getElementById('secretMicZone').classList.remove('listening');
+                    }
                 };
             }
         }
@@ -847,7 +865,7 @@
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 100, 50]);
                 }
-                return;
+                return true; // Card detected
             }
 
             // Detect value
@@ -874,8 +892,10 @@
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 100, 50]);
                 }
+                return true; // Card detected
             } else {
                 console.log('Could not detect card from:', transcript);
+                return false; // No card detected, keep listening
             }
         }
 
