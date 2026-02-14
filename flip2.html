@@ -841,13 +841,12 @@
 
             // Check for joker first
             if (transcript.includes('joker')) {
-                secretNextCard = { value: '🃏', suit: '' };
-                setTimeout(() => {
-                    shuffleCard();
-                    setTimeout(() => {
-                        flipCard();
-                    }, 150);
-                }, 100);
+                currentCard = { value: '🃏', suit: '' };
+                updateCardDisplay();
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate([50, 100, 50]);
+                }
                 return;
             }
 
@@ -869,13 +868,8 @@
 
             // If we detected both value and suit, set the card
             if (detectedValue && detectedSuit) {
-                secretNextCard = { value: detectedValue, suit: detectedSuit };
-                setTimeout(() => {
-                    shuffleCard();
-                    setTimeout(() => {
-                        flipCard();
-                    }, 150);
-                }, 100);
+                currentCard = { value: detectedValue, suit: detectedSuit };
+                updateCardDisplay();
                 
                 if (navigator.vibrate) {
                     navigator.vibrate([50, 100, 50]);
