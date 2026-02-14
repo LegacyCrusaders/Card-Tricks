@@ -1,0 +1,149 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { Undo, Trash2, Pen } from 'lucide-react';
+
+export default function SamsungNotesClone() {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [context, setContext] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [currentStep, setCurrentStep] = useState(-1);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    setContext(ctx);
+
+    // Set canvas size
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      // Redraw current state if exists
+      if (currentStep >= 0 && history[currentStep]) {
+        const img = new Image();
+        img.src = history[currentStep];
+        img.onload = () => ctx.drawImage(img, 0, 0);
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
+  const saveState = () => {
+    const canvas = canvasRef.current;
+    const newHistory = history.slice(0, currentStep + 1);
+    newHistory.push(canvas.toDataURL());
+    setHistory(newHistory);
+    setCurrentStep(newHistory.length - 1);
+  };
+
+  const startDrawing = (e) => {
+    if (!context) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    context.beginPath();
+    context.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing || !context) return;
+    
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    context.lineTo(x, y);
+    context.stroke();
+  };
+
+  const stopDrawing = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      saveState();
+    }
+  };
+
+  const handleUndo = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      const img = new Image();
+      img.src = history[currentStep - 1];
+      img.onload = () => {
+        context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        context.drawImage(img, 0, 0);
+      };
+    } else if (currentStep === 0) {
+      setCurrentStep(-1);
+      context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  const handleClear = () => {
+    context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setHistory([]);
+    setCurrentStep(-1);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-white">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleUndo}
+            disabled={currentStep < 0}
+            className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+          >
+            <Undo size={20} className="text-gray-700" />
+          </button>
+          <button 
+            onClick={handleClear}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <Trash2 size={20} className="text-gray-700" />
+          </button>
+        </div>
+        <h1 className="text-lg font-medium text-gray-800">Note</h1>
+        <div className="w-16"></div>
+      </div>
+
+      {/* Canvas Area */}
+      <div className="flex-1 relative overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full touch-none"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+      </div>
+
+      {/* Bottom Toolbar */}
+      <div className="flex items-center justify-center py-4 bg-white border-t border-gray-200">
+        <div className="flex items-center gap-6">
+          <button className="p-3 rounded-full bg-blue-500 shadow-lg">
+            <Pen size={20} className="text-white" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
