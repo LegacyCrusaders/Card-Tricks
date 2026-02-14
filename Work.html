@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Note</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            position: relative;
+        }
+
+        .pen-btn {
+            background: #2196F3;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* SECRET KEYBOARD TRIGGER - invisible area in bottom right */
+        .secret-trigger {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 80px;
+            height: 80px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Hidden text input that will open keyboard */
+        #keywordInput {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+        }
+
+        /* Menu overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-overlay.active {
+            display: flex;
+        }
+
+        .menu-panel {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-header {
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+        }
+
+        .menu-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .drawing-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 16px;
+            background: #fafafa;
+        }
+
+        .drawing-preview {
+            width: 100%;
+            height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: white;
+            display: block;
+        }
+
+        .keyword-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .item-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .load-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .save-current-btn {
+            width: 100%;
+            padding: 14px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 12px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .import-btn {
+            width: 100%;
+            padding: 12px;
+            background: #9C27B0;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .status-toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            display: none;
+        }
+
+        .status-toast.show {
+            display: block;
+            animation: fadeInOut 2s;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+
+        #importFile {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Toast -->
+    <div id="statusToast" class="status-toast"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <button id="undoBtn" class="btn">↶</button>
+            <button id="clearBtn" class="btn">🗑</button>
+        </div>
+        <div class="header-title" id="menuTrigger">Note</div>
+        <div style="width:64px"></div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Bottom Toolbar -->
+    <div class="toolbar">
+        <button class="pen-btn">✏️</button>
+        <!-- SECRET TRIGGER - tap bottom right corner -->
+        <button class="secret-trigger" id="secretTrigger"></button>
+    </div>
+
+    <!-- Hidden input for keyword entry -->
+    <input type="text" id="keywordInput" autocomplete="off" autocorrect="off" autocapitalize="off">
+
+    <!-- Secret Menu -->
+    <div class="menu-overlay" id="menuOverlay">
+        <div class="menu-panel">
+            <div class="menu-header">
+                <h2>🎩 Magic Drawings</h2>
+                <button class="close-btn" id="closeMenu">&times;</button>
+            </div>
+            <div class="menu-content">
+                <button class="save-current-btn" id="saveCurrentBtn">💾 Save Current Drawing</button>
+                <button class="export-btn" id="exportBtn">📤 Export All Drawings</button>
+                <button class="import-btn" id="importBtn">📥 Import Drawings</button>
+                <input type="file" id="importFile" accept=".json">
+                <hr style="margin: 16px 0; border: none; border-top: 1px solid #e0e0e0;">
+                <div id="drawingsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let history = [];
+        let currentStep = -1;
+
+        // Elements
+        const undoBtn = document.getElementById('undoBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const menuTrigger = document.getElementById('menuTrigger');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const closeMenu = document.getElementById('closeMenu');
+        const saveCurrentBtn = document.getElementById('saveCurrentBtn');
+        const drawingsList = document.getElementById('drawingsList');
+        const secretTrigger = document.getElementById('secretTrigger');
+        const keywordInput = document.getElementById('keywordInput');
+        const statusToast = document.getElementById('statusToast');
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+
+        // Drawings storage
+        let drawings = [];
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            loadDrawingsFromStorage();
+            setupEventListeners();
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const oldImage = currentStep >= 0 ? canvas.toDataURL() : null;
+            
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            if (oldImage) {
+                const img = new Image();
+                img.src = oldImage;
+                img.onload = () => ctx.drawImage(img, 0, 0);
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+        }
+
+        function setupEventListeners() {
+            // Drawing
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchmove', draw);
+            canvas.addEventListener('touchend', stopDrawing);
+
+            // Buttons
+            undoBtn.addEventListener('click', undo);
+            clearBtn.addEventListener('click', clear);
+
+            // Menu trigger - triple click
+            let clickCount = 0;
+            let clickTimer;
+            menuTrigger.addEventListener('click', () => {
+                clickCount++;
+                clearTimeout(clickTimer);
+                clickTimer = setTimeout(() => {
+                    if (clickCount >= 3) {
+                        openMenu();
+                    }
+                    clickCount = 0;
+                }, 400);
+            });
+
+            closeMenu.addEventListener('click', () => menuOverlay.classList.remove('active'));
+            menuOverlay.addEventListener('click', (e) => {
+                if (e.target === menuOverlay) menuOverlay.classList.remove('active');
+            });
+
+            saveCurrentBtn.addEventListener('click', saveCurrentDrawing);
+
+            // SECRET TRIGGER - tap to open keyboard
+            secretTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                keywordInput.value = '';
+                keywordInput.focus();
+            });
+
+            // Keyword input - check for matches as user types
+            keywordInput.addEventListener('input', (e) => {
+                const typed = e.target.value.toLowerCase().trim();
+                
+                // Find matching drawing
+                const match = drawings.find(d => d.keyword.toLowerCase() === typed);
+                
+                if (match) {
+                    loadDrawingToCanvas(match.imageData);
+                    showToast(`✨ Loaded: "${match.keyword}"`);
+                    keywordInput.value = '';
+                    keywordInput.blur();
+                }
+            });
+
+            // Export/Import
+            exportBtn.addEventListener('click', exportDrawings);
+            importBtn.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', importDrawings);
+
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        // Drawing functions
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+            const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+            return { x, y };
+        }
+
+        function startDrawing(e) {
+            e.preventDefault();
+            const coords = getCoords(e);
+            ctx.beginPath();
+            ctx.moveTo(coords.x, coords.y);
+            isDrawing = true;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const coords = getCoords(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing(e) {
+            if (isDrawing) {
+                e.preventDefault();
+                isDrawing = false;
+                saveState();
+            }
+        }
+
+        function saveState() {
+            const newHistory = history.slice(0, currentStep + 1);
+            newHistory.push(canvas.toDataURL());
+            history = newHistory;
+            currentStep = history.length - 1;
+            updateUndoButton();
+        }
+
+        function undo() {
+            if (currentStep > 0) {
+                currentStep--;
+                const img = new Image();
+                img.src = history[currentStep];
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+            } else if (currentStep === 0) {
+                currentStep = -1;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            updateUndoButton();
+        }
+
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            history = [];
+            currentStep = -1;
+            updateUndoButton();
+        }
+
+        function updateUndoButton() {
+            undoBtn.disabled = currentStep < 0;
+        }
+
+        // Storage functions
+        function loadDrawingsFromStorage() {
+            try {
+                const stored = localStorage.getItem('magicDrawings');
+                if (stored) {
+                    drawings = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.log('Could not load drawings:', e);
+            }
+        }
+
+        function saveDrawingsToStorage() {
+            try {
+                localStorage.setItem('magicDrawings', JSON.stringify(drawings));
+                return true;
+            } catch (e) {
+                console.log('Could not save drawings:', e);
+                return false;
+            }
+        }
+
+        // Menu functions
+        function openMenu() {
+            renderDrawingsList();
+            menuOverlay.classList.add('active');
+        }
+
+        function saveCurrentDrawing() {
+            const keyword = prompt('Enter keyword for this drawing:');
+            
+            if (!keyword || !keyword.trim()) {
+                showToast('❌ Keyword required');
+                return;
+            }
+
+            const imageData = canvas.toDataURL();
+            drawings.push({
+                id: Date.now(),
+                keyword: keyword.trim(),
+                imageData: imageData
+            });
+
+            if (saveDrawingsToStorage()) {
+                showToast('✅ Drawing saved!');
+                renderDrawingsList();
+            } else {
+                showToast('❌ Failed to save');
+            }
+        }
+
+        function renderDrawingsList() {
+            if (drawings.length === 0) {
+                drawingsList.innerHTML = '<div class="empty-state">No drawings yet.<br>Draw something and tap "Save Current Drawing"</div>';
+                return;
+            }
+
+            drawingsList.innerHTML = '';
+            
+            drawings.forEach(drawing => {
+                const item = document.createElement('div');
+                item.className = 'drawing-item';
+                
+                const preview = document.createElement('canvas');
+                preview.className = 'drawing-preview';
+                const previewWidth = drawingsList.offsetWidth - 48; // Account for padding
+                preview.width = previewWidth || 400;
+                preview.height = 100;
+                
+                const keywordLabel = document.createElement('div');
+                keywordLabel.style.fontSize = '12px';
+                keywordLabel.style.fontWeight = '600';
+                keywordLabel.style.color = '#666';
+                keywordLabel.style.marginBottom = '4px';
+                keywordLabel.textContent = 'Keyword:';
+                
+                const keywordInput = document.createElement('input');
+                keywordInput.className = 'keyword-input';
+                keywordInput.value = drawing.keyword;
+                keywordInput.placeholder = 'Enter keyword';
+                keywordInput.style.marginBottom = '12px';
+                
+                const buttonDiv = document.createElement('div');
+                buttonDiv.className = 'item-buttons';
+                
+                const loadBtn = document.createElement('button');
+                loadBtn.className = 'item-btn load-btn';
+                loadBtn.textContent = 'Load';
+                loadBtn.onclick = () => {
+                    loadDrawingToCanvas(drawing.imageData);
+                    menuOverlay.classList.remove('active');
+                    showToast(`Loaded: "${drawing.keyword}"`);
+                };
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'item-btn delete-btn';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => {
+                    if (confirm(`Delete "${drawing.keyword}"?`)) {
+                        drawings = drawings.filter(d => d.id !== drawing.id);
+                        saveDrawingsToStorage();
+                        renderDrawingsList();
+                        showToast('Deleted');
+                    }
+                };
+                
+                buttonDiv.appendChild(loadBtn);
+                buttonDiv.appendChild(deleteBtn);
+                
+                item.appendChild(preview);
+                item.appendChild(keywordLabel);
+                item.appendChild(keywordInput);
+                item.appendChild(buttonDiv);
+                drawingsList.appendChild(item);
+                
+                // Draw preview
+                const previewCtx = preview.getContext('2d');
+                const img = new Image();
+                img.src = drawing.imageData;
+                img.onload = () => {
+                    const scale = Math.min(preview.width / img.width, preview.height / img.height);
+                    const x = (preview.width - img.width * scale) / 2;
+                    const y = (preview.height - img.height * scale) / 2;
+                    previewCtx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                };
+                
+                // Update keyword on blur
+                keywordInput.addEventListener('blur', () => {
+                    drawing.keyword = keywordInput.value.trim();
+                    saveDrawingsToStorage();
+                });
+            });
+        }
+
+        function loadDrawingToCanvas(imageData) {
+            const img = new Image();
+            img.src = imageData;
+            img.onload = () => {
+                clear();
+                ctx.drawImage(img, 0, 0);
+                saveState();
+            };
+        }
+
+        function showToast(message) {
+            statusToast.textContent = message;
+            statusToast.classList.add('show');
+            setTimeout(() => {
+                statusToast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Export/Import functions
+        function exportDrawings() {
+            if (drawings.length === 0) {
+                showToast('❌ No drawings to export');
+                return;
+            }
+
+            const dataStr = JSON.stringify(drawings, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `magic-drawings-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ Exported!');
+        }
+
+        function importDrawings(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (Array.isArray(imported)) {
+                        drawings = imported;
+                        saveDrawingsToStorage();
+                        renderDrawingsList();
+                        showToast('✅ Imported!');
+                    } else {
+                        showToast('❌ Invalid file');
+                    }
+                } catch (e) {
+                    showToast('❌ Failed to import');
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = '';
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
