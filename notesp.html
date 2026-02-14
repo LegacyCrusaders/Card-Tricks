@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Note</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .header-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: #333;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            position: relative;
+        }
+
+        .pen-btn {
+            background: #2196F3;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .pen-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .spacer {
+            width: 64px;
+        }
+
+        /* Secret keyboard button - invisible but clickable */
+        .secret-btn {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            opacity: 0;
+        }
+
+        /* Hidden input for keyboard */
+        #hiddenInput {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
+        /* Secret Menu Overlay */
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .menu-overlay.active {
+            display: block;
+        }
+
+        .menu-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-header {
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .menu-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .drawing-item {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9f9f9;
+        }
+
+        .drawing-preview {
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: white;
+        }
+
+        .drawing-keyword {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .drawing-keyword input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .drawing-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .small-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .update-btn {
+            background: #2196F3;
+            color: white;
+        }
+
+        .update-btn:hover {
+            background: #1976D2;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .load-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .load-btn:hover {
+            background: #45a049;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .add-btn:hover {
+            background: #1976D2;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            color: #666;
+        }
+
+        .status-msg {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            z-index: 2000;
+        }
+
+        .status-msg.show {
+            display: block;
+            animation: fadeInOut 2s;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Message -->
+    <div id="statusMsg" class="status-msg"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <button id="undoBtn" class="btn" title="Undo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                </svg>
+            </button>
+            <button id="clearBtn" class="btn" title="Clear">
+                <svg viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="header-title" id="headerTitle">Note</div>
+        <div class="spacer"></div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Bottom Toolbar -->
+    <div class="toolbar">
+        <button class="pen-btn">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                <path d="M2 2l7.586 7.586"></path>
+            </svg>
+        </button>
+        <!-- Secret button in bottom right corner -->
+        <button class="secret-btn" id="secretBtn"></button>
+    </div>
+
+    <!-- Hidden input for keyboard -->
+    <input type="text" id="hiddenInput" autocomplete="off">
+
+    <!-- Secret Menu Overlay -->
+    <div class="menu-overlay" id="menuOverlay">
+        <div class="menu-panel">
+            <div class="menu-header">
+                <h2>Manage Drawings</h2>
+                <button class="close-btn" id="closeMenu">&times;</button>
+            </div>
+            <div class="menu-content" id="menuContent">
+                <div id="drawingsList"></div>
+                <button class="add-btn" id="addDrawingBtn">+ Save Current Drawing</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const undoBtn = document.getElementById('undoBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const secretBtn = document.getElementById('secretBtn');
+        const hiddenInput = document.getElementById('hiddenInput');
+        const menuOverlay = document.getElementById('menuOverlay');
+        const closeMenu = document.getElementById('closeMenu');
+        const headerTitle = document.getElementById('headerTitle');
+        const addDrawingBtn = document.getElementById('addDrawingBtn');
+        const drawingsList = document.getElementById('drawingsList');
+        const statusMsg = document.getElementById('statusMsg');
+
+        let isDrawing = false;
+        let history = [];
+        let currentStep = -1;
+        let drawings = JSON.parse(localStorage.getItem('magicDrawings') || '[]');
+
+        // Set up canvas
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const oldImage = currentStep >= 0 ? canvas.toDataURL() : null;
+            
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            if (oldImage) {
+                const img = new Image();
+                img.src = oldImage;
+                img.onload = () => ctx.drawImage(img, 0, 0);
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Get coordinates
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
+            const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+            return { x, y };
+        }
+
+        // Save state
+        function saveState() {
+            const newHistory = history.slice(0, currentStep + 1);
+            newHistory.push(canvas.toDataURL());
+            history = newHistory;
+            currentStep = history.length - 1;
+            updateUndoButton();
+        }
+
+        function updateUndoButton() {
+            undoBtn.disabled = currentStep < 0;
+        }
+
+        // Drawing functions
+        function startDrawing(e) {
+            e.preventDefault();
+            const coords = getCoords(e);
+            ctx.beginPath();
+            ctx.moveTo(coords.x, coords.y);
+            isDrawing = true;
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const coords = getCoords(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing(e) {
+            if (isDrawing) {
+                e.preventDefault();
+                isDrawing = false;
+                saveState();
+            }
+        }
+
+        function undo() {
+            if (currentStep > 0) {
+                currentStep--;
+                const img = new Image();
+                img.src = history[currentStep];
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+            } else if (currentStep === 0) {
+                currentStep = -1;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            updateUndoButton();
+        }
+
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            history = [];
+            currentStep = -1;
+            updateUndoButton();
+        }
+
+        // Canvas events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        undoBtn.addEventListener('click', undo);
+        clearBtn.addEventListener('click', clear);
+
+        // SECRET FEATURE: Triple-click header to open menu
+        let clickCount = 0;
+        let clickTimer;
+        headerTitle.addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                if (clickCount >= 3) {
+                    openMenu();
+                }
+                clickCount = 0;
+            }, 500);
+        });
+
+        // SECRET BUTTON: Opens keyboard
+        secretBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            hiddenInput.focus();
+            hiddenInput.click();
+        });
+
+        // Listen for keywords typed in hidden input
+        hiddenInput.addEventListener('input', (e) => {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            // Check if keyword matches any drawing
+            const matchedDrawing = drawings.find(d => 
+                d.keyword.toLowerCase() === keyword
+            );
+            
+            if (matchedDrawing) {
+                loadDrawingToCanvas(matchedDrawing.imageData);
+                showStatus(`Loaded: "${matchedDrawing.keyword}"`);
+                hiddenInput.value = '';
+                hiddenInput.blur();
+            }
+        });
+
+        // Menu functions
+        function openMenu() {
+            renderDrawingsList();
+            menuOverlay.classList.add('active');
+        }
+
+        function closeMenuFn() {
+            menuOverlay.classList.remove('active');
+        }
+
+        closeMenu.addEventListener('click', closeMenuFn);
+        menuOverlay.addEventListener('click', (e) => {
+            if (e.target === menuOverlay) closeMenuFn();
+        });
+
+        // Add current drawing
+        addDrawingBtn.addEventListener('click', () => {
+            const imageData = canvas.toDataURL();
+            const keyword = prompt('Enter keyword for this drawing:');
+            
+            if (keyword && keyword.trim()) {
+                drawings.push({
+                    id: Date.now(),
+                    keyword: keyword.trim(),
+                    imageData: imageData
+                });
+                saveDrawings();
+                renderDrawingsList();
+                showStatus('Drawing saved!');
+            }
+        });
+
+        // Render drawings list
+        function renderDrawingsList() {
+            drawingsList.innerHTML = '';
+            
+            if (drawings.length === 0) {
+                drawingsList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">No drawings yet. Draw something and click "Save Current Drawing"</p>';
+                return;
+            }
+
+            drawings.forEach(drawing => {
+                const item = document.createElement('div');
+                item.className = 'drawing-item';
+                item.innerHTML = `
+                    <canvas class="drawing-preview" id="preview-${drawing.id}"></canvas>
+                    <div class="drawing-keyword">
+                        <input type="text" value="${drawing.keyword}" id="keyword-${drawing.id}" placeholder="Keyword">
+                    </div>
+                    <div class="drawing-actions">
+                        <button class="small-btn update-btn" onclick="updateKeyword(${drawing.id})">Update Keyword</button>
+                        <button class="small-btn load-btn" onclick="loadDrawing(${drawing.id})">Load to Canvas</button>
+                        <button class="small-btn delete-btn" onclick="deleteDrawing(${drawing.id})">Delete</button>
+                    </div>
+                `;
+                drawingsList.appendChild(item);
+
+                // Draw preview
+                const previewCanvas = document.getElementById(`preview-${drawing.id}`);
+                const previewCtx = previewCanvas.getContext('2d');
+                const img = new Image();
+                img.src = drawing.imageData;
+                img.onload = () => {
+                    const scale = Math.min(
+                        previewCanvas.width / img.width,
+                        previewCanvas.height / img.height
+                    );
+                    const x = (previewCanvas.width - img.width * scale) / 2;
+                    const y = (previewCanvas.height - img.height * scale) / 2;
+                    previewCtx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                };
+            });
+        }
+
+        // Drawing management functions
+        window.updateKeyword = function(id) {
+            const input = document.getElementById(`keyword-${id}`);
+            const newKeyword = input.value.trim();
+            
+            if (newKeyword) {
+                const drawing = drawings.find(d => d.id === id);
+                if (drawing) {
+                    drawing.keyword = newKeyword;
+                    saveDrawings();
+                    showStatus('Keyword updated!');
+                }
+            }
+        };
+
+        window.loadDrawing = function(id) {
+            const drawing = drawings.find(d => d.id === id);
+            if (drawing) {
+                loadDrawingToCanvas(drawing.imageData);
+                closeMenuFn();
+                showStatus(`Loaded: "${drawing.keyword}"`);
+            }
+        };
+
+        window.deleteDrawing = function(id) {
+            if (confirm('Delete this drawing?')) {
+                drawings = drawings.filter(d => d.id !== id);
+                saveDrawings();
+                renderDrawingsList();
+                showStatus('Drawing deleted');
+            }
+        };
+
+        function loadDrawingToCanvas(imageData) {
+            const img = new Image();
+            img.src = imageData;
+            img.onload = () => {
+                clear();
+                ctx.drawImage(img, 0, 0);
+                saveState();
+            };
+        }
+
+        function saveDrawings() {
+            localStorage.setItem('magicDrawings', JSON.stringify(drawings));
+        }
+
+        function showStatus(message) {
+            statusMsg.textContent = message;
+            statusMsg.classList.add('show');
+            setTimeout(() => {
+                statusMsg.classList.remove('show');
+            }, 2000);
+        }
+
+        updateUndoButton();
+    </script>
+</body>
+</html>
