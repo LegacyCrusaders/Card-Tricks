@@ -315,8 +315,71 @@
             padding: 12px 16px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             border-bottom: 1px solid #3a3a3a;
             height: 56px;
+        }
+
+        .settings-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .settings-header-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .version-display {
+            color: #888;
+            font-size: 11px;
+            margin-right: 8px;
+        }
+
+        .undo-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .undo-btn:active {
+            background: #f57c00;
+        }
+
+        .undo-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .export-btn, .import-btn {
+            background: #5e35b1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .export-btn:active, .import-btn:active {
+            background: #4a2c8f;
+        }
+
+        .import-btn {
+            background: #4CAF50;
+        }
+
+        .import-btn:active {
+            background: #45a049;
         }
 
         .settings-back-btn {
@@ -359,15 +422,26 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            cursor: pointer;
+            cursor: grab;
             transition: background 0.2s;
             min-height: 36px;
             border-bottom: 1px solid #3a3a3a;
             border-right: 1px solid #3a3a3a;
+            position: relative;
         }
 
         .settings-item:active {
             background: #3a3a3a;
+            cursor: grabbing;
+        }
+
+        .settings-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .settings-item.drag-over {
+            border: 2px solid #5e35b1;
         }
 
         .settings-item-left {
@@ -524,6 +598,45 @@
         .modal-save-btn:active {
             background: #4a2c8f;
         }
+
+        .modal-drawing-btn {
+            width: 100%;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .modal-drawing-btn:active {
+            background: #45a049;
+        }
+
+        .drawing-preview {
+            width: 100%;
+            height: 150px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .drawing-preview canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .drawing-preview-empty {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -536,7 +649,7 @@
             </svg>
         </div>
         <div class="app-title">Samsung Notes</div>
-        <div class="app-version">Version 4.3.11</div>
+        <div class="app-version">Version 2.0</div>
         <div class="tap-to-start">Tap to Start</div>
     </div>
 
@@ -616,12 +729,21 @@
     <!-- Secret Settings Page -->
     <div id="settingsPage">
         <div class="settings-header">
-            <button class="settings-back-btn" id="settingsBackBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
-                </svg>
-            </button>
-            <span class="settings-title">Settings</span>
+            <div class="settings-header-left">
+                <button class="settings-back-btn" id="settingsBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <span class="settings-title">Settings</span>
+                <span class="version-display">v2.0</span>
+            </div>
+            <div class="settings-header-right">
+                <button class="undo-btn" id="undoChangesBtn" disabled>Undo</button>
+                <button class="export-btn" id="exportBtn">Export</button>
+                <button class="import-btn" id="importBtn">Import</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
         </div>
         <div class="settings-grid">
             <div class="settings-item" data-item="Circle">
@@ -1224,6 +1346,54 @@
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
+            <div class="settings-item" data-item="Money">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💰</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Money</span>
+                        <span class="settings-code">valuable</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 1">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 1</span>
+                        <span class="settings-code">hypothyroidism</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 2">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 2</span>
+                        <span class="settings-code">osteoporosis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 3">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 3</span>
+                        <span class="settings-code">anaphylaxis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
         </div>
     </div>
 
@@ -1242,6 +1412,10 @@
                 <span class="modal-emoji" id="modalEmoji"></span>
                 <span class="modal-item-name" id="modalItemName"></span>
             </div>
+            <div class="drawing-preview" id="drawingPreview">
+                <span class="drawing-preview-empty">No custom drawing saved</span>
+            </div>
+            <button class="modal-drawing-btn" id="saveDrawingBtn">Save Current Drawing</button>
             <div class="modal-label">Code Word</div>
             <input type="text" class="modal-input" id="codeWordInput" placeholder="Enter code word...">
             <button class="modal-save-btn" id="modalSave">Save</button>
@@ -1306,7 +1480,11 @@
             'FU': 'rude',
             'Yes': 'correct',
             'No': 'wrong',
-            'Penis': 'adult'
+            'Penis': 'adult',
+            'Money': 'valuable',
+            'Custom 1': 'hypothyroidism',
+            'Custom 2': 'osteoporosis',
+            'Custom 3': 'anaphylaxis'
         };
 
         // Load code words from localStorage or use defaults
@@ -1333,6 +1511,56 @@
         const codeWords = loadCodeWords();
         let currentEditingItem = null;
 
+        // Custom drawings storage
+        const customDrawings = {};
+
+        // Load custom drawings from localStorage
+        function loadCustomDrawings() {
+            const saved = localStorage.getItem('magicTrickDrawings');
+            if (saved) {
+                try {
+                    const drawings = JSON.parse(saved);
+                    Object.assign(customDrawings, drawings);
+                    console.log('Loaded custom drawings:', Object.keys(customDrawings));
+                } catch (e) {
+                    console.error('Error loading custom drawings:', e);
+                }
+            }
+        }
+
+        // Save custom drawings to localStorage
+        function saveCustomDrawings() {
+            localStorage.setItem('magicTrickDrawings', JSON.stringify(customDrawings));
+            console.log('Custom drawings saved');
+        }
+
+        // Save current canvas as custom drawing for an item
+        function saveCurrentDrawing(itemName) {
+            // Get canvas data as base64 image
+            const dataURL = canvas.toDataURL('image/png');
+            customDrawings[itemName] = dataURL;
+            saveCustomDrawings();
+            console.log(`Saved custom drawing for ${itemName}`);
+        }
+
+        // Load custom drawing onto canvas
+        function loadCustomDrawing(itemName) {
+            const dataURL = customDrawings[itemName];
+            if (dataURL) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    strokes = [];
+                    redoStack = [];
+                    updateButtons();
+                };
+                img.src = dataURL;
+                return true;
+            }
+            return false;
+        }
+
         // Function to update code word display
         function updateCodeWordDisplay(item, codeWord) {
             const settingsItem = document.querySelector(`[data-item="${item}"]`);
@@ -1351,6 +1579,274 @@
             });
         }
 
+        // Load custom drawings on startup
+        loadCustomDrawings();
+
+        // Item order management
+        let itemOrder = [];
+
+        // Undo system
+        let undoStack = [];
+        const MAX_UNDO_STACK = 10;
+
+        // Save state to undo stack
+        function saveStateToUndo() {
+            const state = {
+                codeWords: JSON.parse(JSON.stringify(codeWords)),
+                itemOrder: JSON.parse(JSON.stringify(itemOrder)),
+                timestamp: Date.now()
+            };
+            
+            undoStack.push(state);
+            
+            // Keep only last 10 states
+            if (undoStack.length > MAX_UNDO_STACK) {
+                undoStack.shift();
+            }
+            
+            updateUndoButton();
+            console.log('State saved to undo stack');
+        }
+
+        // Undo last change
+        function undoLastChange() {
+            if (undoStack.length === 0) return;
+            
+            const previousState = undoStack.pop();
+            
+            // Restore code words
+            Object.keys(codeWords).forEach(key => delete codeWords[key]);
+            Object.assign(codeWords, previousState.codeWords);
+            saveCodeWords();
+            
+            // Restore item order
+            itemOrder = previousState.itemOrder;
+            saveItemOrder();
+            reorderItems();
+            
+            // Update displays
+            initializeCodeWordDisplays();
+            setupDragAndDrop();
+            
+            updateUndoButton();
+            console.log('Undid last change');
+        }
+
+        // Update undo button state
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoChangesBtn');
+            if (undoBtn) {
+                undoBtn.disabled = undoStack.length === 0;
+            }
+        }
+
+        // Load item order from localStorage
+        function loadItemOrder() {
+            const saved = localStorage.getItem('magicTrickItemOrder');
+            if (saved) {
+                try {
+                    itemOrder = JSON.parse(saved);
+                    console.log('Loaded item order');
+                } catch (e) {
+                    console.error('Error loading item order:', e);
+                    itemOrder = [];
+                }
+            }
+        }
+
+        // Save item order to localStorage
+        function saveItemOrder() {
+            localStorage.setItem('magicTrickItemOrder', JSON.stringify(itemOrder));
+            console.log('Item order saved');
+        }
+
+        // Initialize item order on page load
+        function initializeItemOrder() {
+            const items = document.querySelectorAll('.settings-item');
+            if (itemOrder.length === 0) {
+                // First time - save current order
+                items.forEach(item => {
+                    const name = item.querySelector('.settings-label').textContent;
+                    itemOrder.push(name);
+                });
+                saveItemOrder();
+            } else {
+                // Apply saved order
+                reorderItems();
+            }
+        }
+
+        // Reorder items based on saved order
+        function reorderItems() {
+            const grid = document.querySelector('.settings-grid');
+            const items = Array.from(document.querySelectorAll('.settings-item'));
+            
+            // Create a map of items by name
+            const itemMap = {};
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                itemMap[name] = item;
+            });
+            
+            // Remove all items from grid
+            items.forEach(item => item.remove());
+            
+            // Re-add items in saved order
+            itemOrder.forEach(name => {
+                if (itemMap[name]) {
+                    grid.appendChild(itemMap[name]);
+                }
+            });
+            
+            // Add any new items that aren't in the saved order
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                if (!itemOrder.includes(name)) {
+                    grid.appendChild(item);
+                    itemOrder.push(name);
+                }
+            });
+        }
+
+        // Setup drag and drop for items
+        function setupDragAndDrop() {
+            const items = document.querySelectorAll('.settings-item');
+            
+            items.forEach(item => {
+                item.draggable = true;
+                
+                item.addEventListener('dragstart', (e) => {
+                    // Save state before starting drag (in case order changes)
+                    saveStateToUndo();
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', (e) => {
+                    item.classList.remove('dragging');
+                    document.querySelectorAll('.settings-item').forEach(i => {
+                        i.classList.remove('drag-over');
+                    });
+                    
+                    // Update order after drag
+                    updateItemOrder();
+                });
+                
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const draggingItem = document.querySelector('.dragging');
+                    if (draggingItem && draggingItem !== item) {
+                        item.classList.add('drag-over');
+                    }
+                });
+                
+                item.addEventListener('dragleave', (e) => {
+                    item.classList.remove('drag-over');
+                });
+                
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const draggingItem = document.querySelector('.dragging');
+                    if (draggingItem && draggingItem !== item) {
+                        const grid = item.parentElement;
+                        const allItems = Array.from(grid.querySelectorAll('.settings-item'));
+                        const draggingIndex = allItems.indexOf(draggingItem);
+                        const targetIndex = allItems.indexOf(item);
+                        
+                        if (draggingIndex < targetIndex) {
+                            item.after(draggingItem);
+                        } else {
+                            item.before(draggingItem);
+                        }
+                    }
+                    item.classList.remove('drag-over');
+                });
+            });
+        }
+
+        // Update item order array based on current DOM order
+        function updateItemOrder() {
+            itemOrder = [];
+            const items = document.querySelectorAll('.settings-item');
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                itemOrder.push(name);
+            });
+            saveItemOrder();
+            console.log('Item order updated:', itemOrder);
+        }
+
+        // Load order and setup drag/drop
+        loadItemOrder();
+
+        // Export all data (code words + custom drawings + item order)
+        function exportData() {
+            const data = {
+                codeWords: codeWords,
+                customDrawings: customDrawings,
+                itemOrder: itemOrder,
+                exportDate: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `magic-trick-backup-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            console.log('Data exported successfully');
+        }
+
+        // Import data (code words + custom drawings + item order)
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data structure
+                    if (!data.codeWords || !data.customDrawings) {
+                        alert('Invalid backup file format');
+                        return;
+                    }
+                    
+                    // Import code words
+                    Object.assign(codeWords, data.codeWords);
+                    saveCodeWords();
+                    
+                    // Import custom drawings
+                    Object.assign(customDrawings, data.customDrawings);
+                    saveCustomDrawings();
+                    
+                    // Import item order if available
+                    if (data.itemOrder) {
+                        itemOrder = data.itemOrder;
+                        saveItemOrder();
+                        reorderItems();
+                    }
+                    
+                    // Update all displays
+                    initializeCodeWordDisplays();
+                    setupDragAndDrop();
+                    
+                    alert(`Successfully imported!\n${Object.keys(data.customDrawings).length} custom drawings\n${Object.keys(data.codeWords).length} code words`);
+                    console.log('Data imported successfully');
+                    
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('Error importing file. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
         // Start screen - click to start
         startScreen.addEventListener('click', () => {
             startScreen.classList.add('fade-out');
@@ -1366,10 +1862,42 @@
         // Settings page toggle
         document.querySelector('.menu-btn').addEventListener('click', () => {
             settingsPage.classList.add('active');
+            // Initialize drag and drop and order when opening settings
+            setTimeout(() => {
+                initializeItemOrder();
+                setupDragAndDrop();
+                updateUndoButton();
+            }, 100);
         });
 
         document.getElementById('settingsBackBtn').addEventListener('click', () => {
             settingsPage.classList.remove('active');
+        });
+
+        // Undo button
+        document.getElementById('undoChangesBtn').addEventListener('click', () => {
+            if (confirm('Undo last change? This will restore previous code words and item order.')) {
+                undoLastChange();
+            }
+        });
+
+        // Export button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            exportData();
+        });
+
+        // Import button
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+
+        // Import file input
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importData(file);
+                e.target.value = ''; // Reset file input
+            }
         });
 
         // Settings modal handlers
@@ -1384,8 +1912,55 @@
                 document.getElementById('modalEmoji').textContent = emoji;
                 document.getElementById('modalItemName').textContent = label;
                 document.getElementById('codeWordInput').value = codeWords[label];
+                
+                // Show custom drawing preview if exists
+                const preview = document.getElementById('drawingPreview');
+                if (customDrawings[label]) {
+                    preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+                    const previewCanvas = document.getElementById('previewCanvas');
+                    const previewCtx = previewCanvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                        const w = canvas.width * scale;
+                        const h = canvas.height * scale;
+                        const x = (200 - w) / 2;
+                        const y = (150 - h) / 2;
+                        previewCtx.clearRect(0, 0, 200, 150);
+                        previewCtx.drawImage(img, x, y, w, h);
+                    };
+                    img.src = customDrawings[label];
+                } else {
+                    preview.innerHTML = '<span class="drawing-preview-empty">No custom drawing saved</span>';
+                }
+                
                 settingsModal.classList.add('active');
             });
+        });
+
+        // Save drawing button
+        document.getElementById('saveDrawingBtn').addEventListener('click', () => {
+            if (currentEditingItem) {
+                saveCurrentDrawing(currentEditingItem);
+                alert(`Drawing saved for ${currentEditingItem}!`);
+                
+                // Update preview
+                const preview = document.getElementById('drawingPreview');
+                preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+                const previewCanvas = document.getElementById('previewCanvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                    const w = canvas.width * scale;
+                    const h = canvas.height * scale;
+                    const x = (200 - w) / 2;
+                    const y = (150 - h) / 2;
+                    previewCtx.clearRect(0, 0, 200, 150);
+                    previewCtx.drawImage(img, x, y, w, h);
+                };
+                img.src = customDrawings[currentEditingItem];
+            }
         });
 
         document.getElementById('modalClose').addEventListener('click', () => {
@@ -1396,6 +1971,9 @@
             if (currentEditingItem) {
                 const newCodeWord = document.getElementById('codeWordInput').value.trim();
                 if (newCodeWord) {
+                    // Save state before making changes
+                    saveStateToUndo();
+                    
                     codeWords[currentEditingItem] = newCodeWord;
                     updateCodeWordDisplay(currentEditingItem, newCodeWord);
                     saveCodeWords();
@@ -1439,10 +2017,8 @@
                         console.log(`Code word detected: "${codeWord}" for ${item}`);
                         voiceOverlay.textContent = `Detected: ${item}!`;
                         drawPredefinedShape(item);
-                        // Stop listening after detection
-                        setTimeout(() => {
-                            stopListening();
-                        }, 1000);
+                        // Don't stop listening - let it continue
+                        // User can manually stop by clicking mic button
                         break;
                     }
                 }
@@ -1514,9 +2090,13 @@
             strokes = [];
             redoStack = [];
             
-            // Draw the shape based on item name
-            // For now, we'll draw simple text/emoji as placeholder
-            // You can replace with custom drawings later
+            // Try to load custom drawing first
+            if (loadCustomDrawing(itemName)) {
+                console.log(`Loaded custom drawing for ${itemName}`);
+                return;
+            }
+            
+            // Fallback to emoji if no custom drawing exists
             ctx.save();
             ctx.font = '120px Arial';
             ctx.textAlign = 'center';
@@ -1577,7 +2157,11 @@
                 'FU': '🖕',
                 'Yes': '✅',
                 'No': '❌',
-                'Penis': '🍆'
+                'Penis': '🍆',
+                'Money': '💰',
+                'Custom 1': '⚪',
+                'Custom 2': '⚪',
+                'Custom 3': '⚪'
             };
             
             const emoji = emojiMap[itemName] || '❓';
