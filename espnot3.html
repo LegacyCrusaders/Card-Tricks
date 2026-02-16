@@ -2363,46 +2363,39 @@ for (const [item, codeWord] of Object.entries(codeWords)) {
             redrawCanvas();
         });
     
-
-
-
-// === SAFE Mic Toggle Extension ===
+/* === Bottom Bar + Settings Mic Access Extension === */
 (function(){
-
-    if (typeof toggleMic !== 'function') return;
 
     const bottomToolbar = document.getElementById('bottomToolbar');
     const settingsPage = document.getElementById('settingsPage');
 
-    // Bottom bar tap (except buttons)
-    if (bottomToolbar) {
-        bottomToolbar.addEventListener('click', function(e) {
+    if (typeof toggleMic !== 'function') return;
 
+    // Bottom toolbar (except pen, eraser, mic button)
+    if (bottomToolbar) {
+        bottomToolbar.addEventListener('click', function(e){
             if (e.target.closest('#penBtn') ||
                 e.target.closest('#eraserBtn') ||
                 e.target.closest('#micBtn')) {
                 return;
             }
-
             toggleMic();
         });
     }
 
-    // Secret page tap (empty space only)
+    // Settings page empty space
     if (settingsPage) {
-        settingsPage.addEventListener('click', function(e) {
-
+        settingsPage.addEventListener('click', function(e){
             if (e.target.closest('.settings-item') ||
                 e.target.closest('.settings-header')) {
                 return;
             }
-
             toggleMic();
         });
     }
 
 })();
-// === END SAFE Mic Toggle Extension ===
+/* === End Extension === */
 
 </script>
 </body>
