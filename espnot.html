@@ -32,6 +32,7 @@
             justify-content: center;
             z-index: 1000;
             transition: opacity 0.5s ease;
+            cursor: pointer;
         }
 
         #startScreen.fade-out {
@@ -66,6 +67,18 @@
         .app-version {
             color: rgba(255,255,255,0.8);
             font-size: 16px;
+        }
+
+        .tap-to-start {
+            color: rgba(255,255,255,0.9);
+            font-size: 18px;
+            margin-top: 40px;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         /* Main App */
@@ -248,6 +261,35 @@
 
         .mic-btn:active {
             background: #e0e0e0;
+        }
+
+        .mic-btn.listening {
+            background: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Voice recognition overlay */
+        .voice-overlay {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .voice-overlay.active {
+            display: block;
         }
 
         /* Secret Settings Page */
@@ -495,6 +537,7 @@
         </div>
         <div class="app-title">Samsung Notes</div>
         <div class="app-version">Version 4.3.11</div>
+        <div class="tap-to-start">Tap to Start</div>
     </div>
 
     <!-- Main App -->
@@ -566,6 +609,9 @@
             </button>
         </div>
     </div>
+
+    <!-- Voice Recognition Overlay -->
+    <div class="voice-overlay" id="voiceOverlay">Listening...</div>
 
     <!-- Secret Settings Page -->
     <div id="settingsPage">
@@ -698,363 +744,483 @@
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Heart">
                 <div class="settings-item-left">
                     <span class="settings-emoji">❤️</span>
-                    <span class="settings-label">Heart</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Heart</span>
+                        <span class="settings-code">love</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Boat">
                 <div class="settings-item-left">
                     <span class="settings-emoji">⛵</span>
-                    <span class="settings-label">Boat</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Boat</span>
+                        <span class="settings-code">sailing</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="House">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🏠</span>
-                    <span class="settings-label">House</span>
+                    <div class="settings-text">
+                        <span class="settings-label">House</span>
+                        <span class="settings-code">home</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Bicycle">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🚲</span>
-                    <span class="settings-label">Bicycle</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bicycle</span>
+                        <span class="settings-code">riding</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Train">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🚂</span>
-                    <span class="settings-label">Train</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Train</span>
+                        <span class="settings-code">tracks</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Plane">
                 <div class="settings-item-left">
                     <span class="settings-emoji">✈️</span>
-                    <span class="settings-label">Plane</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Plane</span>
+                        <span class="settings-code">flying</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Rocket Ship">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🚀</span>
-                    <span class="settings-label">Rocket Ship</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rocket Ship</span>
+                        <span class="settings-code">space</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Table">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🪑</span>
-                    <span class="settings-label">Table</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Table</span>
+                        <span class="settings-code">furniture</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Television">
                 <div class="settings-item-left">
                     <span class="settings-emoji">📺</span>
-                    <span class="settings-label">Television</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Television</span>
+                        <span class="settings-code">screen</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Music">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🎵</span>
-                    <span class="settings-label">Music Note</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Music</span>
+                        <span class="settings-code">melody</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Phone">
                 <div class="settings-item-left">
                     <span class="settings-emoji">📱</span>
-                    <span class="settings-label">Phone</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Phone</span>
+                        <span class="settings-code">calling</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Light Bulb">
                 <div class="settings-item-left">
                     <span class="settings-emoji">💡</span>
-                    <span class="settings-label">Light Bulb</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Light Bulb</span>
+                        <span class="settings-code">idea</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Book">
                 <div class="settings-item-left">
                     <span class="settings-emoji">📖</span>
-                    <span class="settings-label">Book</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Book</span>
+                        <span class="settings-code">reading</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Balloon">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🎈</span>
-                    <span class="settings-label">Balloon</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Balloon</span>
+                        <span class="settings-code">party</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Racket">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🎾</span>
-                    <span class="settings-label">Tennis Racket</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Racket</span>
+                        <span class="settings-code">sport</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Apple">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🍎</span>
-                    <span class="settings-label">Apple</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Apple</span>
+                        <span class="settings-code">fruit</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Wine">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🍷</span>
-                    <span class="settings-label">Wine</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Wine</span>
+                        <span class="settings-code">drink</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Pencil">
                 <div class="settings-item-left">
                     <span class="settings-emoji">✏️</span>
-                    <span class="settings-label">Pencil</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Pencil</span>
+                        <span class="settings-code">writing</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Lock">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🔒</span>
-                    <span class="settings-label">Lock</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lock</span>
+                        <span class="settings-code">secure</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Time">
                 <div class="settings-item-left">
                     <span class="settings-emoji">⏰</span>
-                    <span class="settings-label">Keeping Time</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Time</span>
+                        <span class="settings-code">clock</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Sword">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🗡️</span>
-                    <span class="settings-label">Knife/Sword</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sword</span>
+                        <span class="settings-code">sharp</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Gun">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🔫</span>
-                    <span class="settings-label">Gun</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Gun</span>
+                        <span class="settings-code">weapon</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Tree">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🌳</span>
-                    <span class="settings-label">Tree</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Tree</span>
+                        <span class="settings-code">nature</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Flower">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🌸</span>
-                    <span class="settings-label">Flower</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Flower</span>
+                        <span class="settings-code">beautiful</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Sun">
                 <div class="settings-item-left">
                     <span class="settings-emoji">☀️</span>
-                    <span class="settings-label">Sun</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sun</span>
+                        <span class="settings-code">sunny</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Moon">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🌙</span>
-                    <span class="settings-label">Moon</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Moon</span>
+                        <span class="settings-code">night</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Rain">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🌧️</span>
-                    <span class="settings-label">Clouds/Rain</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rain</span>
+                        <span class="settings-code">weather</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Lightning">
                 <div class="settings-item-left">
                     <span class="settings-emoji">⚡</span>
-                    <span class="settings-label">Lightning</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lightning</span>
+                        <span class="settings-code">storm</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Dog">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🐕</span>
-                    <span class="settings-label">Dog</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Dog</span>
+                        <span class="settings-code">puppy</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Cat">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🐈</span>
-                    <span class="settings-label">Cat</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Cat</span>
+                        <span class="settings-code">kitty</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Fish">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🐟</span>
-                    <span class="settings-label">Fish</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Fish</span>
+                        <span class="settings-code">swimming</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Bird">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🐦</span>
-                    <span class="settings-label">Bird</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bird</span>
+                        <span class="settings-code">chirping</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="UFO">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🛸</span>
-                    <span class="settings-label">Flying Saucer</span>
+                    <div class="settings-text">
+                        <span class="settings-label">UFO</span>
+                        <span class="settings-code">alien</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Ghost">
                 <div class="settings-item-left">
                     <span class="settings-emoji">👻</span>
-                    <span class="settings-label">Ghost</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Ghost</span>
+                        <span class="settings-code">spooky</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Skull">
                 <div class="settings-item-left">
                     <span class="settings-emoji">💀</span>
-                    <span class="settings-label">Skull</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Skull</span>
+                        <span class="settings-code">scary</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Nothing">
                 <div class="settings-item-left">
                     <span class="settings-emoji">⚫</span>
-                    <span class="settings-label">Nothing</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Nothing</span>
+                        <span class="settings-code">blank</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="FU">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🖕</span>
-                    <span class="settings-label">Middle Finger</span>
+                    <div class="settings-text">
+                        <span class="settings-label">FU</span>
+                        <span class="settings-code">rude</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Yes">
                 <div class="settings-item-left">
                     <span class="settings-emoji">✅</span>
-                    <span class="settings-label">Yes</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Yes</span>
+                        <span class="settings-code">correct</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="No">
                 <div class="settings-item-left">
                     <span class="settings-emoji">❌</span>
-                    <span class="settings-label">No</span>
+                    <div class="settings-text">
+                        <span class="settings-label">No</span>
+                        <span class="settings-code">wrong</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
-            <div class="settings-item">
+            <div class="settings-item" data-item="Penis">
                 <div class="settings-item-left">
                     <span class="settings-emoji">🍆</span>
-                    <span class="settings-label">Penis</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Penis</span>
+                        <span class="settings-code">adult</span>
+                    </div>
                 </div>
-                <svg class="settings-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
                 </svg>
             </div>
@@ -1165,7 +1331,6 @@
 
         // Initialize code words
         const codeWords = loadCodeWords();
-
         let currentEditingItem = null;
 
         // Function to update code word display
@@ -1186,7 +1351,8 @@
             });
         }
 
-        setTimeout(() => {
+        // Start screen - click to start
+        startScreen.addEventListener('click', () => {
             startScreen.classList.add('fade-out');
             setTimeout(() => {
                 startScreen.style.display = 'none';
@@ -1195,7 +1361,7 @@
                 initializeCodeWordDisplays();
                 enterFullscreen();
             }, 500);
-        }, 2000);
+        });
 
         // Settings page toggle
         document.querySelector('.menu-btn').addEventListener('click', () => {
@@ -1245,6 +1411,183 @@
                 settingsModal.classList.remove('active');
             }
         });
+
+        // Voice Recognition Setup
+        let recognition = null;
+        let isListening = false;
+        const micBtn = document.getElementById('micBtn');
+        const voiceOverlay = document.getElementById('voiceOverlay');
+
+        // Check if browser supports speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript.toLowerCase())
+                    .join(' ');
+                
+                voiceOverlay.textContent = `Heard: "${transcript}"`;
+                
+                // Check if any code word was said
+                for (const [item, codeWord] of Object.entries(codeWords)) {
+                    if (transcript.includes(codeWord.toLowerCase())) {
+                        console.log(`Code word detected: "${codeWord}" for ${item}`);
+                        voiceOverlay.textContent = `Detected: ${item}!`;
+                        drawPredefinedShape(item);
+                        // Stop listening after detection
+                        setTimeout(() => {
+                            stopListening();
+                        }, 1000);
+                        break;
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    // Restart if still supposed to be listening
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('Recognition restart failed:', e);
+                        stopListening();
+                    }
+                }
+            };
+        }
+
+        function startListening() {
+            if (!recognition) {
+                alert('Speech recognition not supported in this browser');
+                return;
+            }
+            
+            isListening = true;
+            micBtn.classList.add('listening');
+            voiceOverlay.classList.add('active');
+            voiceOverlay.textContent = 'Listening...';
+            
+            try {
+                recognition.start();
+            } catch (e) {
+                console.log('Recognition already started');
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            voiceOverlay.classList.remove('active');
+            
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log('Recognition stop failed:', e);
+                }
+            }
+        }
+
+        // Toggle listening on microphone button click
+        micBtn.addEventListener('click', () => {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        });
+
+        // Function to draw predefined shapes when code word is detected
+        function drawPredefinedShape(itemName) {
+            // Clear current drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = [];
+            redoStack = [];
+            
+            // Draw the shape based on item name
+            // For now, we'll draw simple text/emoji as placeholder
+            // You can replace with custom drawings later
+            ctx.save();
+            ctx.font = '120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Get emoji for the item
+            const emojiMap = {
+                'Circle': '⭕',
+                'Plus Sign': '➕',
+                'Wavy Lines': '〰️',
+                'Triangle': '🔺',
+                'Square': '⬜',
+                'Star': '⭐',
+                'Man': '👨',
+                'Woman': '👩',
+                'Smiley Face': '😊',
+                'Sad Face': '😢',
+                'Heart': '❤️',
+                'Boat': '⛵',
+                'House': '🏠',
+                'Bicycle': '🚲',
+                'Train': '🚂',
+                'Plane': '✈️',
+                'Rocket Ship': '🚀',
+                'Table': '🪑',
+                'Television': '📺',
+                'Music': '🎵',
+                'Phone': '📱',
+                'Light Bulb': '💡',
+                'Book': '📖',
+                'Balloon': '🎈',
+                'Racket': '🎾',
+                'Apple': '🍎',
+                'Wine': '🍷',
+                'Pencil': '✏️',
+                'Lock': '🔒',
+                'Time': '⏰',
+                'Sword': '🗡️',
+                'Gun': '🔫',
+                'Tree': '🌳',
+                'Flower': '🌸',
+                'Sun': '☀️',
+                'Moon': '🌙',
+                'Rain': '🌧️',
+                'Lightning': '⚡',
+                'Dog': '🐕',
+                'Cat': '🐈',
+                'Fish': '🐟',
+                'Bird': '🐦',
+                'UFO': '🛸',
+                'Ghost': '👻',
+                'Skull': '💀',
+                'Nothing': '',
+                'FU': '🖕',
+                'Yes': '✅',
+                'No': '❌',
+                'Penis': '🍆'
+            };
+            
+            const emoji = emojiMap[itemName] || '❓';
+            if (emoji) {
+                ctx.fillText(emoji, centerX, centerY);
+            }
+            
+            ctx.restore();
+            updateButtons();
+        }
 
         // Fullscreen
         function enterFullscreen() {
@@ -1378,12 +1721,10 @@
 
         // Clear button functionality
         document.getElementById('clearBtn').addEventListener('click', () => {
-            if (strokes.length > 0 && confirm('Clear all drawings?')) {
-                strokes = [];
-                redoStack = [];
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                updateButtons();
-            }
+            strokes = [];
+            redoStack = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateButtons();
         });
 
         function redrawCanvas() {
