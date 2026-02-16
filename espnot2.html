@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Samsung One', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Start Screen */
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+            cursor: pointer;
+        }
+
+        #startScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .app-icon svg {
+            width: 70px;
+            height: 70px;
+        }
+
+        .app-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .app-version {
+            color: rgba(255,255,255,0.8);
+            font-size: 16px;
+        }
+
+        .tap-to-start {
+            color: rgba(255,255,255,0.9);
+            font-size: 18px;
+            margin-top: 40px;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Main App */
+        #mainApp {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            background: #1a1a1a;
+            flex-direction: column;
+        }
+
+        #mainApp.active {
+            display: flex;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a;
+            height: 56px;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-bar-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .menu-btn, .top-icon-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-btn:active, .top-icon-btn:active {
+            background: #3a3a3a;
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Drawing Canvas */
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+
+        #drawingCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Bottom Toolbar */
+        .bottom-toolbar {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #3a3a3a;
+            height: 64px;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .tool-btn:active {
+            background: #3a3a3a;
+        }
+
+        .tool-btn.active {
+            background: #3a3a3a;
+        }
+
+        .tool-btn svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+
+        .tool-label {
+            font-size: 11px;
+            color: #b0b0b0;
+        }
+
+        .tool-btn.active .tool-label {
+            color: #fff;
+        }
+
+        /* Color picker popup */
+        .color-picker-popup {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .color-picker-popup.active {
+            display: flex;
+        }
+
+        .color-picker-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-option:active {
+            transform: scale(0.9);
+        }
+
+        .color-option.selected {
+            border-color: #5e35b1;
+            transform: scale(1.1);
+        }
+
+        /* Text input overlay */
+        .text-input-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .text-input-overlay.active {
+            display: flex;
+        }
+
+        .text-input-box {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .text-input-label {
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .text-input-field {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 2px solid #3a3a3a;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+
+        .text-input-field:focus {
+            outline: none;
+            border-color: #5e35b1;
+        }
+
+        .text-input-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .text-input-cancel, .text-input-add {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .text-input-cancel {
+            background: #555;
+            color: #fff;
+        }
+
+        .text-input-add {
+            background: #5e35b1;
+            color: #fff;
+        }
+
+        .text-input-cancel:active {
+            background: #444;
+        }
+
+        .text-input-add:active {
+            background: #4a2c8f;
+        }
+
+        /* Undo/Redo buttons */
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-btn:active {
+            background: #3a3a3a;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .action-btn:disabled:active {
+            background: transparent;
+        }
+
+        /* Microphone button */
+        .mic-btn {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .mic-btn:active {
+            background: #e0e0e0;
+        }
+
+        .mic-btn.listening {
+            background: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Voice recognition overlay */
+        .voice-overlay {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .voice-overlay.active {
+            display: block;
+        }
+
+        /* Secret Settings Page */
+        #settingsPage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #settingsPage.active {
+            display: flex;
+        }
+
+        .settings-header {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a;
+            height: 56px;
+        }
+
+        .settings-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .settings-header-right {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .version-display {
+            color: #888;
+            font-size: 11px;
+            margin-right: 8px;
+        }
+
+        .undo-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .undo-btn:active {
+            background: #f57c00;
+        }
+
+        .undo-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .export-btn, .import-btn {
+            background: #5e35b1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .export-btn:active, .import-btn:active {
+            background: #4a2c8f;
+        }
+
+        .import-btn {
+            background: #4CAF50;
+        }
+
+        .import-btn:active {
+            background: #45a049;
+        }
+
+        .settings-back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-right: 12px;
+        }
+
+        .settings-back-btn:active {
+            background: #3a3a3a;
+        }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0px;
+            background: #1a1a1a;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+        }
+
+        .settings-item {
+            background: #2a2a2a;
+            padding: 4px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: grab;
+            transition: background 0.2s;
+            min-height: 36px;
+            border-bottom: 1px solid #3a3a3a;
+            border-right: 1px solid #3a3a3a;
+            position: relative;
+        }
+
+        .settings-item:active {
+            background: #3a3a3a;
+            cursor: grabbing;
+        }
+
+        .settings-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .settings-item.drag-over {
+            border: 2px solid #5e35b1;
+        }
+
+        .settings-item-left {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .settings-emoji {
+            font-size: 14px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .settings-text {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .settings-label {
+            font-size: 9px;
+            color: #fff;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .settings-code {
+            font-size: 8px;
+            color: #888;
+            font-weight: 400;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .settings-icon {
+            flex-shrink: 0;
+        }
+
+        /* Settings Modal */
+        #settingsModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #settingsModal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .modal-close:active {
+            background: #3a3a3a;
+        }
+
+        .modal-item-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-emoji {
+            font-size: 48px;
+        }
+
+        .modal-item-name {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .modal-label {
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 8px;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #5e35b1;
+        }
+
+        .modal-save-btn {
+            width: 100%;
+            background: #5e35b1;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .modal-save-btn:active {
+            background: #4a2c8f;
+        }
+
+        .modal-drawing-btn {
+            width: 100%;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .modal-drawing-btn:active {
+            background: #45a049;
+        }
+
+        .drawing-preview {
+            width: 100%;
+            height: 150px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .drawing-preview canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .drawing-preview-empty {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="startScreen">
+        <div class="app-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" stroke="#667eea" stroke-width="2" fill="none"/>
+                <path d="M7 7h10M7 11h10M7 15h7" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="app-title">Samsung Notes</div>
+        <div class="app-version">Version 2.0</div>
+        <div class="tap-to-start">Tap to Start</div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <button class="menu-btn" aria-label="Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="6" r="2" fill="#fff"/>
+                        <circle cx="12" cy="12" r="2" fill="#fff"/>
+                        <circle cx="12" cy="18" r="2" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="top-bar-center">
+                <button class="action-btn" id="undoBtn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/>
+                    </svg>
+                </button>
+                <button class="action-btn" id="redoBtn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/>
+                    </svg>
+                </button>
+                <button class="action-btn" id="clearBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="top-bar-right">
+                <button class="top-icon-btn" aria-label="Share">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
+
+        <!-- Bottom Toolbar -->
+        <div class="bottom-toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" id="penBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/>
+                    </svg>
+                    <span class="tool-label">Pen</span>
+                </button>
+                <button class="tool-btn" id="highlighterBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M17.75 7L14 3.25l-10 10V17h3.75l10-10zm2.96-2.96a.996.996 0 000-1.41L18.37.29a.996.996 0 00-1.41 0L15 2.25 18.75 6l1.96-1.96z" fill="#fff" opacity="0.9"/>
+                        <path d="M2 20h20v4H2z" fill="#fff" opacity="0.6"/>
+                    </svg>
+                    <span class="tool-label">Highlight</span>
+                </button>
+                <button class="tool-btn" id="eraserBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/>
+                    </svg>
+                    <span class="tool-label">Eraser</span>
+                </button>
+                <button class="tool-btn" id="textBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 4v3h5.5v12h3V7H19V4z" fill="#fff"/>
+                    </svg>
+                    <span class="tool-label">Text</span>
+                </button>
+            </div>
+            
+            <button class="mic-btn" id="micBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#000"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Color Picker Popup -->
+    <div class="color-picker-popup" id="colorPickerPopup">
+        <div class="color-picker-title">Choose Color</div>
+        <div class="color-options">
+            <div class="color-option selected" data-color="#ffffff" style="background: #ffffff; border-color: #333;"></div>
+            <div class="color-option" data-color="#000000" style="background: #000000;"></div>
+            <div class="color-option" data-color="#FF0000" style="background: #FF0000;"></div>
+            <div class="color-option" data-color="#00FF00" style="background: #00FF00;"></div>
+            <div class="color-option" data-color="#0000FF" style="background: #0000FF;"></div>
+            <div class="color-option" data-color="#FFEB3B" style="background: #FFEB3B;"></div>
+            <div class="color-option" data-color="#FF9800" style="background: #FF9800;"></div>
+            <div class="color-option" data-color="#9C27B0" style="background: #9C27B0;"></div>
+        </div>
+    </div>
+
+    <!-- Text Input Overlay -->
+    <div class="text-input-overlay" id="textInputOverlay">
+        <div class="text-input-box">
+            <div class="text-input-label">Enter Text</div>
+            <input type="text" class="text-input-field" id="textInputField" placeholder="Type here...">
+            <div class="text-input-buttons">
+                <button class="text-input-cancel" id="textInputCancel">Cancel</button>
+                <button class="text-input-add" id="textInputAdd">Add to Canvas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Voice Recognition Overlay -->
+    <div class="voice-overlay" id="voiceOverlay">Listening...</div>
+
+    <!-- Secret Settings Page -->
+    <div id="settingsPage">
+        <div class="settings-header">
+            <div class="settings-header-left">
+                <button class="settings-back-btn" id="settingsBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <span class="settings-title">Settings</span>
+                <span class="version-display">v2.0</span>
+            </div>
+            <div class="settings-header-right">
+                <button class="undo-btn" id="undoChangesBtn" disabled>Undo</button>
+                <button class="export-btn" id="exportBtn">Export</button>
+                <button class="import-btn" id="importBtn">Import</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </div>
+        <div class="settings-grid">
+            <div class="settings-item" data-item="Circle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⭕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Circle</span>
+                        <span class="settings-code">simple</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Plus Sign">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">➕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Plus Sign</span>
+                        <span class="settings-code">addition</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Wavy Lines">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">〰️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Wavy Lines</span>
+                        <span class="settings-code">flowing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Triangle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔺</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Triangle</span>
+                        <span class="settings-code">pointy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Square">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⬜</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Square</span>
+                        <span class="settings-code">boxy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Star">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⭐</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Star</span>
+                        <span class="settings-code">bright</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Man">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👨</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Man</span>
+                        <span class="settings-code">male</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Woman">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👩</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Woman</span>
+                        <span class="settings-code">female</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Smiley Face">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">😊</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Smiley Face</span>
+                        <span class="settings-code">happy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Sad Face">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">😢</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sad Face</span>
+                        <span class="settings-code">unhappy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Heart">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">❤️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Heart</span>
+                        <span class="settings-code">love</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Boat">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⛵</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Boat</span>
+                        <span class="settings-code">sailing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="House">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🏠</span>
+                    <div class="settings-text">
+                        <span class="settings-label">House</span>
+                        <span class="settings-code">home</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Bicycle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚲</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bicycle</span>
+                        <span class="settings-code">riding</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Train">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚂</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Train</span>
+                        <span class="settings-code">tracks</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Plane">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✈️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Plane</span>
+                        <span class="settings-code">flying</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Rocket Ship">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚀</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rocket Ship</span>
+                        <span class="settings-code">space</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Table">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🪑</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Table</span>
+                        <span class="settings-code">furniture</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Television">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📺</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Television</span>
+                        <span class="settings-code">screen</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Music">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎵</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Music</span>
+                        <span class="settings-code">melody</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Phone">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📱</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Phone</span>
+                        <span class="settings-code">calling</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Light Bulb">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💡</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Light Bulb</span>
+                        <span class="settings-code">idea</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Book">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📖</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Book</span>
+                        <span class="settings-code">reading</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Balloon">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎈</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Balloon</span>
+                        <span class="settings-code">party</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Racket">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎾</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Racket</span>
+                        <span class="settings-code">sport</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Apple">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍎</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Apple</span>
+                        <span class="settings-code">fruit</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Wine">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍷</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Wine</span>
+                        <span class="settings-code">drink</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Pencil">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✏️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Pencil</span>
+                        <span class="settings-code">writing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Lock">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔒</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lock</span>
+                        <span class="settings-code">secure</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Time">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⏰</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Time</span>
+                        <span class="settings-code">clock</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Sword">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🗡️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sword</span>
+                        <span class="settings-code">sharp</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Gun">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔫</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Gun</span>
+                        <span class="settings-code">weapon</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Tree">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌳</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Tree</span>
+                        <span class="settings-code">nature</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Flower">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌸</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Flower</span>
+                        <span class="settings-code">beautiful</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Sun">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">☀️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sun</span>
+                        <span class="settings-code">sunny</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Moon">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌙</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Moon</span>
+                        <span class="settings-code">night</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Rain">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌧️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rain</span>
+                        <span class="settings-code">weather</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Lightning">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚡</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lightning</span>
+                        <span class="settings-code">storm</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Dog">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Dog</span>
+                        <span class="settings-code">puppy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Cat">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐈</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Cat</span>
+                        <span class="settings-code">kitty</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Fish">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐟</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Fish</span>
+                        <span class="settings-code">swimming</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Bird">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐦</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bird</span>
+                        <span class="settings-code">chirping</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="UFO">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🛸</span>
+                    <div class="settings-text">
+                        <span class="settings-label">UFO</span>
+                        <span class="settings-code">alien</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Ghost">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👻</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Ghost</span>
+                        <span class="settings-code">spooky</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Skull">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💀</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Skull</span>
+                        <span class="settings-code">scary</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Nothing">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚫</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Nothing</span>
+                        <span class="settings-code">blank</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="FU">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🖕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">FU</span>
+                        <span class="settings-code">rude</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Yes">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✅</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Yes</span>
+                        <span class="settings-code">correct</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="No">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">❌</span>
+                    <div class="settings-text">
+                        <span class="settings-label">No</span>
+                        <span class="settings-code">wrong</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Penis">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍆</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Penis</span>
+                        <span class="settings-code">adult</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Money">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💰</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Money</span>
+                        <span class="settings-code">valuable</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 1">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 1</span>
+                        <span class="settings-code">hypothyroidism</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 2">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 2</span>
+                        <span class="settings-code">osteoporosis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+            <div class="settings-item" data-item="Custom 3">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 3</span>
+                        <span class="settings-code">anaphylaxis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Edit Code Word</span>
+                <button class="modal-close" id="modalClose">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-item-display">
+                <span class="modal-emoji" id="modalEmoji"></span>
+                <span class="modal-item-name" id="modalItemName"></span>
+            </div>
+            <div class="drawing-preview" id="drawingPreview">
+                <span class="drawing-preview-empty">No custom drawing saved</span>
+            </div>
+            <button class="modal-drawing-btn" id="saveDrawingBtn">Save Current Drawing</button>
+            <div class="modal-label">Code Word</div>
+            <input type="text" class="modal-input" id="codeWordInput" placeholder="Enter code word...">
+            <button class="modal-save-btn" id="modalSave">Save</button>
+        </div>
+    </div>
+
+    <script>
+        // Start screen functionality
+        const startScreen = document.getElementById('startScreen');
+        const mainApp = document.getElementById('mainApp');
+        const settingsPage = document.getElementById('settingsPage');
+        const settingsModal = document.getElementById('settingsModal');
+
+        // Default code words for each item
+        const defaultCodeWords = {
+            'Circle': 'simple',
+            'Plus Sign': 'addition',
+            'Wavy Lines': 'flowing',
+            'Triangle': 'pointy',
+            'Square': 'boxy',
+            'Star': 'bright',
+            'Man': 'male',
+            'Woman': 'female',
+            'Smiley Face': 'happy',
+            'Sad Face': 'unhappy',
+            'Heart': 'love',
+            'Boat': 'sailing',
+            'House': 'home',
+            'Bicycle': 'riding',
+            'Train': 'tracks',
+            'Plane': 'flying',
+            'Rocket Ship': 'space',
+            'Table': 'furniture',
+            'Television': 'screen',
+            'Music': 'melody',
+            'Phone': 'calling',
+            'Light Bulb': 'idea',
+            'Book': 'reading',
+            'Balloon': 'party',
+            'Racket': 'sport',
+            'Apple': 'fruit',
+            'Wine': 'drink',
+            'Pencil': 'writing',
+            'Lock': 'secure',
+            'Time': 'clock',
+            'Sword': 'sharp',
+            'Gun': 'weapon',
+            'Tree': 'nature',
+            'Flower': 'beautiful',
+            'Sun': 'sunny',
+            'Moon': 'night',
+            'Rain': 'weather',
+            'Lightning': 'storm',
+            'Dog': 'puppy',
+            'Cat': 'kitty',
+            'Fish': 'swimming',
+            'Bird': 'chirping',
+            'UFO': 'alien',
+            'Ghost': 'spooky',
+            'Skull': 'scary',
+            'Nothing': 'blank',
+            'FU': 'rude',
+            'Yes': 'correct',
+            'No': 'wrong',
+            'Penis': 'adult',
+            'Money': 'valuable',
+            'Custom 1': 'hypothyroidism',
+            'Custom 2': 'osteoporosis',
+            'Custom 3': 'anaphylaxis'
+        };
+
+        // Load code words from localStorage or use defaults
+        function loadCodeWords() {
+            const saved = localStorage.getItem('magicTrickCodeWords');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error loading saved code words:', e);
+                    return {...defaultCodeWords};
+                }
+            }
+            return {...defaultCodeWords};
+        }
+
+        // Save code words to localStorage
+        function saveCodeWords() {
+            localStorage.setItem('magicTrickCodeWords', JSON.stringify(codeWords));
+            console.log('Code words saved to localStorage');
+        }
+
+        // Initialize code words
+        const codeWords = loadCodeWords();
+        let currentEditingItem = null;
+
+        // Custom drawings storage
+        const customDrawings = {};
+
+        // Load custom drawings from localStorage
+        function loadCustomDrawings() {
+            const saved = localStorage.getItem('magicTrickDrawings');
+            if (saved) {
+                try {
+                    const drawings = JSON.parse(saved);
+                    Object.assign(customDrawings, drawings);
+                    console.log('Loaded custom drawings:', Object.keys(customDrawings));
+                } catch (e) {
+                    console.error('Error loading custom drawings:', e);
+                }
+            }
+        }
+
+        // Save custom drawings to localStorage
+        function saveCustomDrawings() {
+            localStorage.setItem('magicTrickDrawings', JSON.stringify(customDrawings));
+            console.log('Custom drawings saved');
+        }
+
+        // Save current canvas as custom drawing for an item
+        function saveCurrentDrawing(itemName) {
+            // Get canvas data as base64 image
+            const dataURL = canvas.toDataURL('image/png');
+            customDrawings[itemName] = dataURL;
+            saveCustomDrawings();
+            console.log(`Saved custom drawing for ${itemName}`);
+        }
+
+        // Load custom drawing onto canvas
+        function loadCustomDrawing(itemName) {
+            const dataURL = customDrawings[itemName];
+            if (dataURL) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    strokes = [];
+                    redoStack = [];
+                    updateButtons();
+                };
+                img.src = dataURL;
+                return true;
+            }
+            return false;
+        }
+
+        // Function to update code word display
+        function updateCodeWordDisplay(item, codeWord) {
+            const settingsItem = document.querySelector(`[data-item="${item}"]`);
+            if (settingsItem) {
+                const codeSpan = settingsItem.querySelector('.settings-code');
+                if (codeSpan) {
+                    codeSpan.textContent = codeWord;
+                }
+            }
+        }
+
+        // Initialize all code word displays on page load
+        function initializeCodeWordDisplays() {
+            Object.keys(codeWords).forEach(item => {
+                updateCodeWordDisplay(item, codeWords[item]);
+            });
+        }
+
+        // Load custom drawings on startup
+        loadCustomDrawings();
+
+        // Item order management
+        let itemOrder = [];
+
+        // Undo system
+        let undoStack = [];
+        const MAX_UNDO_STACK = 10;
+
+        // Save state to undo stack
+        function saveStateToUndo() {
+            const state = {
+                codeWords: JSON.parse(JSON.stringify(codeWords)),
+                itemOrder: JSON.parse(JSON.stringify(itemOrder)),
+                timestamp: Date.now()
+            };
+            
+            undoStack.push(state);
+            
+            // Keep only last 10 states
+            if (undoStack.length > MAX_UNDO_STACK) {
+                undoStack.shift();
+            }
+            
+            updateUndoButton();
+            console.log('State saved to undo stack');
+        }
+
+        // Undo last change
+        function undoLastChange() {
+            if (undoStack.length === 0) return;
+            
+            const previousState = undoStack.pop();
+            
+            // Restore code words
+            Object.keys(codeWords).forEach(key => delete codeWords[key]);
+            Object.assign(codeWords, previousState.codeWords);
+            saveCodeWords();
+            
+            // Restore item order
+            itemOrder = previousState.itemOrder;
+            saveItemOrder();
+            reorderItems();
+            
+            // Update displays
+            initializeCodeWordDisplays();
+            setupDragAndDrop();
+            
+            updateUndoButton();
+            console.log('Undid last change');
+        }
+
+        // Update undo button state
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoChangesBtn');
+            if (undoBtn) {
+                undoBtn.disabled = undoStack.length === 0;
+            }
+        }
+
+        // Load item order from localStorage
+        function loadItemOrder() {
+            const saved = localStorage.getItem('magicTrickItemOrder');
+            if (saved) {
+                try {
+                    itemOrder = JSON.parse(saved);
+                    console.log('Loaded item order');
+                } catch (e) {
+                    console.error('Error loading item order:', e);
+                    itemOrder = [];
+                }
+            }
+        }
+
+        // Save item order to localStorage
+        function saveItemOrder() {
+            localStorage.setItem('magicTrickItemOrder', JSON.stringify(itemOrder));
+            console.log('Item order saved');
+        }
+
+        // Initialize item order on page load
+        function initializeItemOrder() {
+            const items = document.querySelectorAll('.settings-item');
+            if (itemOrder.length === 0) {
+                // First time - save current order
+                items.forEach(item => {
+                    const name = item.querySelector('.settings-label').textContent;
+                    itemOrder.push(name);
+                });
+                saveItemOrder();
+            } else {
+                // Apply saved order
+                reorderItems();
+            }
+        }
+
+        // Reorder items based on saved order
+        function reorderItems() {
+            const grid = document.querySelector('.settings-grid');
+            const items = Array.from(document.querySelectorAll('.settings-item'));
+            
+            // Create a map of items by name
+            const itemMap = {};
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                itemMap[name] = item;
+            });
+            
+            // Remove all items from grid
+            items.forEach(item => item.remove());
+            
+            // Re-add items in saved order
+            itemOrder.forEach(name => {
+                if (itemMap[name]) {
+                    grid.appendChild(itemMap[name]);
+                }
+            });
+            
+            // Add any new items that aren't in the saved order
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                if (!itemOrder.includes(name)) {
+                    grid.appendChild(item);
+                    itemOrder.push(name);
+                }
+            });
+        }
+
+        // Setup drag and drop for items
+        function setupDragAndDrop() {
+            const items = document.querySelectorAll('.settings-item');
+            
+            items.forEach(item => {
+                item.draggable = true;
+                
+                item.addEventListener('dragstart', (e) => {
+                    // Save state before starting drag (in case order changes)
+                    saveStateToUndo();
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', (e) => {
+                    item.classList.remove('dragging');
+                    document.querySelectorAll('.settings-item').forEach(i => {
+                        i.classList.remove('drag-over');
+                    });
+                    
+                    // Update order after drag
+                    updateItemOrder();
+                });
+                
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const draggingItem = document.querySelector('.dragging');
+                    if (draggingItem && draggingItem !== item) {
+                        item.classList.add('drag-over');
+                    }
+                });
+                
+                item.addEventListener('dragleave', (e) => {
+                    item.classList.remove('drag-over');
+                });
+                
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const draggingItem = document.querySelector('.dragging');
+                    if (draggingItem && draggingItem !== item) {
+                        const grid = item.parentElement;
+                        const allItems = Array.from(grid.querySelectorAll('.settings-item'));
+                        const draggingIndex = allItems.indexOf(draggingItem);
+                        const targetIndex = allItems.indexOf(item);
+                        
+                        if (draggingIndex < targetIndex) {
+                            item.after(draggingItem);
+                        } else {
+                            item.before(draggingItem);
+                        }
+                    }
+                    item.classList.remove('drag-over');
+                });
+            });
+        }
+
+        // Update item order array based on current DOM order
+        function updateItemOrder() {
+            itemOrder = [];
+            const items = document.querySelectorAll('.settings-item');
+            items.forEach(item => {
+                const name = item.querySelector('.settings-label').textContent;
+                itemOrder.push(name);
+            });
+            saveItemOrder();
+            console.log('Item order updated:', itemOrder);
+        }
+
+        // Load order and setup drag/drop
+        loadItemOrder();
+
+        // Export all data (code words + custom drawings + item order)
+        function exportData() {
+            const data = {
+                codeWords: codeWords,
+                customDrawings: customDrawings,
+                itemOrder: itemOrder,
+                exportDate: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `magic-trick-backup-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            console.log('Data exported successfully');
+        }
+
+        // Import data (code words + custom drawings + item order)
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data structure
+                    if (!data.codeWords || !data.customDrawings) {
+                        alert('Invalid backup file format');
+                        return;
+                    }
+                    
+                    // Import code words
+                    Object.assign(codeWords, data.codeWords);
+                    saveCodeWords();
+                    
+                    // Import custom drawings
+                    Object.assign(customDrawings, data.customDrawings);
+                    saveCustomDrawings();
+                    
+                    // Import item order if available
+                    if (data.itemOrder) {
+                        itemOrder = data.itemOrder;
+                        saveItemOrder();
+                        reorderItems();
+                    }
+                    
+                    // Update all displays
+                    initializeCodeWordDisplays();
+                    setupDragAndDrop();
+                    
+                    alert(`Successfully imported!\n${Object.keys(data.customDrawings).length} custom drawings\n${Object.keys(data.codeWords).length} code words`);
+                    console.log('Data imported successfully');
+                    
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('Error importing file. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Start screen - click to start
+        startScreen.addEventListener('click', () => {
+            startScreen.classList.add('fade-out');
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                mainApp.classList.add('active');
+                initCanvas();
+                initializeCodeWordDisplays();
+                enterFullscreen();
+            }, 500);
+        });
+
+        // Settings page toggle
+        document.querySelector('.menu-btn').addEventListener('click', () => {
+            settingsPage.classList.add('active');
+            // Initialize drag and drop and order when opening settings
+            setTimeout(() => {
+                initializeItemOrder();
+                setupDragAndDrop();
+                updateUndoButton();
+            }, 100);
+        });
+
+        document.getElementById('settingsBackBtn').addEventListener('click', () => {
+            settingsPage.classList.remove('active');
+        });
+
+        // Undo button
+        document.getElementById('undoChangesBtn').addEventListener('click', () => {
+            if (confirm('Undo last change? This will restore previous code words and item order.')) {
+                undoLastChange();
+            }
+        });
+
+        // Export button
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            exportData();
+        });
+
+        // Import button
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+
+        // Import file input
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importData(file);
+                e.target.value = ''; // Reset file input
+            }
+        });
+
+        // Settings modal handlers
+        document.querySelectorAll('.settings-item').forEach(item => {
+            const settingsIcon = item.querySelector('.settings-icon');
+            const emoji = item.querySelector('.settings-emoji').textContent;
+            const label = item.querySelector('.settings-label').textContent;
+            
+            settingsIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentEditingItem = label;
+                document.getElementById('modalEmoji').textContent = emoji;
+                document.getElementById('modalItemName').textContent = label;
+                document.getElementById('codeWordInput').value = codeWords[label];
+                
+                // Show custom drawing preview if exists
+                const preview = document.getElementById('drawingPreview');
+                if (customDrawings[label]) {
+                    preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+                    const previewCanvas = document.getElementById('previewCanvas');
+                    const previewCtx = previewCanvas.getContext('2d');
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                        const w = canvas.width * scale;
+                        const h = canvas.height * scale;
+                        const x = (200 - w) / 2;
+                        const y = (150 - h) / 2;
+                        previewCtx.clearRect(0, 0, 200, 150);
+                        previewCtx.drawImage(img, x, y, w, h);
+                    };
+                    img.src = customDrawings[label];
+                } else {
+                    preview.innerHTML = '<span class="drawing-preview-empty">No custom drawing saved</span>';
+                }
+                
+                settingsModal.classList.add('active');
+            });
+        });
+
+        // Save drawing button
+        document.getElementById('saveDrawingBtn').addEventListener('click', () => {
+            if (currentEditingItem) {
+                saveCurrentDrawing(currentEditingItem);
+                alert(`Drawing saved for ${currentEditingItem}!`);
+                
+                // Update preview
+                const preview = document.getElementById('drawingPreview');
+                preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+                const previewCanvas = document.getElementById('previewCanvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                    const w = canvas.width * scale;
+                    const h = canvas.height * scale;
+                    const x = (200 - w) / 2;
+                    const y = (150 - h) / 2;
+                    previewCtx.clearRect(0, 0, 200, 150);
+                    previewCtx.drawImage(img, x, y, w, h);
+                };
+                img.src = customDrawings[currentEditingItem];
+            }
+        });
+
+        document.getElementById('modalClose').addEventListener('click', () => {
+            settingsModal.classList.remove('active');
+        });
+
+        document.getElementById('modalSave').addEventListener('click', () => {
+            if (currentEditingItem) {
+                const newCodeWord = document.getElementById('codeWordInput').value.trim();
+                if (newCodeWord) {
+                    // Save state before making changes
+                    saveStateToUndo();
+                    
+                    codeWords[currentEditingItem] = newCodeWord;
+                    updateCodeWordDisplay(currentEditingItem, newCodeWord);
+                    saveCodeWords();
+                    console.log('Updated and saved code words:', codeWords);
+                }
+            }
+            settingsModal.classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('active');
+            }
+        });
+
+        // Voice Recognition Setup
+        let recognition = null;
+        let isListening = false;
+        const micBtn = document.getElementById('micBtn');
+        const voiceOverlay = document.getElementById('voiceOverlay');
+
+        // Check if browser supports speech recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript.toLowerCase())
+                    .join(' ');
+                
+                voiceOverlay.textContent = `Heard: "${transcript}"`;
+                
+                // Check if any code word was said
+                for (const [item, codeWord] of Object.entries(codeWords)) {
+                    if (transcript.includes(codeWord.toLowerCase())) {
+                        console.log(`Code word detected: "${codeWord}" for ${item}`);
+                        voiceOverlay.textContent = `Detected: ${item}!`;
+                        drawPredefinedShape(item);
+                        // Don't stop listening - let it continue
+                        // User can manually stop by clicking mic button
+                        break;
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopListening();
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    // Restart if still supposed to be listening
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('Recognition restart failed:', e);
+                        stopListening();
+                    }
+                }
+            };
+        }
+
+        function startListening() {
+            if (!recognition) {
+                alert('Speech recognition not supported in this browser');
+                return;
+            }
+            
+            isListening = true;
+            micBtn.classList.add('listening');
+            voiceOverlay.classList.add('active');
+            voiceOverlay.textContent = 'Listening...';
+            
+            try {
+                recognition.start();
+            } catch (e) {
+                console.log('Recognition already started');
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            voiceOverlay.classList.remove('active');
+            
+            if (recognition) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log('Recognition stop failed:', e);
+                }
+            }
+        }
+
+        // Toggle listening on microphone button click
+        micBtn.addEventListener('click', () => {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        });
+
+        // Function to draw predefined shapes when code word is detected
+        function drawPredefinedShape(itemName) {
+            // Clear current drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = [];
+            redoStack = [];
+            
+            // Try to load custom drawing first
+            if (loadCustomDrawing(itemName)) {
+                console.log(`Loaded custom drawing for ${itemName}`);
+                return;
+            }
+            
+            // Fallback to emoji if no custom drawing exists
+            ctx.save();
+            ctx.font = '120px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Get emoji for the item
+            const emojiMap = {
+                'Circle': '⭕',
+                'Plus Sign': '➕',
+                'Wavy Lines': '〰️',
+                'Triangle': '🔺',
+                'Square': '⬜',
+                'Star': '⭐',
+                'Man': '👨',
+                'Woman': '👩',
+                'Smiley Face': '😊',
+                'Sad Face': '😢',
+                'Heart': '❤️',
+                'Boat': '⛵',
+                'House': '🏠',
+                'Bicycle': '🚲',
+                'Train': '🚂',
+                'Plane': '✈️',
+                'Rocket Ship': '🚀',
+                'Table': '🪑',
+                'Television': '📺',
+                'Music': '🎵',
+                'Phone': '📱',
+                'Light Bulb': '💡',
+                'Book': '📖',
+                'Balloon': '🎈',
+                'Racket': '🎾',
+                'Apple': '🍎',
+                'Wine': '🍷',
+                'Pencil': '✏️',
+                'Lock': '🔒',
+                'Time': '⏰',
+                'Sword': '🗡️',
+                'Gun': '🔫',
+                'Tree': '🌳',
+                'Flower': '🌸',
+                'Sun': '☀️',
+                'Moon': '🌙',
+                'Rain': '🌧️',
+                'Lightning': '⚡',
+                'Dog': '🐕',
+                'Cat': '🐈',
+                'Fish': '🐟',
+                'Bird': '🐦',
+                'UFO': '🛸',
+                'Ghost': '👻',
+                'Skull': '💀',
+                'Nothing': '',
+                'FU': '🖕',
+                'Yes': '✅',
+                'No': '❌',
+                'Penis': '🍆',
+                'Money': '💰',
+                'Custom 1': '⚪',
+                'Custom 2': '⚪',
+                'Custom 3': '⚪'
+            };
+            
+            const emoji = emojiMap[itemName] || '❓';
+            if (emoji) {
+                ctx.fillText(emoji, centerX, centerY);
+            }
+            
+            ctx.restore();
+            updateButtons();
+        }
+
+        // Fullscreen
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => console.log(err));
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // Canvas functionality
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentTool = 'pen';
+        let currentColor = '#ffffff';
+        let currentHighlighterColor = '#FFEB3B';
+        let strokes = [];
+        let currentStroke = [];
+        let redoStack = [];
+
+        function initCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPosition(e);
+            currentStroke = [{
+                x: pos.x,
+                y: pos.y,
+                tool: currentTool,
+                color: currentTool === 'pen' ? currentColor : currentTool === 'highlighter' ? currentHighlighterColor : null
+            }];
+            
+            // Set up context for current tool
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            
+            if (currentTool === 'pen') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = 2;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+            } else if (currentTool === 'highlighter') {
+                ctx.strokeStyle = currentHighlighterColor;
+                ctx.lineWidth = 12;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.4;
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 20;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            
+            const pos = getPosition(e);
+            currentStroke.push({
+                x: pos.x,
+                y: pos.y,
+                tool: currentTool,
+                color: currentTool === 'pen' ? currentColor : currentTool === 'highlighter' ? currentHighlighterColor : null
+            });
+
+            if (currentTool === 'pen') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = 2;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+            } else if (currentTool === 'highlighter') {
+                ctx.strokeStyle = currentHighlighterColor;
+                ctx.lineWidth = 12;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 0.4;
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 20;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+            }
+
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            
+            // Reset alpha
+            ctx.globalAlpha = 1.0;
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (currentStroke.length > 0) {
+                strokes.push([...currentStroke]);
+                redoStack = [];
+                updateButtons();
+            }
+        }
+
+        function getPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // Tool buttons
+        document.getElementById('penBtn').addEventListener('click', (e) => {
+            // Long press to show color picker
+            if (e.detail === 1) {
+                currentTool = 'pen';
+                document.getElementById('penBtn').classList.add('active');
+                document.getElementById('highlighterBtn').classList.remove('active');
+                document.getElementById('eraserBtn').classList.remove('active');
+                document.getElementById('textBtn').classList.remove('active');
+                canvas.style.cursor = 'crosshair';
+            }
+        });
+
+        // Long press on pen to show color picker
+        let penPressTimer;
+        document.getElementById('penBtn').addEventListener('mousedown', () => {
+            penPressTimer = setTimeout(() => {
+                document.getElementById('colorPickerPopup').classList.add('active');
+            }, 500);
+        });
+        document.getElementById('penBtn').addEventListener('mouseup', () => {
+            clearTimeout(penPressTimer);
+        });
+        document.getElementById('penBtn').addEventListener('touchstart', () => {
+            penPressTimer = setTimeout(() => {
+                document.getElementById('colorPickerPopup').classList.add('active');
+            }, 500);
+        });
+        document.getElementById('penBtn').addEventListener('touchend', () => {
+            clearTimeout(penPressTimer);
+        });
+
+        document.getElementById('highlighterBtn').addEventListener('click', () => {
+            currentTool = 'highlighter';
+            document.getElementById('highlighterBtn').classList.add('active');
+            document.getElementById('penBtn').classList.remove('active');
+            document.getElementById('eraserBtn').classList.remove('active');
+            document.getElementById('textBtn').classList.remove('active');
+            canvas.style.cursor = 'crosshair';
+        });
+
+        // Long press on highlighter to show color picker
+        let highlighterPressTimer;
+        document.getElementById('highlighterBtn').addEventListener('mousedown', () => {
+            highlighterPressTimer = setTimeout(() => {
+                document.getElementById('colorPickerPopup').classList.add('active');
+            }, 500);
+        });
+        document.getElementById('highlighterBtn').addEventListener('mouseup', () => {
+            clearTimeout(highlighterPressTimer);
+        });
+        document.getElementById('highlighterBtn').addEventListener('touchstart', () => {
+            highlighterPressTimer = setTimeout(() => {
+                document.getElementById('colorPickerPopup').classList.add('active');
+            }, 500);
+        });
+        document.getElementById('highlighterBtn').addEventListener('touchend', () => {
+            clearTimeout(highlighterPressTimer);
+        });
+
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            currentTool = 'eraser';
+            document.getElementById('eraserBtn').classList.add('active');
+            document.getElementById('penBtn').classList.remove('active');
+            document.getElementById('highlighterBtn').classList.remove('active');
+            document.getElementById('textBtn').classList.remove('active');
+            canvas.style.cursor = 'pointer';
+        });
+
+        document.getElementById('textBtn').addEventListener('click', () => {
+            document.getElementById('textInputOverlay').classList.add('active');
+            document.getElementById('textInputField').value = '';
+            document.getElementById('textInputField').focus();
+        });
+
+        // Color picker functionality
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const color = option.dataset.color;
+                
+                // Update selected state
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                
+                // Update current color based on active tool
+                if (currentTool === 'pen') {
+                    currentColor = color;
+                    // Update pen icon color
+                    const penIcon = document.querySelector('#penBtn svg path');
+                    if (penIcon) penIcon.setAttribute('fill', color);
+                } else if (currentTool === 'highlighter') {
+                    currentHighlighterColor = color;
+                    // Update highlighter icon color
+                    const highlighterPaths = document.querySelectorAll('#highlighterBtn svg path');
+                    highlighterPaths.forEach(path => path.setAttribute('fill', color));
+                }
+                
+                // Close popup
+                document.getElementById('colorPickerPopup').classList.remove('active');
+            });
+        });
+
+        // Close color picker when clicking outside
+        document.addEventListener('click', (e) => {
+            const popup = document.getElementById('colorPickerPopup');
+            const penBtn = document.getElementById('penBtn');
+            const highlighterBtn = document.getElementById('highlighterBtn');
+            if (!popup.contains(e.target) && e.target !== penBtn && !penBtn.contains(e.target) && 
+                e.target !== highlighterBtn && !highlighterBtn.contains(e.target)) {
+                popup.classList.remove('active');
+            }
+        });
+
+        // Text input functionality
+        document.getElementById('textInputCancel').addEventListener('click', () => {
+            document.getElementById('textInputOverlay').classList.remove('active');
+        });
+
+        document.getElementById('textInputAdd').addEventListener('click', () => {
+            const text = document.getElementById('textInputField').value.trim();
+            if (text) {
+                // Add text to center of canvas
+                ctx.save();
+                ctx.font = '48px Arial';
+                ctx.fillStyle = currentColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.globalAlpha = 1.0;
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                ctx.restore();
+                
+                // Save as stroke for undo
+                strokes.push([{x: canvas.width / 2, y: canvas.height / 2, tool: 'text', text: text, color: currentColor}]);
+                redoStack = [];
+                updateButtons();
+            }
+            document.getElementById('textInputOverlay').classList.remove('active');
+        });
+
+        // Share button - save to gallery
+        document.querySelector('.share-btn').addEventListener('click', () => {
+            // Create download link for the canvas image
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `drawing-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                // Show fake Android share dialog briefly
+                alert('Image saved to gallery!');
+            });
+        });
+
+        // Undo functionality
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if (strokes.length > 0) {
+                const lastStroke = strokes.pop();
+                redoStack.push(lastStroke);
+                redrawCanvas();
+                updateButtons();
+            }
+        });
+
+        // Redo functionality
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            if (redoStack.length > 0) {
+                const stroke = redoStack.pop();
+                strokes.push(stroke);
+                redrawCanvas();
+                updateButtons();
+            }
+        });
+
+        // Clear button functionality
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            strokes = [];
+            redoStack = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1.0;
+            updateButtons();
+        });
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            strokes.forEach(stroke => {
+                if (stroke.length === 0) return;
+                
+                const tool = stroke[0].tool;
+                
+                // Handle text separately
+                if (tool === 'text') {
+                    ctx.save();
+                    ctx.font = '48px Arial';
+                    ctx.fillStyle = stroke[0].color || currentColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y);
+                    ctx.restore();
+                    return;
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(stroke[0].x, stroke[0].y);
+                
+                if (tool === 'pen') {
+                    ctx.strokeStyle = stroke[0].color || currentColor;
+                    ctx.lineWidth = 2;
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.globalAlpha = 1.0;
+                } else if (tool === 'highlighter') {
+                    ctx.strokeStyle = stroke[0].color || currentHighlighterColor;
+                    ctx.lineWidth = 12;
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.globalAlpha = 0.4;
+                } else if (tool === 'eraser') {
+                    ctx.strokeStyle = '#1a1a1a';
+                    ctx.lineWidth = 20;
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.globalAlpha = 1.0;
+                }
+                
+                for (let i = 1; i < stroke.length; i++) {
+                    ctx.lineTo(stroke[i].x, stroke[i].y);
+                }
+                ctx.stroke();
+                
+                // Reset alpha after each stroke
+                ctx.globalAlpha = 1.0;
+            });
+        }
+
+        function updateButtons() {
+            document.getElementById('undoBtn').disabled = strokes.length === 0;
+            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+        }
+
+        window.addEventListener('resize', () => {
+            const tempStrokes = [...strokes];
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            strokes = tempStrokes;
+            redrawCanvas();
+        });
+    </script>
+</body>
+</html>
