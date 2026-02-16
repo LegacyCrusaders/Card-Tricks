@@ -2011,17 +2011,21 @@
                 
                 voiceOverlay.textContent = `Heard: "${transcript}"`;
                 
-                // Check if any code word was said
-                for (const [item, codeWord] of Object.entries(codeWords)) {
-                    if (transcript.includes(codeWord.toLowerCase())) {
-                        console.log(`Code word detected: "${codeWord}" for ${item}`);
-                        voiceOverlay.textContent = `Detected: ${item}!`;
-                        drawPredefinedShape(item);
-                        // Don't stop listening - let it continue
-                        // User can manually stop by clicking mic button
-                        break;
-                    }
-                }
+// Check if any code word was said
+for (const [item, codeWord] of Object.entries(codeWords)) {
+    if (transcript.includes(codeWord.toLowerCase())) {
+        console.log(`Code word detected: "${codeWord}" for ${item}`);
+        voiceOverlay.textContent = `Detected: ${item}!`;
+        drawPredefinedShape(item);
+        
+        // FIXED: Stop listening immediately after detecting keyword
+        setTimeout(() => {
+            stopListening();
+        }, 100);
+        
+        break;
+    }
+}
             };
 
             recognition.onerror = (event) => {
