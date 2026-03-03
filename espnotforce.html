@@ -1269,6 +1269,89 @@
         </div>
     </div>
 
+
+    <!-- ============================================================
+         FLIP MENU PAGE
+         Secret performer page accessed via the share button.
+         Shows 8 slots (4 directions x fast/slow).
+         When closed, gyroscope activates and watches for a flip.
+         On flip: loads the saved drawing for that slot onto canvas.
+         ============================================================ -->
+    <div id="flipPage">
+        <div class="flip-header">
+            <div class="flip-header-left">
+                <button class="settings-back-btn" id="flipBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <span class="settings-title">Flip Reveal</span>
+            </div>
+            <div class="flip-header-right">
+                <label class="flip-speed-label">Speed: <span id="flipSpeedVal">5</span></label>
+                <input type="range" id="flipSpeedSlider" min="1" max="10" value="5" class="flip-speed-slider">
+            </div>
+        </div>
+        <div class="flip-status" id="flipStatus">Close menu to arm flip detection</div>
+        <div class="flip-grid">
+            <div class="flip-item" data-flip="up-fast">
+                <div class="flip-item-left"><span class="flip-emoji">&#11014;&#65039;</span><div class="flip-text"><span class="flip-label">Up</span><span class="flip-speed-tag">Fast</span></div></div>
+                <button class="flip-save-btn" data-flip="up-fast">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="up-slow">
+                <div class="flip-item-left"><span class="flip-emoji">&#11014;&#65039;</span><div class="flip-text"><span class="flip-label">Up</span><span class="flip-speed-tag">Slow</span></div></div>
+                <button class="flip-save-btn" data-flip="up-slow">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="down-fast">
+                <div class="flip-item-left"><span class="flip-emoji">&#11015;&#65039;</span><div class="flip-text"><span class="flip-label">Down</span><span class="flip-speed-tag">Fast</span></div></div>
+                <button class="flip-save-btn" data-flip="down-fast">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="down-slow">
+                <div class="flip-item-left"><span class="flip-emoji">&#11015;&#65039;</span><div class="flip-text"><span class="flip-label">Down</span><span class="flip-speed-tag">Slow</span></div></div>
+                <button class="flip-save-btn" data-flip="down-slow">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="left-fast">
+                <div class="flip-item-left"><span class="flip-emoji">&#11013;&#65039;</span><div class="flip-text"><span class="flip-label">Left</span><span class="flip-speed-tag">Fast</span></div></div>
+                <button class="flip-save-btn" data-flip="left-fast">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="left-slow">
+                <div class="flip-item-left"><span class="flip-emoji">&#11013;&#65039;</span><div class="flip-text"><span class="flip-label">Left</span><span class="flip-speed-tag">Slow</span></div></div>
+                <button class="flip-save-btn" data-flip="left-slow">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="right-fast">
+                <div class="flip-item-left"><span class="flip-emoji">&#10145;&#65039;</span><div class="flip-text"><span class="flip-label">Right</span><span class="flip-speed-tag">Fast</span></div></div>
+                <button class="flip-save-btn" data-flip="right-fast">Set Drawing</button>
+            </div>
+            <div class="flip-item" data-flip="right-slow">
+                <div class="flip-item-left"><span class="flip-emoji">&#10145;&#65039;</span><div class="flip-text"><span class="flip-label">Right</span><span class="flip-speed-tag">Slow</span></div></div>
+                <button class="flip-save-btn" data-flip="right-slow">Set Drawing</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLIP SLOT MODAL -->
+    <div id="flipModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="flipModalTitle">Set Drawing</span>
+                <button class="modal-close" id="flipModalClose">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-item-display">
+                <span class="modal-emoji" id="flipModalEmoji"></span>
+                <span class="modal-item-name" id="flipModalSlotName"></span>
+            </div>
+            <div class="drawing-preview" id="flipDrawingPreview">
+                <span class="drawing-preview-empty">No drawing saved</span>
+            </div>
+            <button class="modal-drawing-btn" id="flipSaveDrawingBtn">Save Current Drawing</button>
+            <button class="flip-clear-btn" id="flipClearDrawingBtn">Clear Drawing</button>
+        </div>
+    </div>
+
     <script>
         // ============================================================
         // SECTION 7A: DOM REFERENCES
@@ -2356,157 +2439,5 @@
         }
 
     </script>
-    <!-- ============================================================
-         FLIP MENU PAGE
-         Secret performer page accessed via the share button.
-         Shows 8 slots (4 directions × fast/slow).
-         When closed, gyroscope activates and watches for a flip.
-         On flip: loads the saved drawing for that slot onto canvas.
-         ============================================================ -->
-    <div id="flipPage">
-        <div class="flip-header">
-            <div class="flip-header-left">
-                <button class="settings-back-btn" id="flipBackBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
-                    </svg>
-                </button>
-                <span class="settings-title">Flip Reveal</span>
-            </div>
-            <div class="flip-header-right">
-                <!-- Speed threshold: lower = faster flip needed to trigger -->
-                <label class="flip-speed-label">Speed: <span id="flipSpeedVal">5</span></label>
-                <input type="range" id="flipSpeedSlider" min="1" max="10" value="5" class="flip-speed-slider">
-            </div>
-        </div>
-
-        <!-- Status message shown while flip listening is active -->
-        <div class="flip-status" id="flipStatus">Close menu to arm flip detection</div>
-
-        <!-- 8 flip slots grid -->
-        <div class="flip-grid">
-
-            <div class="flip-item" data-flip="up-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬆️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Up</span>
-                        <span class="flip-speed-tag">Fast</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="up-fast">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="up-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬆️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Up</span>
-                        <span class="flip-speed-tag">Slow</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="up-slow">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="down-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬇️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Down</span>
-                        <span class="flip-speed-tag">Fast</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="down-fast">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="down-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬇️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Down</span>
-                        <span class="flip-speed-tag">Slow</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="down-slow">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="left-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬅️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Left</span>
-                        <span class="flip-speed-tag">Fast</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="left-fast">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="left-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬅️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Left</span>
-                        <span class="flip-speed-tag">Slow</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="left-slow">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="right-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">➡️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Right</span>
-                        <span class="flip-speed-tag">Fast</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="right-fast">Set Drawing</button>
-            </div>
-
-            <div class="flip-item" data-flip="right-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">➡️</span>
-                    <div class="flip-text">
-                        <span class="flip-label">Right</span>
-                        <span class="flip-speed-tag">Slow</span>
-                    </div>
-                </div>
-                <button class="flip-save-btn" data-flip="right-slow">Set Drawing</button>
-            </div>
-
-        </div><!-- end .flip-grid -->
-    </div><!-- end #flipPage -->
-
-    <!-- ============================================================
-         FLIP SLOT MODAL
-         Opens when "Set Drawing" is tapped on a flip slot.
-         Shows a preview of any saved drawing for that slot,
-         and a "Save Current Drawing" button to snapshot the canvas.
-         ============================================================ -->
-    <div id="flipModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="modal-title" id="flipModalTitle">Set Drawing</span>
-                <button class="modal-close" id="flipModalClose">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="modal-item-display">
-                <span class="modal-emoji" id="flipModalEmoji"></span>
-                <span class="modal-item-name" id="flipModalSlotName"></span>
-            </div>
-            <!-- Preview of saved drawing for this flip slot -->
-            <div class="drawing-preview" id="flipDrawingPreview">
-                <span class="drawing-preview-empty">No drawing saved</span>
-            </div>
-            <!-- Snapshots current canvas and saves it for this flip slot -->
-            <button class="modal-drawing-btn" id="flipSaveDrawingBtn">Save Current Drawing</button>
-            <!-- Clear button to remove saved drawing from this slot -->
-            <button class="flip-clear-btn" id="flipClearDrawingBtn">Clear Drawing</button>
-        </div>
-    </div>
-
 </body>
 </html>
