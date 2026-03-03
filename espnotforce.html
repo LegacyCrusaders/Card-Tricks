@@ -1,0 +1,2512 @@
+<!-- ============================================================
+     MAGIC TRICK APP - FULLY ANNOTATED VERSION
+     
+     WHAT THIS APP IS:
+     A mentalism/magic trick tool disguised as a Samsung Notes app.
+     A spectator says a secret "code word" out loud. The app listens
+     via microphone, recognizes the code word, and automatically draws
+     the matching image on screen.
+     
+     HIGH-LEVEL STRUCTURE:
+     1.  PWA manifest links         — makes app installable on phones
+     2.  CSS Styles                 — all visual styling
+     3.  Start Screen HTML          — fake Samsung Notes splash
+     4.  Main App HTML              — canvas + toolbars audience sees
+     5.  Settings Page HTML         — hidden performer config grid
+     6.  Settings Modal HTML        — popup to edit one item
+     7.  JavaScript                 — all logic
+         § Storage                 — localStorage read/write
+         § Undo system             — settings change history
+         § Drag/drop ordering      — reorder grid items
+         § Export / Import         — JSON backup
+         § Speech recognition      — listens for code words
+         § Canvas drawing engine   — pen, eraser, undo/redo
+     ============================================================ -->
+
+<!-- ============================================================
+     SECTION 1: PWA SUPPORT
+     Lets the app be installed to a phone home screen and run
+     fullscreen like a native app. manifest.json defines the
+     app name, icon, and colors for the install prompt.
+     ============================================================ -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung Notes</title>
+    <style>
+        /* ============================================================
+           SECTION 2A: GLOBAL RESET
+           Removes default browser margins/padding everywhere.
+           Disables the blue flash on tap (mobile UX).
+           overflow:hidden on body prevents any page scrolling.
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Samsung One', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* ============================================================
+           SECTION 2B: START SCREEN STYLES
+           Covers the whole screen (z-index:1000) until tapped.
+           .fade-out triggers the opacity transition then it's hidden.
+           The pulsing "Tap to Start" text uses a CSS keyframe animation.
+           ============================================================ */
+        #startScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+            cursor: pointer;
+        }
+        #startScreen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .app-icon {
+            width: 120px; height: 120px;
+            background: white; border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .app-icon svg { width: 70px; height: 70px; }
+        .app-title { color: white; font-size: 32px; font-weight: 600; margin-bottom: 10px; }
+        .app-version { color: rgba(255,255,255,0.8); font-size: 16px; }
+        .tap-to-start {
+            color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px;
+            animation: fadeInOut 2s infinite;
+        }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* ============================================================
+           SECTION 2C: MAIN APP LAYOUT
+           Hidden until start screen is dismissed (display:none → flex).
+           Vertical column: top bar → canvas (flex:1) → bottom bar.
+           ============================================================ */
+        #mainApp {
+            display: none;
+            width: 100vw; height: 100vh;
+            background: #1a1a1a;
+            flex-direction: column;
+        }
+        #mainApp.active { display: flex; }
+
+        /* ============================================================
+           SECTION 2D: TOP BAR
+           Left:   ⋮ menu button — opens hidden Settings page
+           Center: Undo / Redo / Clear canvas buttons (absolutely centered)
+           Right:  Share button (cosmetic only, not wired up)
+           ============================================================ */
+        .top-bar {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a;
+            height: 56px;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: 12px; }
+        .top-bar-center {
+            display: flex; align-items: center; gap: 20px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+        }
+        .menu-btn, .top-icon-btn {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: transparent; border: none;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .menu-btn:active, .top-icon-btn:active { background: #3a3a3a; }
+        .page-title { font-size: 18px; font-weight: 500; color: #fff; }
+        .top-bar-right { display: flex; align-items: center; gap: 8px; }
+        .action-btn {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent; border: none; border-radius: 50%;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .action-btn:active { background: #3a3a3a; }
+        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .action-btn:disabled:active { background: transparent; }
+
+        /* ============================================================
+           SECTION 2E: CANVAS AREA
+           Takes all remaining vertical space (flex:1).
+           Canvas is absolutely positioned to fill its container.
+           ============================================================ */
+        .canvas-container {
+            flex: 1; position: relative;
+            background: #1a1a1a; overflow: hidden;
+        }
+        #drawingCanvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; cursor: crosshair;
+        }
+
+        /* ============================================================
+           SECTION 2F: BOTTOM TOOLBAR
+           Left:   Pen and Eraser tool buttons
+           Center: Microphone button — THE MAIN TRIGGER
+                   White normally, turns red + pulses when listening.
+           The voice overlay is a floating pill above this bar that
+           shows what the speech recognizer heard.
+           ============================================================ */
+        .bottom-toolbar {
+            background: #2a2a2a; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-top: 1px solid #3a3a3a; height: 64px;
+        }
+        .tool-group { display: flex; align-items: center; gap: 16px; }
+        .tool-btn {
+            display: flex; flex-direction: column; align-items: center;
+            background: transparent; border: none; cursor: pointer;
+            padding: 4px 8px; border-radius: 8px; transition: background 0.2s;
+        }
+        .tool-btn:active { background: #3a3a3a; }
+        .tool-btn.active { background: #3a3a3a; }
+        .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
+        .tool-label { font-size: 11px; color: #b0b0b0; }
+        .tool-btn.active .tool-label { color: #fff; }
+        .mic-btn {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border: none; border-radius: 50%;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .mic-btn:active { background: #e0e0e0; }
+        /* listening class intentionally shows no visual change — keeps the trick hidden */
+        .mic-btn.listening { background: #fff; }
+        .voice-overlay {
+            position: fixed; bottom: 80px;
+            left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white;
+            padding: 12px 24px; border-radius: 20px;
+            font-size: 14px; display: none; z-index: 1000;
+        }
+        .voice-overlay.active { display: block; }
+
+        /* ============================================================
+           TEXT TOOL INPUT
+           Transparent <input> floated over canvas at tapped position.
+           On Enter or blur, text is drawn onto the canvas then removed.
+           ============================================================ */
+        #textInput {
+            position: absolute;
+            background: transparent;
+            border: 1px dashed rgba(255,255,255,0.4);
+            color: #fff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            outline: none;
+            padding: 2px 6px;
+            min-width: 60px;
+            z-index: 500;
+            caret-color: #fff;
+            display: none;
+        }
+        /* Active text tool icon turns white to match pen/eraser pattern */
+        .tool-btn#textBtn.active svg path { fill: #fff; }
+
+        /* ============================================================
+           FLIP MENU PAGE STYLES
+           Full-screen overlay (z-index:2000), same layer as settings.
+           Only one of settings/flip is ever visible at a time.
+           ============================================================ */
+        #flipPage {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #1a1a1a; z-index: 2000;
+            display: none; flex-direction: column;
+        }
+        #flipPage.active { display: flex; }
+
+        .flip-header {
+            background: #2a2a2a; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0;
+        }
+        .flip-header-left { display: flex; align-items: center; gap: 12px; }
+        .flip-header-right { display: flex; align-items: center; gap: 10px; }
+
+        /* Speed threshold label + slider */
+        .flip-speed-label {
+            font-size: 12px; color: #b0b0b0; white-space: nowrap;
+        }
+        .flip-speed-slider {
+            width: 80px; accent-color: #5e35b1;
+        }
+
+        /* Status bar below header — tells performer the armed state */
+        .flip-status {
+            background: #333; color: #aaa;
+            text-align: center; font-size: 12px;
+            padding: 6px; flex-shrink: 0;
+        }
+        .flip-status.armed { background: #1b5e20; color: #a5d6a7; }
+
+        /* 2-column grid of 8 slots */
+        .flip-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0; overflow-y: auto; flex: 1;
+        }
+
+        /* Each flip slot cell */
+        .flip-item {
+            background: #2a2a2a;
+            padding: 12px 10px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a;
+            border-right: 1px solid #3a3a3a;
+            min-height: 60px;
+        }
+        /* Highlight slot when it has a drawing saved */
+        .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
+
+        .flip-item-left { display: flex; align-items: center; gap: 8px; }
+        .flip-emoji { font-size: 22px; flex-shrink: 0; }
+        .flip-text { display: flex; flex-direction: column; gap: 2px; }
+        .flip-label { font-size: 13px; color: #fff; font-weight: 500; }
+        .flip-speed-tag { font-size: 10px; color: #888; }
+
+        /* "Set Drawing" button on each slot */
+        .flip-save-btn {
+            background: #5e35b1; color: #fff; border: none;
+            border-radius: 6px; padding: 6px 10px;
+            font-size: 11px; cursor: pointer; white-space: nowrap;
+        }
+        .flip-save-btn:active { background: #4a2c8f; }
+        /* Green tint when a drawing is saved for this slot */
+        .flip-item.has-drawing .flip-save-btn { background: #2e7d32; }
+        .flip-item.has-drawing .flip-save-btn:active { background: #1b5e20; }
+
+        /* Flip modal clear button */
+        .flip-clear-btn {
+            width: 100%; background: #c62828; border: none;
+            border-radius: 8px; padding: 12px; color: #fff;
+            font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;
+        }
+        .flip-clear-btn:active { background: #b71c1c; }
+
+        /* Flip modal overlay — same z-index as settings modal (3000) */
+        #flipModal {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+        }
+        #flipModal.active { display: flex; }
+
+        /* ============================================================
+           SECTION 2G: SETTINGS PAGE
+           Full-screen overlay (z-index:2000) hidden by default.
+           Opens via ⋮ menu button. Sits above main app but below modal.
+           Contains the header (back/undo/export/import) and the
+           3-column item grid.
+           ============================================================ */
+        #settingsPage {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #1a1a1a; z-index: 2000;
+            display: none; flex-direction: column; overflow-y: auto;
+        }
+        #settingsPage.active { display: flex; }
+        .settings-header {
+            background: #2a2a2a; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a; height: 56px;
+        }
+        .settings-header-left { display: flex; align-items: center; gap: 12px; }
+        .settings-header-right { display: flex; gap: 8px; align-items: center; }
+        .version-display { color: #888; font-size: 11px; margin-right: 8px; }
+        /* Undo button — reverts last code word change or reorder */
+        .undo-btn {
+            background: #ff9800; color: white; border: none;
+            padding: 8px 16px; border-radius: 6px;
+            font-size: 12px; cursor: pointer; font-weight: 500;
+        }
+        .undo-btn:active { background: #f57c00; }
+        .undo-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+        /* Export — saves JSON backup file to device */
+        .export-btn, .import-btn {
+            background: #5e35b1; color: white; border: none;
+            padding: 8px 16px; border-radius: 6px;
+            font-size: 12px; cursor: pointer; font-weight: 500;
+        }
+        .export-btn:active, .import-btn:active { background: #4a2c8f; }
+        /* Import — loads a previously exported JSON backup */
+        .import-btn { background: #4CAF50; }
+        .import-btn:active { background: #45a049; }
+        .settings-back-btn {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: transparent; border: none;
+            cursor: pointer; transition: background 0.2s; margin-right: 12px;
+        }
+        .settings-back-btn:active { background: #3a3a3a; }
+        .settings-title { font-size: 20px; font-weight: 500; color: #fff; }
+
+        /* Mic button in settings header — same shape as bottom mic but smaller/dark */
+        .settings-mic-btn {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            background: #444; border: none; border-radius: 50%;
+            cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+        }
+        .settings-mic-btn:active { background: #555; }
+        /* listening state — subtle green glow so performer knows it's on, not visible to audience */
+        .settings-mic-btn.listening { background: #2e7d32; }
+
+        /* 3-column grid of all trick items */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0px; background: #1a1a1a; overflow-y: auto;
+        }
+        /* Each item cell — draggable to reorder */
+        .settings-item {
+            background: #2a2a2a; padding: 4px 4px;
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: grab; transition: background 0.2s;
+            min-height: 36px;
+            border-bottom: 1px solid #3a3a3a;
+            border-right: 1px solid #3a3a3a;
+            position: relative;
+        }
+        .settings-item:active { background: #3a3a3a; cursor: grabbing; }
+        .settings-item.dragging { opacity: 0.5; cursor: grabbing; }
+        .settings-item.drag-over { border: 2px solid #5e35b1; }
+        .settings-item-left { display: flex; align-items: center; gap: 3px; flex: 1; min-width: 0; }
+        .settings-emoji { font-size: 14px; line-height: 1; flex-shrink: 0; }
+        .settings-text { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+        .settings-label { font-size: 9px; color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+        /* Code word shown in grey — updated dynamically when changed */
+        .settings-code { font-size: 8px; color: #888; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .settings-icon { flex-shrink: 0; } /* gear icon that opens the edit modal */
+
+        /* ============================================================
+           SECTION 2H: SETTINGS MODAL
+           Full-screen overlay (z-index:3000) — above everything.
+           Opens when a gear icon is tapped on a grid item.
+           Contains: drawing preview, save drawing button,
+                     code word input, save button.
+           ============================================================ */
+        #settingsModal {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 3000;
+            display: none; align-items: center; justify-content: center;
+        }
+        #settingsModal.active { display: flex; }
+        .modal-content {
+            background: #2a2a2a; border-radius: 12px;
+            padding: 24px; width: 90%; max-width: 400px;
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .modal-title { font-size: 20px; color: #fff; font-weight: 500; }
+        .modal-close {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            background: transparent; border: none; border-radius: 50%; cursor: pointer;
+        }
+        .modal-close:active { background: #3a3a3a; }
+        .modal-item-display { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .modal-emoji { font-size: 48px; }
+        .modal-item-name { font-size: 24px; color: #fff; }
+        .modal-label { font-size: 14px; color: #b0b0b0; margin-bottom: 8px; }
+        /* Code word text input */
+        .modal-input {
+            width: 100%; background: #1a1a1a;
+            border: 1px solid #3a3a3a; border-radius: 8px;
+            padding: 12px; color: #fff; font-size: 16px; margin-bottom: 20px;
+        }
+        .modal-input:focus { outline: none; border-color: #5e35b1; }
+        .modal-save-btn {
+            width: 100%; background: #5e35b1; border: none;
+            border-radius: 8px; padding: 14px; color: #fff;
+            font-size: 16px; font-weight: 500; cursor: pointer;
+        }
+        .modal-save-btn:active { background: #4a2c8f; }
+        /* "Save Current Drawing" — snapshots main canvas for this item */
+        .modal-drawing-btn {
+            width: 100%; background: #4CAF50; border: none;
+            border-radius: 8px; padding: 14px; color: #fff;
+            font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 10px;
+        }
+        .modal-drawing-btn:active { background: #45a049; }
+        /* Preview of any saved custom drawing for this item */
+        .drawing-preview {
+            width: 100%; height: 150px;
+            background: #1a1a1a; border-radius: 8px; margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .drawing-preview canvas { max-width: 100%; max-height: 100%; }
+        .drawing-preview-empty { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         SECTION 3: START SCREEN HTML
+         Fake Samsung Notes splash. Tapping anywhere fades it out
+         and launches the main app. The SVG mimics the Notes icon.
+         ============================================================ -->
+    <div id="startScreen">
+        <div class="app-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" stroke="#667eea" stroke-width="2" fill="none"/>
+                <path d="M7 7h10M7 11h10M7 15h7" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="app-title">Samsung Notes</div>
+        <div class="app-version">Version 2.0</div>
+        <div class="tap-to-start">Tap to Start</div>
+    </div>
+
+    <!-- ============================================================
+         SECTION 4: MAIN APP HTML
+         The performer-facing drawing interface shown to the audience.
+         Top bar → canvas → bottom bar (mic button).
+         ============================================================ -->
+    <div id="mainApp">
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <!-- ⋮ menu — secretly opens Settings page -->
+                <button class="menu-btn" aria-label="Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="6" r="2" fill="#fff"/>
+                        <circle cx="12" cy="12" r="2" fill="#fff"/>
+                        <circle cx="12" cy="18" r="2" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Canvas history controls -->
+            <div class="top-bar-center">
+                <button class="action-btn" id="undoBtn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/>
+                    </svg>
+                </button>
+                <button class="action-btn" id="redoBtn" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/>
+                    </svg>
+                </button>
+                <button class="action-btn" id="clearBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="top-bar-right">
+                <!-- Share button — opens the secret Flip Menu -->
+                <button class="top-icon-btn" id="flipMenuBtn" aria-label="Flip Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Drawing canvas — what the audience watches -->
+        <div class="canvas-container">
+            <canvas id="drawingCanvas"></canvas>
+            <!-- Text tool input — appears at tap position, commits text to canvas on Enter/blur -->
+            <input type="text" id="textInput" placeholder="Type here...">
+        </div>
+
+        <!-- Bottom toolbar: tools + microphone trigger -->
+        <div class="bottom-toolbar">
+            <div class="tool-group">
+                <button class="tool-btn active" id="penBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/>
+                    </svg>
+                    <span class="tool-label">Pen</span>
+                </button>
+                <!-- Eraser paints background color over strokes -->
+                <button class="tool-btn" id="eraserBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/>
+                    </svg>
+                    <span class="tool-label">Eraser</span>
+                </button>
+                <!-- Text tool — click then tap canvas to place a text input -->
+                <button class="tool-btn" id="textBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/>
+                    </svg>
+                    <span class="tool-label">Text</span>
+                </button>
+            </div>
+            <!-- THE CORE TRIGGER: tap to start/stop listening for code words -->
+            <button class="mic-btn" id="micBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#000"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Voice status pill — floats above bottom toolbar while listening -->
+    <div class="voice-overlay" id="voiceOverlay">Listening...</div>
+
+    <!-- ============================================================
+         SECTION 5: SETTINGS PAGE HTML
+         Hidden performer config page. Each .settings-item row is
+         one trick object. The gear SVG (settings-icon) on each row
+         opens the edit modal for that item.
+         
+         DATA ATTRIBUTES PER ITEM:
+         data-item       = item name key (must match defaultCodeWords JS object)
+         settings-emoji  = visual emoji
+         settings-label  = display name
+         settings-code   = current code word (JS updates this dynamically)
+         settings-icon   = gear icon that opens the edit modal
+         
+         TO ADD A NEW ITEM: copy any block below, update data-item,
+         emoji, label, and code, then add it to defaultCodeWords in JS
+         and emojiMap in drawPredefinedShape() in JS.
+         ============================================================ -->
+    <div id="settingsPage">
+        <div class="settings-header">
+            <div class="settings-header-left">
+                <button class="settings-back-btn" id="settingsBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <span class="settings-title">Settings</span>
+                <span class="version-display">v2.0</span>
+            </div>
+            <div class="settings-header-right">
+                <!-- Settings mic button — performer speaks code word, app draws and closes settings -->
+                <button class="settings-mic-btn" id="settingsMicBtn" title="Speak a code word">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#fff"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <button class="undo-btn" id="undoChangesBtn" disabled>Undo</button>
+                <button class="export-btn" id="exportBtn">Export</button>
+                <button class="import-btn" id="importBtn">Import</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </div>
+
+        <!-- ============================================================
+             THE ITEM GRID
+             Each block = one item the trick can reveal.
+             All 45+ items are listed here with their default code words.
+             Drag any item to reorder. Tap gear icon to edit code word.
+             ============================================================ -->
+        <div class="settings-grid">
+
+            <!-- SHAPES -->
+            <div class="settings-item" data-item="Circle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⭕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Circle</span>
+                        <span class="settings-code">simple</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Plus Sign">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">➕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Plus Sign</span>
+                        <span class="settings-code">addition</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Wavy Lines">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">〰️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Wavy Lines</span>
+                        <span class="settings-code">flowing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Triangle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔺</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Triangle</span>
+                        <span class="settings-code">pointy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Square">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⬜</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Square</span>
+                        <span class="settings-code">boxy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Star">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⭐</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Star</span>
+                        <span class="settings-code">bright</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- PEOPLE -->
+            <div class="settings-item" data-item="Man">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👨</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Man</span>
+                        <span class="settings-code">male</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Woman">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👩</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Woman</span>
+                        <span class="settings-code">female</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Smiley Face">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">😊</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Smiley Face</span>
+                        <span class="settings-code">happy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Sad Face">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">😢</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sad Face</span>
+                        <span class="settings-code">unhappy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- SYMBOLS -->
+            <div class="settings-item" data-item="Heart">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">❤️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Heart</span>
+                        <span class="settings-code">love</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- VEHICLES / TRANSPORT -->
+            <div class="settings-item" data-item="Boat">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⛵</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Boat</span>
+                        <span class="settings-code">sailing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="House">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🏠</span>
+                    <div class="settings-text">
+                        <span class="settings-label">House</span>
+                        <span class="settings-code">home</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Bicycle">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚲</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bicycle</span>
+                        <span class="settings-code">riding</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Train">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚂</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Train</span>
+                        <span class="settings-code">tracks</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Plane">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✈️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Plane</span>
+                        <span class="settings-code">flying</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Rocket Ship">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🚀</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rocket Ship</span>
+                        <span class="settings-code">space</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- OBJECTS / HOUSEHOLD -->
+            <div class="settings-item" data-item="Table">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🪑</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Table</span>
+                        <span class="settings-code">furniture</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Television">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📺</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Television</span>
+                        <span class="settings-code">screen</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Music">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎵</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Music</span>
+                        <span class="settings-code">melody</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Phone">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📱</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Phone</span>
+                        <span class="settings-code">calling</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Light Bulb">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💡</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Light Bulb</span>
+                        <span class="settings-code">idea</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Book">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">📖</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Book</span>
+                        <span class="settings-code">reading</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Balloon">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎈</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Balloon</span>
+                        <span class="settings-code">party</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Racket">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🎾</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Racket</span>
+                        <span class="settings-code">sport</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- FOOD & DRINK -->
+            <div class="settings-item" data-item="Apple">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍎</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Apple</span>
+                        <span class="settings-code">fruit</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Wine">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍷</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Wine</span>
+                        <span class="settings-code">drink</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- MISC OBJECTS -->
+            <div class="settings-item" data-item="Pencil">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✏️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Pencil</span>
+                        <span class="settings-code">writing</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Lock">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔒</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lock</span>
+                        <span class="settings-code">secure</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Time">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⏰</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Time</span>
+                        <span class="settings-code">clock</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- WEAPONS -->
+            <div class="settings-item" data-item="Sword">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🗡️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sword</span>
+                        <span class="settings-code">sharp</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Gun">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🔫</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Gun</span>
+                        <span class="settings-code">weapon</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- NATURE -->
+            <div class="settings-item" data-item="Tree">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌳</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Tree</span>
+                        <span class="settings-code">nature</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Flower">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌸</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Flower</span>
+                        <span class="settings-code">beautiful</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- WEATHER -->
+            <div class="settings-item" data-item="Sun">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">☀️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Sun</span>
+                        <span class="settings-code">sunny</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Moon">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌙</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Moon</span>
+                        <span class="settings-code">night</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Rain">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🌧️</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Rain</span>
+                        <span class="settings-code">weather</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Lightning">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚡</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Lightning</span>
+                        <span class="settings-code">storm</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- ANIMALS -->
+            <div class="settings-item" data-item="Dog">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Dog</span>
+                        <span class="settings-code">puppy</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Cat">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐈</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Cat</span>
+                        <span class="settings-code">kitty</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Fish">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐟</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Fish</span>
+                        <span class="settings-code">swimming</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Bird">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🐦</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Bird</span>
+                        <span class="settings-code">chirping</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- FANTASY / SPOOKY -->
+            <div class="settings-item" data-item="UFO">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🛸</span>
+                    <div class="settings-text">
+                        <span class="settings-label">UFO</span>
+                        <span class="settings-code">alien</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Ghost">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">👻</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Ghost</span>
+                        <span class="settings-code">spooky</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Skull">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💀</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Skull</span>
+                        <span class="settings-code">scary</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- RESPONSES / GESTURES -->
+            <div class="settings-item" data-item="Nothing">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚫</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Nothing</span>
+                        <span class="settings-code">blank</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="FU">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🖕</span>
+                    <div class="settings-text">
+                        <span class="settings-label">FU</span>
+                        <span class="settings-code">rude</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Yes">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">✅</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Yes</span>
+                        <span class="settings-code">correct</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="No">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">❌</span>
+                    <div class="settings-text">
+                        <span class="settings-label">No</span>
+                        <span class="settings-code">wrong</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Penis">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">🍆</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Penis</span>
+                        <span class="settings-code">adult</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Money">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">💰</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Money</span>
+                        <span class="settings-code">valuable</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <!-- CUSTOM SLOTS — performer can assign their own code words and drawings -->
+            <div class="settings-item" data-item="Custom 1">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 1</span>
+                        <span class="settings-code">hypothyroidism</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Custom 2">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 2</span>
+                        <span class="settings-code">osteoporosis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+            <div class="settings-item" data-item="Custom 3">
+                <div class="settings-item-left">
+                    <span class="settings-emoji">⚪</span>
+                    <div class="settings-text">
+                        <span class="settings-label">Custom 3</span>
+                        <span class="settings-code">anaphylaxis</span>
+                    </div>
+                </div>
+                <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="#fff"/></svg>
+            </div>
+
+        </div><!-- end .settings-grid -->
+    </div><!-- end #settingsPage -->
+
+    <!-- ============================================================
+         SECTION 6: SETTINGS MODAL HTML
+         Popup for editing one item. Opens on gear icon tap.
+         - Drawing preview (saved custom drawing if any)
+         - "Save Current Drawing" — snapshots main canvas for this item
+         - Code word text input
+         - Save button
+         ============================================================ -->
+    <div id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Edit Code Word</span>
+                <button class="modal-close" id="modalClose">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-item-display">
+                <span class="modal-emoji" id="modalEmoji"></span>
+                <span class="modal-item-name" id="modalItemName"></span>
+            </div>
+            <div class="drawing-preview" id="drawingPreview">
+                <span class="drawing-preview-empty">No custom drawing saved</span>
+            </div>
+            <button class="modal-drawing-btn" id="saveDrawingBtn">Save Current Drawing</button>
+            <div class="modal-label">Code Word</div>
+            <input type="text" class="modal-input" id="codeWordInput" placeholder="Enter code word...">
+            <button class="modal-save-btn" id="modalSave">Save</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // SECTION 7A: DOM REFERENCES
+        // ============================================================
+        const startScreen   = document.getElementById('startScreen');
+        const mainApp       = document.getElementById('mainApp');
+        const settingsPage  = document.getElementById('settingsPage');
+        const settingsModal = document.getElementById('settingsModal');
+
+        // ============================================================
+        // SECTION 7B: DEFAULT CODE WORDS
+        // Master list of all items and their default trigger words.
+        // Key   = item name (must match data-item in HTML)
+        // Value = word the spectator says to trigger that item
+        //
+        // TO ADD A NEW ITEM:
+        // 1. Add entry here
+        // 2. Add .settings-item block in HTML grid (Section 5)
+        // 3. Add emoji to emojiMap in drawPredefinedShape() (Section 7H)
+        // ============================================================
+        const defaultCodeWords = {
+            'Circle': 'simple', 'Plus Sign': 'addition', 'Wavy Lines': 'flowing',
+            'Triangle': 'pointy', 'Square': 'boxy', 'Star': 'bright',
+            'Man': 'male', 'Woman': 'female', 'Smiley Face': 'happy',
+            'Sad Face': 'unhappy', 'Heart': 'love', 'Boat': 'sailing',
+            'House': 'home', 'Bicycle': 'riding', 'Train': 'tracks',
+            'Plane': 'flying', 'Rocket Ship': 'space', 'Table': 'furniture',
+            'Television': 'screen', 'Music': 'melody', 'Phone': 'calling',
+            'Light Bulb': 'idea', 'Book': 'reading', 'Balloon': 'party',
+            'Racket': 'sport', 'Apple': 'fruit', 'Wine': 'drink',
+            'Pencil': 'writing', 'Lock': 'secure', 'Time': 'clock',
+            'Sword': 'sharp', 'Gun': 'weapon', 'Tree': 'nature',
+            'Flower': 'beautiful', 'Sun': 'sunny', 'Moon': 'night',
+            'Rain': 'weather', 'Lightning': 'storm', 'Dog': 'puppy',
+            'Cat': 'kitty', 'Fish': 'swimming', 'Bird': 'chirping',
+            'UFO': 'alien', 'Ghost': 'spooky', 'Skull': 'scary',
+            'Nothing': 'blank', 'FU': 'rude', 'Yes': 'correct',
+            'No': 'wrong', 'Penis': 'adult', 'Money': 'valuable',
+            'Custom 1': 'hypothyroidism', 'Custom 2': 'osteoporosis', 'Custom 3': 'anaphylaxis'
+        };
+
+        // ============================================================
+        // SECTION 7C: PERSISTENT STORAGE — CODE WORDS
+        // Loads from localStorage, falls back to defaults if missing.
+        // Every change is immediately written back to localStorage.
+        // ============================================================
+        function loadCodeWords() {
+            const saved = localStorage.getItem('magicTrickCodeWords');
+            if (saved) { try { return JSON.parse(saved); } catch(e) {} }
+            return {...defaultCodeWords};
+        }
+        function saveCodeWords() {
+            localStorage.setItem('magicTrickCodeWords', JSON.stringify(codeWords));
+        }
+
+        const codeWords = loadCodeWords(); // live object checked by speech recognition
+        let currentEditingItem = null;     // which item the modal is currently editing
+
+        // ============================================================
+        // SECTION 7D: PERSISTENT STORAGE — CUSTOM DRAWINGS
+        // Stores canvas snapshots per item as base64 PNG data URLs.
+        // When a code word triggers, custom drawing loads first;
+        // falls back to emoji if none saved.
+        // ============================================================
+        const customDrawings = {};
+
+        function loadCustomDrawings() {
+            const saved = localStorage.getItem('magicTrickDrawings');
+            if (saved) { try { Object.assign(customDrawings, JSON.parse(saved)); } catch(e) {} }
+        }
+        function saveCustomDrawings() {
+            localStorage.setItem('magicTrickDrawings', JSON.stringify(customDrawings));
+        }
+        function saveCurrentDrawing(itemName) {
+            customDrawings[itemName] = canvas.toDataURL('image/png');
+            saveCustomDrawings();
+        }
+        function loadCustomDrawing(itemName) {
+            const dataURL = customDrawings[itemName];
+            if (dataURL) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    strokes = []; redoStack = [];
+                    updateButtons();
+                };
+                img.src = dataURL;
+                return true;
+            }
+            return false;
+        }
+
+        // ============================================================
+        // SECTION 7E: UI HELPERS
+        // updateCodeWordDisplay() — refreshes the grey code word text
+        //   shown next to an item name in the settings grid.
+        // initializeCodeWordDisplays() — refreshes all items at once.
+        //   Called on startup and after import.
+        // ============================================================
+        function updateCodeWordDisplay(item, codeWord) {
+            const el = document.querySelector(`[data-item="${item}"]`);
+            if (el) { const s = el.querySelector('.settings-code'); if (s) s.textContent = codeWord; }
+        }
+        function initializeCodeWordDisplays() {
+            Object.keys(codeWords).forEach(item => updateCodeWordDisplay(item, codeWords[item]));
+        }
+
+        loadCustomDrawings();
+
+        // ============================================================
+        // SECTION 7F: UNDO SYSTEM (settings changes only)
+        // Saves up to 10 snapshots of {codeWords, itemOrder} before
+        // each change. Undo restores the previous snapshot.
+        // This is SEPARATE from the canvas stroke undo system.
+        // ============================================================
+        let undoStack = [];
+        const MAX_UNDO_STACK = 10;
+
+        function saveStateToUndo() {
+            undoStack.push({
+                codeWords: JSON.parse(JSON.stringify(codeWords)),
+                itemOrder: JSON.parse(JSON.stringify(itemOrder)),
+                timestamp: Date.now()
+            });
+            if (undoStack.length > MAX_UNDO_STACK) undoStack.shift();
+            updateUndoButton();
+        }
+        function undoLastChange() {
+            if (undoStack.length === 0) return;
+            const prev = undoStack.pop();
+            Object.keys(codeWords).forEach(k => delete codeWords[k]);
+            Object.assign(codeWords, prev.codeWords);
+            saveCodeWords();
+            itemOrder = prev.itemOrder;
+            saveItemOrder();
+            reorderItems();
+            initializeCodeWordDisplays();
+            setupDragAndDrop();
+            updateUndoButton();
+        }
+        function updateUndoButton() {
+            const btn = document.getElementById('undoChangesBtn');
+            if (btn) btn.disabled = undoStack.length === 0;
+        }
+
+        // ============================================================
+        // SECTION 7G: ITEM ORDER — drag-and-drop reordering
+        // itemOrder[] = array of item names in current display order.
+        // Persisted to localStorage. On load, DOM is reordered to match.
+        // Drag events update DOM, then updateItemOrder() syncs the array.
+        // ============================================================
+        let itemOrder = [];
+
+        function loadItemOrder() {
+            const saved = localStorage.getItem('magicTrickItemOrder');
+            if (saved) { try { itemOrder = JSON.parse(saved); } catch(e) { itemOrder = []; } }
+        }
+        function saveItemOrder() {
+            localStorage.setItem('magicTrickItemOrder', JSON.stringify(itemOrder));
+        }
+        function initializeItemOrder() {
+            const items = document.querySelectorAll('.settings-item');
+            if (itemOrder.length === 0) {
+                items.forEach(item => itemOrder.push(item.querySelector('.settings-label').textContent));
+                saveItemOrder();
+            } else { reorderItems(); }
+        }
+        function reorderItems() {
+            const grid = document.querySelector('.settings-grid');
+            const items = Array.from(document.querySelectorAll('.settings-item'));
+            const map = {};
+            items.forEach(i => { map[i.querySelector('.settings-label').textContent] = i; });
+            items.forEach(i => i.remove());
+            itemOrder.forEach(name => { if (map[name]) grid.appendChild(map[name]); });
+            items.forEach(i => {
+                const name = i.querySelector('.settings-label').textContent;
+                if (!itemOrder.includes(name)) { grid.appendChild(i); itemOrder.push(name); }
+            });
+        }
+        function setupDragAndDrop() {
+            document.querySelectorAll('.settings-item').forEach(item => {
+                item.draggable = true;
+                item.addEventListener('dragstart', (e) => {
+                    saveStateToUndo();
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    document.querySelectorAll('.settings-item').forEach(i => i.classList.remove('drag-over'));
+                    updateItemOrder();
+                });
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const d = document.querySelector('.dragging');
+                    if (d && d !== item) item.classList.add('drag-over');
+                });
+                item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const d = document.querySelector('.dragging');
+                    if (d && d !== item) {
+                        const all = Array.from(item.parentElement.querySelectorAll('.settings-item'));
+                        all.indexOf(d) < all.indexOf(item) ? item.after(d) : item.before(d);
+                    }
+                    item.classList.remove('drag-over');
+                });
+            });
+        }
+        function updateItemOrder() {
+            itemOrder = [];
+            document.querySelectorAll('.settings-item').forEach(i => {
+                itemOrder.push(i.querySelector('.settings-label').textContent);
+            });
+            saveItemOrder();
+        }
+
+        loadItemOrder();
+
+        // ============================================================
+        // SECTION 7H: EXPORT / IMPORT
+        // Export: bundles codeWords + customDrawings + itemOrder into
+        //         a JSON file download.
+        // Import: reads a JSON file, validates it, restores all data,
+        //         refreshes UI. Base64 drawing data can make files large.
+        // ============================================================
+        function exportData() {
+            const data = { codeWords, customDrawings, itemOrder, exportDate: new Date().toISOString(), version: '2.0' };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = `magic-trick-backup-${Date.now()}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.codeWords || !data.customDrawings) { alert('Invalid backup file'); return; }
+                    Object.assign(codeWords, data.codeWords); saveCodeWords();
+                    Object.assign(customDrawings, data.customDrawings); saveCustomDrawings();
+                    if (data.itemOrder) { itemOrder = data.itemOrder; saveItemOrder(); reorderItems(); }
+                    initializeCodeWordDisplays(); setupDragAndDrop();
+                    alert(`Imported: ${Object.keys(data.customDrawings).length} drawings, ${Object.keys(data.codeWords).length} code words`);
+                } catch(err) { alert('Error importing file.'); }
+            };
+            reader.readAsText(file);
+        }
+
+        // ============================================================
+        // SECTION 7I: START SCREEN → MAIN APP TRANSITION
+        // Tap fades out start screen, shows main app, inits canvas,
+        // sets up code word displays, requests fullscreen.
+        // ============================================================
+        startScreen.addEventListener('click', () => {
+            startScreen.classList.add('fade-out');
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                mainApp.classList.add('active');
+                initCanvas();
+                initializeCodeWordDisplays();
+                enterFullscreen();
+            }, 500);
+        });
+
+        // ============================================================
+        // SECTION 7J: SETTINGS PAGE & MODAL EVENT HANDLERS
+        // ============================================================
+        // Open settings page
+        document.querySelector('.menu-btn').addEventListener('click', () => {
+            settingsPage.classList.add('active');
+            setTimeout(() => { initializeItemOrder(); setupDragAndDrop(); updateUndoButton(); }, 100);
+        });
+        // Close settings page
+        document.getElementById('settingsBackBtn').addEventListener('click', () => {
+            settingsPage.classList.remove('active');
+        });
+        // Settings header buttons
+        document.getElementById('undoChangesBtn').addEventListener('click', () => {
+            if (confirm('Undo last change?')) undoLastChange();
+        });
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            if (e.target.files[0]) { importData(e.target.files[0]); e.target.value = ''; }
+        });
+
+        // ============================================================
+        // SETTINGS MIC BUTTON
+        // Lets the performer speak a code word while looking at the
+        // settings list. On match: draws the shape, stops listening,
+        // and closes the settings page to reveal the drawing.
+        // Uses the same speech recognition engine as the main mic.
+        // A separate one-shot recognizer is used so it doesn't
+        // interfere with the main mic state.
+        // ============================================================
+        let settingsListening = false;
+        const settingsMicBtn = document.getElementById('settingsMicBtn');
+
+        settingsMicBtn.addEventListener('click', () => {
+            if (settingsListening) {
+                stopSettingsListening();
+            } else {
+                startSettingsListening();
+            }
+        });
+
+        function startSettingsListening() {
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                alert('Speech recognition not supported in this browser');
+                return;
+            }
+            settingsListening = true;
+            settingsMicBtn.classList.add('listening');
+
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const settingsRec = new SR();
+            settingsRec.continuous     = true;
+            settingsRec.interimResults = true;
+            settingsRec.lang           = 'en-US';
+
+            settingsRec.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(r => r[0].transcript.toLowerCase()).join(' ');
+
+                for (const [item, codeWord] of Object.entries(codeWords)) {
+                    if (transcript.includes(codeWord.toLowerCase())) {
+                        // Match found — stop listening, draw, close settings
+                        settingsListening = false;
+                        settingsMicBtn.classList.remove('listening');
+                        try { settingsRec.stop(); } catch(e) {}
+
+                        drawPredefinedShape(item);
+
+                        // Close settings page after a brief moment so the
+                        // performer sees the confirmation before the view changes
+                        setTimeout(() => {
+                            settingsPage.classList.remove('active');
+                        }, 300);
+                        break;
+                    }
+                }
+            };
+
+            settingsRec.onerror = () => stopSettingsListening();
+            settingsRec.onend   = () => {
+                // Auto-restart only if still supposed to be listening
+                if (settingsListening) {
+                    try { settingsRec.start(); } catch(e) { stopSettingsListening(); }
+                }
+            };
+
+            // Keep a reference so stopSettingsListening can reach it
+            settingsMicBtn._rec = settingsRec;
+            try { settingsRec.start(); } catch(e) { stopSettingsListening(); }
+        }
+
+        function stopSettingsListening() {
+            settingsListening = false;
+            settingsMicBtn.classList.remove('listening');
+            if (settingsMicBtn._rec) {
+                try { settingsMicBtn._rec.stop(); } catch(e) {}
+                settingsMicBtn._rec = null;
+            }
+        }
+
+        // Stop settings mic if the settings page is closed manually
+        document.getElementById('settingsBackBtn').addEventListener('click', () => {
+            stopSettingsListening();
+        }, true); // capture phase so it runs before the existing close handler
+
+        // Open modal when gear icon is tapped on a grid item
+        document.querySelectorAll('.settings-item').forEach(item => {
+            const gear  = item.querySelector('.settings-icon');
+            const emoji = item.querySelector('.settings-emoji').textContent;
+            const label = item.querySelector('.settings-label').textContent;
+            gear.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentEditingItem = label;
+                document.getElementById('modalEmoji').textContent    = emoji;
+                document.getElementById('modalItemName').textContent = label;
+                document.getElementById('codeWordInput').value       = codeWords[label];
+                const preview = document.getElementById('drawingPreview');
+                if (customDrawings[label]) {
+                    preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+                    const pCtx = document.getElementById('previewCanvas').getContext('2d');
+                    const img  = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(200/canvas.width, 150/canvas.height);
+                        pCtx.drawImage(img, (200-canvas.width*scale)/2, (150-canvas.height*scale)/2, canvas.width*scale, canvas.height*scale);
+                    };
+                    img.src = customDrawings[label];
+                } else {
+                    preview.innerHTML = '<span class="drawing-preview-empty">No custom drawing saved</span>';
+                }
+                settingsModal.classList.add('active');
+            });
+        });
+
+        // "Save Current Drawing" — snapshots canvas for current item
+        document.getElementById('saveDrawingBtn').addEventListener('click', () => {
+            if (!currentEditingItem) return;
+            saveCurrentDrawing(currentEditingItem);
+            alert(`Drawing saved for ${currentEditingItem}!`);
+            const preview = document.getElementById('drawingPreview');
+            preview.innerHTML = `<canvas id="previewCanvas" width="200" height="150"></canvas>`;
+            const pCtx = document.getElementById('previewCanvas').getContext('2d');
+            const img  = new Image();
+            img.onload = () => {
+                const scale = Math.min(200/canvas.width, 150/canvas.height);
+                pCtx.drawImage(img, (200-canvas.width*scale)/2, (150-canvas.height*scale)/2, canvas.width*scale, canvas.height*scale);
+            };
+            img.src = customDrawings[currentEditingItem];
+        });
+
+        // Close modal
+        document.getElementById('modalClose').addEventListener('click', () => settingsModal.classList.remove('active'));
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); });
+
+        // Save code word and close modal
+        document.getElementById('modalSave').addEventListener('click', () => {
+            if (currentEditingItem) {
+                const newWord = document.getElementById('codeWordInput').value.trim();
+                if (newWord) {
+                    saveStateToUndo();
+                    codeWords[currentEditingItem] = newWord;
+                    updateCodeWordDisplay(currentEditingItem, newWord);
+                    saveCodeWords();
+                }
+            }
+            settingsModal.classList.remove('active');
+        });
+
+        // ============================================================
+        // SECTION 7K: SPEECH RECOGNITION — THE CORE TRICK ENGINE
+        // Uses Web Speech API to listen continuously for code words.
+        //
+        // Flow:
+        // 1. Mic button tapped → startListening()
+        // 2. recognition.onresult fires with interim/final transcript
+        // 3. Transcript is lowercased, checked against all codeWords
+        // 4. First match → drawPredefinedShape() → stopListening()
+        //
+        // recognition.onend auto-restarts if still listening
+        // (handles browser ~60s auto-timeout on some devices).
+        //
+        // NOTE: Only works over HTTPS or localhost in most browsers.
+        // ============================================================
+        let recognition = null;
+        let isListening  = false;
+        const micBtn       = document.getElementById('micBtn');
+        const voiceOverlay = document.getElementById('voiceOverlay');
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SR();
+            recognition.continuous     = true;  // keep session open
+            recognition.interimResults = true;  // get partial results in real time
+            recognition.lang           = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(r => r[0].transcript.toLowerCase()).join(' ');
+                voiceOverlay.textContent = `Heard: "${transcript}"`;
+
+                for (const [item, codeWord] of Object.entries(codeWords)) {
+                    if (transcript.includes(codeWord.toLowerCase())) {
+                        voiceOverlay.textContent = `Detected: ${item}!`;
+                        drawPredefinedShape(item);
+                        setTimeout(stopListening, 100); // stop immediately after match
+                        break;
+                    }
+                }
+            };
+
+            recognition.onerror = () => stopListening();
+
+            // Auto-restart if still supposed to be listening
+            recognition.onend = () => {
+                if (isListening) { try { recognition.start(); } catch(e) { stopListening(); } }
+            };
+        }
+
+        function startListening() {
+            if (!recognition) { alert('Speech recognition not supported in this browser'); return; }
+            isListening = true;
+            micBtn.classList.add('listening');
+            voiceOverlay.classList.add('active');
+            voiceOverlay.textContent = 'Listening...';
+            try { recognition.start(); } catch(e) {}
+        }
+        function stopListening() {
+            isListening = false;
+            micBtn.classList.remove('listening');
+            voiceOverlay.classList.remove('active');
+            if (recognition) try { recognition.stop(); } catch(e) {}
+        }
+        micBtn.addEventListener('click', () => { isListening ? stopListening() : startListening(); });
+
+        // ============================================================
+        // SECTION 7L: DRAW PREDEFINED SHAPE
+        // Called when a code word is detected.
+        // 1. Clears canvas + resets stroke history
+        // 2. Tries to load a saved custom drawing for this item
+        // 3. Falls back to rendering the emoji centered on canvas
+        //
+        // TO REPLACE EMOJI with real drawn shapes:
+        // Add canvas drawing commands (ctx.arc, ctx.rect etc.) here
+        // instead of the ctx.fillText emoji call.
+        // ============================================================
+        function drawPredefinedShape(itemName) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes = []; redoStack = [];
+            if (loadCustomDrawing(itemName)) return; // use custom drawing if saved
+
+            // Fallback emoji map — one emoji per item
+            const emojiMap = {
+                'Circle':'⭕','Plus Sign':'➕','Wavy Lines':'〰️','Triangle':'🔺',
+                'Square':'⬜','Star':'⭐','Man':'👨','Woman':'👩','Smiley Face':'😊',
+                'Sad Face':'😢','Heart':'❤️','Boat':'⛵','House':'🏠','Bicycle':'🚲',
+                'Train':'🚂','Plane':'✈️','Rocket Ship':'🚀','Table':'🪑',
+                'Television':'📺','Music':'🎵','Phone':'📱','Light Bulb':'💡',
+                'Book':'📖','Balloon':'🎈','Racket':'🎾','Apple':'🍎','Wine':'🍷',
+                'Pencil':'✏️','Lock':'🔒','Time':'⏰','Sword':'🗡️','Gun':'🔫',
+                'Tree':'🌳','Flower':'🌸','Sun':'☀️','Moon':'🌙','Rain':'🌧️',
+                'Lightning':'⚡','Dog':'🐕','Cat':'🐈','Fish':'🐟','Bird':'🐦',
+                'UFO':'🛸','Ghost':'👻','Skull':'💀','Nothing':'','FU':'🖕',
+                'Yes':'✅','No':'❌','Penis':'🍆','Money':'💰',
+                'Custom 1':'⚪','Custom 2':'⚪','Custom 3':'⚪'
+            };
+
+            const emoji = emojiMap[itemName] || '❓';
+            if (emoji) {
+                ctx.save();
+                ctx.font = '120px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(emoji, canvas.width / 2, canvas.height / 2);
+                ctx.restore();
+            }
+            updateButtons();
+        }
+
+        // ============================================================
+        // SECTION 7M: FULLSCREEN
+        // Called after start screen dismissal.
+        // Hides browser UI on mobile for a cleaner app-like experience.
+        // ============================================================
+        function enterFullscreen() {
+            const el = document.documentElement;
+            if      (el.requestFullscreen)        el.requestFullscreen().catch(()=>{});
+            else if (el.webkitRequestFullscreen)  el.webkitRequestFullscreen();
+            else if (el.msRequestFullscreen)      el.msRequestFullscreen();
+        }
+
+        // ============================================================
+        // SECTION 7N: CANVAS DRAWING ENGINE
+        //
+        // Tools:
+        //   Pen    — white, 2px, source-over composite
+        //   Eraser — background color (#1a1a1a), 20px, source-over
+        //            (paints background over strokes, not true erase)
+        //
+        // Stroke history:
+        //   strokes[]      = committed strokes (each is array of {x,y,tool})
+        //   currentStroke  = points being drawn right now
+        //   redoStack[]    = strokes removed by undo, available to redo
+        //
+        // Undo: pops from strokes[], pushes to redoStack[], redraws
+        // Redo: pops from redoStack[], pushes to strokes[], redraws
+        // New stroke: clears redoStack[]
+        //
+        // Resize: replays all strokes after canvas dimensions update
+        //   (coordinates may not perfectly match at new dimensions)
+        // ============================================================
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx    = canvas.getContext('2d');
+        let isDrawing    = false;
+        let currentTool  = 'pen';
+        let strokes      = [];
+        let currentStroke = [];
+        let redoStack    = [];
+
+        function initCanvas() {
+            canvas.width  = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.lineCap   = 'round';
+            ctx.lineJoin  = 'round';
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getPosition(e);
+            currentStroke = [{x:pos.x, y:pos.y, tool:currentTool}];
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getPosition(e);
+            currentStroke.push({x:pos.x, y:pos.y, tool:currentTool});
+            if (currentTool === 'pen') {
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 20;
+                ctx.globalCompositeOperation = 'source-over';
+            }
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (currentStroke.length > 0) {
+                strokes.push([...currentStroke]);
+                redoStack = []; // new stroke clears redo history
+                updateButtons();
+            }
+        }
+
+        // Normalises mouse + touch events to canvas-relative {x, y}
+        function getPosition(e) {
+            const rect  = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {x: touch.clientX - rect.left, y: touch.clientY - rect.top};
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup',   stopDrawing);
+        canvas.addEventListener('mouseout',  stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove',  draw);
+        canvas.addEventListener('touchend',   stopDrawing);
+
+        // Tool buttons
+        document.getElementById('penBtn').addEventListener('click', () => {
+            currentTool = 'pen';
+            document.getElementById('penBtn').classList.add('active');
+            document.getElementById('eraserBtn').classList.remove('active');
+            document.getElementById('textBtn').classList.remove('active');
+            canvas.style.cursor = 'crosshair';
+            commitTextInput();
+        });
+        document.getElementById('eraserBtn').addEventListener('click', () => {
+            currentTool = 'eraser';
+            document.getElementById('eraserBtn').classList.add('active');
+            document.getElementById('penBtn').classList.remove('active');
+            document.getElementById('textBtn').classList.remove('active');
+            canvas.style.cursor = 'pointer';
+            commitTextInput(); // close any open text input when switching tools
+        });
+
+        // ============================================================
+        // TEXT TOOL
+        // When active, clicking the canvas places a transparent <input>
+        // at that position. Pressing Enter or clicking elsewhere commits
+        // the typed text onto the canvas (drawn as white Arial 24px).
+        // The input is then hidden until the next canvas tap.
+        // ============================================================
+        const textInput = document.getElementById('textInput');
+
+        document.getElementById('textBtn').addEventListener('click', () => {
+            currentTool = 'text';
+            document.getElementById('textBtn').classList.add('active');
+            document.getElementById('penBtn').classList.remove('active');
+            document.getElementById('eraserBtn').classList.remove('active');
+            canvas.style.cursor = 'text';
+        });
+
+        // Place the text input where the user tapped/clicked on the canvas
+        canvas.addEventListener('click', (e) => {
+            if (currentTool !== 'text') return;
+            commitTextInput(); // commit any existing text first
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            textInput.style.left = x + 'px';
+            textInput.style.top  = (y - 20) + 'px'; // offset up slightly so cursor sits at tap point
+            textInput.style.display = 'block';
+            textInput.value = '';
+            textInput.focus();
+        });
+
+        // Also handle touch for mobile
+        canvas.addEventListener('touchend', (e) => {
+            if (currentTool !== 'text') return;
+            e.preventDefault();
+            commitTextInput();
+            const rect  = canvas.getBoundingClientRect();
+            const touch = e.changedTouches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            textInput.style.left = x + 'px';
+            textInput.style.top  = (y - 20) + 'px';
+            textInput.style.display = 'block';
+            textInput.value = '';
+            textInput.focus();
+        }, {passive: false});
+
+        // Commit text to canvas on Enter key
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { commitTextInput(); }
+        });
+
+        // Commit text to canvas when focus leaves the input
+        textInput.addEventListener('blur', () => {
+            setTimeout(commitTextInput, 100); // small delay so click elsewhere registers first
+        });
+
+        // Draws the typed text onto the canvas at the input's position, then hides the input
+        function commitTextInput() {
+            const text = textInput.value.trim();
+            if (text && textInput.style.display !== 'none') {
+                const x = parseInt(textInput.style.left) + 6; // account for padding
+                const y = parseInt(textInput.style.top) + 24; // baseline below top position
+                ctx.save();
+                ctx.font = '24px Arial';
+                ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText(text, x, y);
+                ctx.restore();
+                // Record as a "text stroke" in history so undo works
+                strokes.push([{x, y, tool: 'text', text}]);
+                redoStack = [];
+                updateButtons();
+            }
+            textInput.style.display = 'none';
+            textInput.value = '';
+        }
+
+        // Undo / Redo / Clear canvas
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if (strokes.length > 0) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
+        });
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            if (redoStack.length > 0) { strokes.push(redoStack.pop()); redrawCanvas(); updateButtons(); }
+        });
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            strokes = []; redoStack = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateButtons();
+        });
+
+        // Replays all strokes from scratch onto a cleared canvas (including text strokes)
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokes.forEach(stroke => {
+                if (!stroke.length) return;
+                if (stroke[0].tool === 'text') {
+                    // Replay text stroke
+                    ctx.save();
+                    ctx.font = '24px Arial';
+                    ctx.fillStyle = '#fff';
+                    ctx.textBaseline = 'alphabetic';
+                    ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y);
+                    ctx.restore();
+                } else {
+                    ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
+                    ctx.strokeStyle = stroke[0].tool === 'pen' ? '#fff' : '#1a1a1a';
+                    ctx.lineWidth   = stroke[0].tool === 'pen' ? 2 : 20;
+                    ctx.globalCompositeOperation = 'source-over';
+                    for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Enables/disables undo and redo buttons based on stack state
+        function updateButtons() {
+            document.getElementById('undoBtn').disabled = strokes.length === 0;
+            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+        }
+
+        // Redraws strokes after window resize to preserve drawing
+        window.addEventListener('resize', () => {
+            const saved = [...strokes];
+            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            strokes = saved; redrawCanvas();
+        });
+
+        // ============================================================
+        // FLIP MENU SYSTEM
+        //
+        // HOW IT WORKS:
+        // 1. Share button opens #flipPage
+        // 2. Performer assigns drawings to slots (same save-drawing flow)
+        // 3. Closing the page ARMS the gyroscope listener
+        // 4. Phone placed face-down — devicemotion watches for a flip
+        // 5. On flip detected:
+        //    a. Direction determined by which axis rotated (beta/gamma)
+        //    b. Speed compared against threshold slider value
+        //    c. Matching slot's drawing loaded onto canvas
+        //    d. Gyroscope disarmed (one-shot per arming)
+        //
+        // STORAGE:
+        //    flipDrawings{} — same pattern as customDrawings, key = slot id
+        //    flipSpeedThreshold — slider value (1-10), saved to localStorage
+        //
+        // DIRECTION DETECTION:
+        //    Uses deviceorientation to snapshot face-down orientation,
+        //    then devicemotion rotationRate to detect the flip axis/speed.
+        //    beta  = front-back tilt (Up/Down flip)
+        //    gamma = left-right tilt (Left/Right flip)
+        // ============================================================
+
+        // --- Storage ---
+        const flipDrawings = {};
+
+        function loadFlipDrawings() {
+            const saved = localStorage.getItem('magicFlipDrawings');
+            if (saved) { try { Object.assign(flipDrawings, JSON.parse(saved)); } catch(e) {} }
+        }
+        function saveFlipDrawings() {
+            localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings));
+        }
+
+        let flipSpeedThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '5');
+
+        loadFlipDrawings();
+
+        // --- Flip page open/close ---
+        document.getElementById('flipMenuBtn').addEventListener('click', () => {
+            flipPage.classList.add('active');
+            updateFlipSlotIndicators();
+            disarmFlip(); // disarm while menu is open
+        });
+
+        const flipPage = document.getElementById('flipPage');
+
+        document.getElementById('flipBackBtn').addEventListener('click', () => {
+            flipPage.classList.remove('active');
+            armFlip(); // arm when menu is closed
+        });
+
+        // Speed slider
+        const flipSpeedSlider = document.getElementById('flipSpeedSlider');
+        flipSpeedSlider.value = flipSpeedThreshold;
+        document.getElementById('flipSpeedVal').textContent = flipSpeedThreshold;
+        flipSpeedSlider.addEventListener('input', () => {
+            flipSpeedThreshold = parseInt(flipSpeedSlider.value);
+            document.getElementById('flipSpeedVal').textContent = flipSpeedThreshold;
+            localStorage.setItem('magicFlipSpeed', flipSpeedThreshold);
+        });
+
+        // Mark slots that have a drawing saved (purple left border + green button)
+        function updateFlipSlotIndicators() {
+            document.querySelectorAll('.flip-item').forEach(item => {
+                const slot = item.dataset.flip;
+                if (flipDrawings[slot]) {
+                    item.classList.add('has-drawing');
+                } else {
+                    item.classList.remove('has-drawing');
+                }
+            });
+        }
+
+        // --- Flip Modal ---
+        let currentFlipSlot = null;
+        const flipModal = document.getElementById('flipModal');
+
+        document.querySelectorAll('.flip-save-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                currentFlipSlot = btn.dataset.flip;
+                const item      = btn.closest('.flip-item');
+                const emoji     = item.querySelector('.flip-emoji').textContent;
+                const label     = item.querySelector('.flip-label').textContent;
+                const speed     = item.querySelector('.flip-speed-tag').textContent;
+
+                document.getElementById('flipModalTitle').textContent  = `Set Drawing — ${label} ${speed}`;
+                document.getElementById('flipModalEmoji').textContent   = emoji;
+                document.getElementById('flipModalSlotName').textContent = `${label} ${speed}`;
+
+                // Show preview if drawing exists
+                const preview = document.getElementById('flipDrawingPreview');
+                if (flipDrawings[currentFlipSlot]) {
+                    preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="150"></canvas>`;
+                    const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
+                    const img  = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                        pCtx.drawImage(img,
+                            (200 - canvas.width * scale) / 2,
+                            (150 - canvas.height * scale) / 2,
+                            canvas.width * scale, canvas.height * scale);
+                    };
+                    img.src = flipDrawings[currentFlipSlot];
+                } else {
+                    preview.innerHTML = '<span class="drawing-preview-empty">No drawing saved</span>';
+                }
+
+                flipModal.classList.add('active');
+            });
+        });
+
+        // Save current canvas as this slot's drawing
+        document.getElementById('flipSaveDrawingBtn').addEventListener('click', () => {
+            if (!currentFlipSlot) return;
+            flipDrawings[currentFlipSlot] = canvas.toDataURL('image/png');
+            saveFlipDrawings();
+            updateFlipSlotIndicators();
+
+            // Refresh preview
+            const preview = document.getElementById('flipDrawingPreview');
+            preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="150"></canvas>`;
+            const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
+            const img  = new Image();
+            img.onload = () => {
+                const scale = Math.min(200 / canvas.width, 150 / canvas.height);
+                pCtx.drawImage(img,
+                    (200 - canvas.width * scale) / 2,
+                    (150 - canvas.height * scale) / 2,
+                    canvas.width * scale, canvas.height * scale);
+            };
+            img.src = flipDrawings[currentFlipSlot];
+            alert(`Drawing saved for ${currentFlipSlot}!`);
+        });
+
+        // Clear this slot's drawing
+        document.getElementById('flipClearDrawingBtn').addEventListener('click', () => {
+            if (!currentFlipSlot) return;
+            delete flipDrawings[currentFlipSlot];
+            saveFlipDrawings();
+            updateFlipSlotIndicators();
+            document.getElementById('flipDrawingPreview').innerHTML =
+                '<span class="drawing-preview-empty">No drawing saved</span>';
+        });
+
+        // Close flip modal
+        document.getElementById('flipModalClose').addEventListener('click', () => {
+            flipModal.classList.remove('active');
+        });
+        flipModal.addEventListener('click', (e) => {
+            if (e.target === flipModal) flipModal.classList.remove('active');
+        });
+
+        // ============================================================
+        // GYROSCOPE / FLIP DETECTION
+        //
+        // Uses DeviceMotionEvent.rotationRate (deg/s) to detect a flip.
+        //
+        // Phase 1 — WATCHING: phone is face-down. We monitor orientation
+        //   via deviceorientation to confirm face-down state (beta ~180
+        //   or beta ~0 depending on device). Once face-down is stable,
+        //   we start sampling rotation rate.
+        //
+        // Phase 2 — FLIP DETECTED: a high rotationRate spike on beta or
+        //   gamma axis indicates the flip direction and speed. We compare
+        //   the peak rate against the threshold (scaled 50-500 deg/s).
+        //
+        //   rotationRate.beta  → Up or Down flip
+        //   rotationRate.gamma → Left or Right flip
+        //   sign of the rate   → which direction within the axis
+        //   magnitude          → fast vs slow
+        //
+        // Threshold mapping: slider 1 = needs 450deg/s (very fast),
+        //   slider 10 = needs 50deg/s (very slow/gentle).
+        //   Formula: threshold = 500 - (flipSpeedThreshold - 1) * 50
+        //
+        // After triggering: listener is removed (one-shot), drawing loads.
+        // ============================================================
+
+        let flipArmed    = false;
+        let flipFaceDown = false;  // true once we confirm phone is face-down
+        let flipPeakBeta = 0;
+        let flipPeakGamma = 0;
+        let flipSampleTimer = null;
+        let motionHandler = null;
+        let orientationHandler = null;
+
+        function armFlip() {
+            // Only arm if at least one slot has a drawing
+            const hasAny = Object.keys(flipDrawings).length > 0;
+            if (!hasAny) return;
+
+            flipArmed    = true;
+            flipFaceDown = false;
+            flipPeakBeta = 0;
+            flipPeakGamma = 0;
+
+            const statusEl = document.getElementById('flipStatus');
+
+            // Request permission on iOS 13+
+            if (typeof DeviceMotionEvent !== 'undefined' &&
+                typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission().then(state => {
+                    if (state === 'granted') startFlipListeners();
+                }).catch(() => {});
+            } else {
+                startFlipListeners();
+            }
+        }
+
+        function disarmFlip() {
+            flipArmed    = false;
+            flipFaceDown = false;
+            clearTimeout(flipSampleTimer);
+            if (motionHandler)      { window.removeEventListener('devicemotion',      motionHandler);      motionHandler = null; }
+            if (orientationHandler) { window.removeEventListener('deviceorientation', orientationHandler); orientationHandler = null; }
+        }
+
+        function startFlipListeners() {
+            // Step 1: Watch orientation to detect face-down
+            orientationHandler = (e) => {
+                if (!flipArmed) return;
+                // beta is the front-back tilt: ~180 or ~-180 means face down
+                const beta = Math.abs(e.beta || 0);
+                if (beta > 150) {
+                    if (!flipFaceDown) {
+                        flipFaceDown = true;
+                        flipPeakBeta  = 0;
+                        flipPeakGamma = 0;
+                    }
+                } else if (flipFaceDown && beta < 30) {
+                    // Phone is now face-up — flip completed
+                    // Check peaks gathered during the motion
+                    evaluateFlip();
+                }
+            };
+
+            // Step 2: While face-down, gather rotation rate peaks
+            motionHandler = (e) => {
+                if (!flipArmed || !flipFaceDown) return;
+                const rr = e.rotationRate;
+                if (!rr) return;
+                const absBeta  = Math.abs(rr.beta  || 0);
+                const absGamma = Math.abs(rr.gamma || 0);
+                if (absBeta  > Math.abs(flipPeakBeta))  flipPeakBeta  = rr.beta;
+                if (absGamma > Math.abs(flipPeakGamma)) flipPeakGamma = rr.gamma;
+            };
+
+            window.addEventListener('deviceorientation', orientationHandler);
+            window.addEventListener('devicemotion',      motionHandler);
+        }
+
+        function evaluateFlip() {
+            if (!flipArmed) return;
+            disarmFlip(); // one-shot — disarm immediately
+
+            // Determine dominant axis and direction
+            const absBeta  = Math.abs(flipPeakBeta);
+            const absGamma = Math.abs(flipPeakGamma);
+
+            // Speed threshold: slider 1 → 450 deg/s needed, slider 10 → 50 deg/s needed
+            const speedNeeded = 500 - (flipSpeedThreshold - 1) * 50;
+
+            let direction = null;
+            let speed     = null;
+
+            if (absBeta >= absGamma) {
+                // Up / Down flip (beta axis)
+                if (absBeta < 20) return; // too small, ignore
+                direction = flipPeakBeta > 0 ? 'down' : 'up';
+                speed     = absBeta >= speedNeeded ? 'fast' : 'slow';
+            } else {
+                // Left / Right flip (gamma axis)
+                if (absGamma < 20) return;
+                direction = flipPeakGamma > 0 ? 'right' : 'left';
+                speed     = absGamma >= speedNeeded ? 'fast' : 'slow';
+            }
+
+            const slotKey = `${direction}-${speed}`;
+
+            if (flipDrawings[slotKey]) {
+                // Load the saved drawing onto the canvas
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    strokes = []; redoStack = [];
+                    updateButtons();
+                };
+                img.src = flipDrawings[slotKey];
+            }
+            // If no drawing assigned to this slot, do nothing silently
+        }
+
+    </script>
+    <!-- ============================================================
+         FLIP MENU PAGE
+         Secret performer page accessed via the share button.
+         Shows 8 slots (4 directions × fast/slow).
+         When closed, gyroscope activates and watches for a flip.
+         On flip: loads the saved drawing for that slot onto canvas.
+         ============================================================ -->
+    <div id="flipPage">
+        <div class="flip-header">
+            <div class="flip-header-left">
+                <button class="settings-back-btn" id="flipBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
+                    </svg>
+                </button>
+                <span class="settings-title">Flip Reveal</span>
+            </div>
+            <div class="flip-header-right">
+                <!-- Speed threshold: lower = faster flip needed to trigger -->
+                <label class="flip-speed-label">Speed: <span id="flipSpeedVal">5</span></label>
+                <input type="range" id="flipSpeedSlider" min="1" max="10" value="5" class="flip-speed-slider">
+            </div>
+        </div>
+
+        <!-- Status message shown while flip listening is active -->
+        <div class="flip-status" id="flipStatus">Close menu to arm flip detection</div>
+
+        <!-- 8 flip slots grid -->
+        <div class="flip-grid">
+
+            <div class="flip-item" data-flip="up-fast">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬆️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Up</span>
+                        <span class="flip-speed-tag">Fast</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="up-fast">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="up-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬆️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Up</span>
+                        <span class="flip-speed-tag">Slow</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="up-slow">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="down-fast">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬇️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Down</span>
+                        <span class="flip-speed-tag">Fast</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="down-fast">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="down-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬇️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Down</span>
+                        <span class="flip-speed-tag">Slow</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="down-slow">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="left-fast">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬅️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Left</span>
+                        <span class="flip-speed-tag">Fast</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="left-fast">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="left-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬅️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Left</span>
+                        <span class="flip-speed-tag">Slow</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="left-slow">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="right-fast">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">➡️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Right</span>
+                        <span class="flip-speed-tag">Fast</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="right-fast">Set Drawing</button>
+            </div>
+
+            <div class="flip-item" data-flip="right-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">➡️</span>
+                    <div class="flip-text">
+                        <span class="flip-label">Right</span>
+                        <span class="flip-speed-tag">Slow</span>
+                    </div>
+                </div>
+                <button class="flip-save-btn" data-flip="right-slow">Set Drawing</button>
+            </div>
+
+        </div><!-- end .flip-grid -->
+    </div><!-- end #flipPage -->
+
+    <!-- ============================================================
+         FLIP SLOT MODAL
+         Opens when "Set Drawing" is tapped on a flip slot.
+         Shows a preview of any saved drawing for that slot,
+         and a "Save Current Drawing" button to snapshot the canvas.
+         ============================================================ -->
+    <div id="flipModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="flipModalTitle">Set Drawing</span>
+                <button class="modal-close" id="flipModalClose">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-item-display">
+                <span class="modal-emoji" id="flipModalEmoji"></span>
+                <span class="modal-item-name" id="flipModalSlotName"></span>
+            </div>
+            <!-- Preview of saved drawing for this flip slot -->
+            <div class="drawing-preview" id="flipDrawingPreview">
+                <span class="drawing-preview-empty">No drawing saved</span>
+            </div>
+            <!-- Snapshots current canvas and saves it for this flip slot -->
+            <button class="modal-drawing-btn" id="flipSaveDrawingBtn">Save Current Drawing</button>
+            <!-- Clear button to remove saved drawing from this slot -->
+            <button class="flip-clear-btn" id="flipClearDrawingBtn">Clear Drawing</button>
+        </div>
+    </div>
+
+</body>
+</html>
