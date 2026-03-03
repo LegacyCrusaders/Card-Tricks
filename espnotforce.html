@@ -2099,13 +2099,14 @@
         loadFlipDrawings();
 
         // --- Flip page open/close ---
+        const flipPage  = document.getElementById('flipPage');
+        const flipModal = document.getElementById('flipModal');
+
         document.getElementById('flipMenuBtn').addEventListener('click', () => {
             flipPage.classList.add('active');
             updateFlipSlotIndicators();
             disarmFlip(); // disarm while menu is open
         });
-
-        const flipPage = document.getElementById('flipPage');
 
         document.getElementById('flipBackBtn').addEventListener('click', () => {
             flipPage.classList.remove('active');
@@ -2136,7 +2137,6 @@
 
         // --- Flip Modal ---
         let currentFlipSlot = null;
-        const flipModal = document.getElementById('flipModal');
 
         document.querySelectorAll('.flip-save-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
