@@ -118,6 +118,14 @@
         .set-btn:active { background:#4a2c8f; }
         .flip-item.has-drawing .set-btn { background:#2e7d32; }
 
+        /* Thumbnail preview on each slot row */
+        .slot-thumb {
+            width:44px; height:36px; border-radius:4px; background:#111;
+            flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
+            border:1px solid #3a3a3a;
+        }
+        .slot-thumb canvas { display:block; }
+
         /* ── MODALS base ── */
         .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:3000; display:none; align-items:center; justify-content:center; padding:16px; }
         .modal-overlay.active { display:flex; }
@@ -466,10 +474,18 @@ function buildGrid(){
     grid.innerHTML='';
     const deck=activeDeck();
     SLOTS.forEach(s=>{
-        const hasDrw=!!deck.drawings[s.key];
+        const drw=deck.drawings[s.key];
+        const hasDrw=!!drw;
         const div=document.createElement('div');
         div.className='flip-item'+(hasDrw?' has-drawing':'');
         div.dataset.flip=s.key;
+
+        // Thumbnail — canvas drawn after append
+        const thumbId='thumb-'+s.key.replace('-','-');
+        const thumbHtml=hasDrw
+            ? `<div class="slot-thumb"><canvas id="${thumbId}" width="44" height="36"></canvas></div>`
+            : `<div class="slot-thumb" style="opacity:.25"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" fill="#555"/></svg></div>`;
+
         div.innerHTML=`
             <div class="fi-left">
                 <span class="fi-emoji">${s.emoji}</span>
@@ -478,8 +494,23 @@ function buildGrid(){
                     <span class="fi-hint">${s.hint}</span>
                 </div>
             </div>
+            ${thumbHtml}
             <button class="set-btn" data-flip="${s.key}">Set</button>`;
         grid.appendChild(div);
+
+        // Draw thumbnail after element is in DOM
+        if(hasDrw){
+            const tc=document.getElementById(thumbId);
+            if(tc){
+                const tctx=tc.getContext('2d');
+                const img=new Image();
+                img.onload=()=>{
+                    const sc=Math.min(44/canvas.width,36/canvas.height);
+                    tctx.drawImage(img,(44-canvas.width*sc)/2,(36-canvas.height*sc)/2,canvas.width*sc,canvas.height*sc);
+                };
+                img.src=drw;
+            }
+        }
     });
     // Attach set-btn listeners
     grid.querySelectorAll('.set-btn').forEach(btn=>{
@@ -508,9 +539,7 @@ document.getElementById('deckSelect').addEventListener('change',e=>{
 });
 
 document.getElementById('flipMenuBtn').addEventListener('click',()=>{
-    // On open always load the default deck
-    activeDeckId=defaultDeckId;
-    saveActiveDeck();
+    // Just open with whatever deck is currently active (default only loads at app start)
     buildDeckSelect();
     buildGrid();
     document.getElementById('flipPage').classList.add('active');
