@@ -2050,6 +2050,12 @@
                         }
 
                         const slotKey = `${direction}-${speed}`;
+
+                        // Close the menu immediately at trigger time — unconditional,
+                        // regardless of whether a drawing exists for this slot.
+                        // This ensures the spectator never sees the menu during reveal.
+                        document.getElementById('flipPage').classList.remove('active');
+
                         applyFlipDrawing(slotKey);
 
                         // Reset to IDLE after cooldown
@@ -2067,14 +2073,20 @@
         function applyFlipDrawing(slotKey) {
             if (!flipDrawings[slotKey]) return; // no drawing for this slot, fail silently
 
-            const img = new Image();
-            img.onload = () => {
+            function revealDrawing(img) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
                 strokes = []; redoStack = [];
                 updateButtons();
-            };
+                // Close flip page so spectator sees the canvas
+                document.getElementById('flipPage').classList.remove('active');
+            }
+
+            const img = new Image();
+            img.onload = () => revealDrawing(img);
             img.src = flipDrawings[slotKey];
+            // If browser already cached the image, onload won't fire — handle immediately
+            if (img.complete) revealDrawing(img);
         }
 
     </script>
