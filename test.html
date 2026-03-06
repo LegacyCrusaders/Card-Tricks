@@ -12,6 +12,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; background: #000; }
 
+        /* START SCREEN */
         #startScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -26,6 +27,7 @@
         .tap-to-start { color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px; animation: fadeInOut 2s infinite; }
         @keyframes fadeInOut { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+        /* MAIN APP */
         #mainApp { display: none; width: 100vw; height: 100vh; background: #1a1a1a; flex-direction: column; }
         #mainApp.active { display: flex; }
 
@@ -47,52 +49,64 @@
         .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
         .tool-label { font-size: 11px; color: #b0b0b0; }
         .tool-btn.active .tool-label { color: #fff; }
-
         #textInput { position: absolute; background: transparent; border: 1px dashed rgba(255,255,255,0.4); color: #fff; font-size: 24px; font-family: Arial, sans-serif; outline: none; padding: 2px 6px; min-width: 60px; z-index: 500; caret-color: #fff; display: none; }
 
         /* FLIP PAGE */
         #flipPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; }
         #flipPage.active { display: flex; }
+
         .flip-header { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0; }
         .flip-header-left { display: flex; align-items: center; gap: 12px; }
-        .flip-header-right { display: flex; align-items: center; gap: 10px; }
-        .flip-angle-label { font-size: 12px; color: #b0b0b0; white-space: nowrap; }
-        .flip-angle-slider { width: 80px; accent-color: #5e35b1; }
+        .flip-header-right { display: flex; align-items: center; gap: 12px; }
         .settings-back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
         .settings-back-btn:active { background: #3a3a3a; }
         .settings-title { font-size: 20px; font-weight: 500; color: #fff; }
 
-        .flip-status { text-align: center; font-size: 13px; padding: 8px; flex-shrink: 0; background: #333; color: #aaa; }
+        /* Speed threshold controls */
+        .speed-controls { display: flex; align-items: center; gap: 8px; }
+        .speed-label { font-size: 11px; color: #888; white-space: nowrap; }
+        .speed-value { font-size: 11px; color: #fff; font-weight: 600; min-width: 28px; }
+        .speed-slider { width: 70px; accent-color: #5e35b1; }
+
+        /* Status bar */
+        .flip-status { text-align: center; font-size: 13px; font-weight: 500; padding: 9px; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
+        .flip-status.idle    { background: #2a2a2a; color: #888; }
         .flip-status.waiting { background: #4a3800; color: #ffe082; }
         .flip-status.armed   { background: #1b5e20; color: #a5d6a7; }
 
+        /* 2-col grid — left col = fast, right col = slow */
         .flip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow-y: auto; flex: 1; }
-        .flip-item { background: #2a2a2a; padding: 12px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 60px; }
+        .flip-col-header { background: #222; color: #888; font-size: 11px; font-weight: 600; text-align: center; padding: 6px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid #3a3a3a; }
+        .flip-col-header.right-col { border-left: 1px solid #3a3a3a; }
+
+        .flip-item { background: #2a2a2a; padding: 10px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 58px; transition: border-left 0.2s; }
         .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
         .flip-item-left { display: flex; align-items: center; gap: 8px; }
-        .flip-emoji { font-size: 22px; flex-shrink: 0; }
-        .flip-text { display: flex; flex-direction: column; gap: 2px; }
-        .flip-label { font-size: 13px; color: #fff; font-weight: 500; }
-        .flip-hint  { font-size: 10px; color: #888; }
-        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+        .flip-emoji { font-size: 20px; flex-shrink: 0; }
+        .flip-text { display: flex; flex-direction: column; gap: 1px; }
+        .flip-label { font-size: 12px; color: #fff; font-weight: 500; }
+        .flip-hint  { font-size: 10px; color: #666; }
+
+        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
         .flip-save-btn:active { background: #4a2c8f; }
         .flip-item.has-drawing .flip-save-btn { background: #2e7d32; }
 
         /* FLIP MODAL */
-        #flipModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        #flipModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; display: none; align-items: center; justify-content: center; }
         #flipModal.active { display: flex; }
         .modal-content { background: #2a2a2a; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; }
         .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .modal-title { font-size: 20px; color: #fff; font-weight: 500; }
+        .modal-title { font-size: 18px; color: #fff; font-weight: 500; }
         .modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
-        .modal-item-display { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .modal-emoji { font-size: 48px; }
-        .modal-item-name { font-size: 24px; color: #fff; }
-        .drawing-preview { width: 100%; height: 150px; background: #1a1a1a; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .drawing-preview-empty { color: #666; font-size: 14px; }
-        .modal-drawing-btn { width: 100%; background: #4CAF50; border: none; border-radius: 8px; padding: 14px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 10px; }
+        .modal-close:active { background: #3a3a3a; }
+        .modal-item-display { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .modal-emoji { font-size: 40px; }
+        .modal-item-name { font-size: 20px; color: #fff; }
+        .drawing-preview { width: 100%; height: 140px; background: #1a1a1a; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .drawing-preview-empty { color: #555; font-size: 13px; }
+        .modal-drawing-btn { width: 100%; background: #4CAF50; border: none; border-radius: 8px; padding: 13px; color: #fff; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 10px; }
         .modal-drawing-btn:active { background: #45a049; }
-        .flip-clear-btn { width: 100%; background: #c62828; border: none; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .flip-clear-btn { width: 100%; background: #c62828; border: none; border-radius: 8px; padding: 11px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
         .flip-clear-btn:active { background: #b71c1c; }
     </style>
 </head>
@@ -130,12 +144,10 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
             </button>
         </div>
-
         <div class="canvas-container">
             <canvas id="drawingCanvas"></canvas>
             <input type="text" id="textInput" placeholder="Type here...">
         </div>
-
         <div class="bottom-toolbar">
             <div class="tool-group">
                 <button class="tool-btn active" id="penBtn">
@@ -165,39 +177,89 @@
                 <span class="settings-title">Flip Reveal</span>
             </div>
             <div class="flip-header-right">
-                <label class="flip-angle-label">Angle: <span id="flipAngleVal">40</span>°</label>
-                <input type="range" id="flipAngleSlider" min="15" max="70" value="40" class="flip-angle-slider">
+                <div class="speed-controls">
+                    <span class="speed-label">Angle</span>
+                    <input type="range" id="angleSlider" min="15" max="70" value="40" class="speed-slider">
+                    <span class="speed-value"><span id="angleVal">40</span>°</span>
+                </div>
+                <div class="speed-controls">
+                    <span class="speed-label">Fast°/s</span>
+                    <input type="range" id="speedSlider" min="50" max="400" value="150" class="speed-slider">
+                    <span class="speed-value" id="speedVal">150</span>
+                </div>
             </div>
         </div>
-        <div class="flip-status" id="flipStatus">Place phone face-down to arm</div>
+
+        <!-- Status bar: shows idle / waiting for face-down / armed -->
+        <div class="flip-status idle" id="flipStatus">Open menu, place phone face-down to arm</div>
+
+        <!-- Column headers -->
+        <div class="flip-grid" style="flex:0;">
+            <div class="flip-col-header">⚡ Fast</div>
+            <div class="flip-col-header right-col">🐢 Slow</div>
+        </div>
+
+        <!-- 8 slots: fast left col, slow right col, rows = directions -->
         <div class="flip-grid">
-            <div class="flip-item" data-flip="up">
+            <!-- UP row -->
+            <div class="flip-item" data-flip="up-fast">
                 <div class="flip-item-left">
                     <span class="flip-emoji">⬆️</span>
-                    <div class="flip-text"><span class="flip-label">Tilt Up</span><span class="flip-hint">top edge tilts down</span></div>
+                    <div class="flip-text"><span class="flip-label">Up — Fast</span><span class="flip-hint">top edge tilts down</span></div>
                 </div>
-                <button class="flip-save-btn" data-flip="up">Set Drawing</button>
+                <button class="flip-save-btn" data-flip="up-fast">Set</button>
             </div>
-            <div class="flip-item" data-flip="down">
+            <div class="flip-item" data-flip="up-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬆️</span>
+                    <div class="flip-text"><span class="flip-label">Up — Slow</span><span class="flip-hint">top edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="up-slow">Set</button>
+            </div>
+            <!-- DOWN row -->
+            <div class="flip-item" data-flip="down-fast">
                 <div class="flip-item-left">
                     <span class="flip-emoji">⬇️</span>
-                    <div class="flip-text"><span class="flip-label">Tilt Down</span><span class="flip-hint">bottom edge tilts down</span></div>
+                    <div class="flip-text"><span class="flip-label">Down — Fast</span><span class="flip-hint">bottom edge tilts down</span></div>
                 </div>
-                <button class="flip-save-btn" data-flip="down">Set Drawing</button>
+                <button class="flip-save-btn" data-flip="down-fast">Set</button>
             </div>
-            <div class="flip-item" data-flip="left">
+            <div class="flip-item" data-flip="down-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬇️</span>
+                    <div class="flip-text"><span class="flip-label">Down — Slow</span><span class="flip-hint">bottom edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="down-slow">Set</button>
+            </div>
+            <!-- LEFT row -->
+            <div class="flip-item" data-flip="left-fast">
                 <div class="flip-item-left">
                     <span class="flip-emoji">⬅️</span>
-                    <div class="flip-text"><span class="flip-label">Tilt Left</span><span class="flip-hint">left edge tilts down</span></div>
+                    <div class="flip-text"><span class="flip-label">Left — Fast</span><span class="flip-hint">left edge tilts down</span></div>
                 </div>
-                <button class="flip-save-btn" data-flip="left">Set Drawing</button>
+                <button class="flip-save-btn" data-flip="left-fast">Set</button>
             </div>
-            <div class="flip-item" data-flip="right">
+            <div class="flip-item" data-flip="left-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬅️</span>
+                    <div class="flip-text"><span class="flip-label">Left — Slow</span><span class="flip-hint">left edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="left-slow">Set</button>
+            </div>
+            <!-- RIGHT row -->
+            <div class="flip-item" data-flip="right-fast">
                 <div class="flip-item-left">
                     <span class="flip-emoji">➡️</span>
-                    <div class="flip-text"><span class="flip-label">Tilt Right</span><span class="flip-hint">right edge tilts down</span></div>
+                    <div class="flip-text"><span class="flip-label">Right — Fast</span><span class="flip-hint">right edge tilts down</span></div>
                 </div>
-                <button class="flip-save-btn" data-flip="right">Set Drawing</button>
+                <button class="flip-save-btn" data-flip="right-fast">Set</button>
+            </div>
+            <div class="flip-item" data-flip="right-slow">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">➡️</span>
+                    <div class="flip-text"><span class="flip-label">Right — Slow</span><span class="flip-hint">right edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="right-slow">Set</button>
             </div>
         </div>
     </div>
@@ -242,29 +304,33 @@
                 mainApp.classList.add('active');
                 initCanvas();
                 lockOrientationAndFullscreen();
+                // Request sensor permission early on user gesture
+                requestOrientationPermission();
             }, 500);
         });
 
         function lockOrientationAndFullscreen() {
-            // Fullscreen first — orientation lock requires fullscreen on many browsers
             const el = document.documentElement;
-            const fsPromise = el.requestFullscreen
+            const fs = el.requestFullscreen
                 ? el.requestFullscreen()
                 : el.webkitRequestFullscreen
                     ? new Promise(r => { el.webkitRequestFullscreen(); r(); })
                     : Promise.resolve();
-
-            fsPromise.then(() => {
-                // Now try orientation lock
-                if (screen.orientation && screen.orientation.lock) {
+            fs.then(() => {
+                if (screen.orientation && screen.orientation.lock)
                     screen.orientation.lock('portrait').catch(() => {});
-                }
             }).catch(() => {
-                // Fullscreen failed (browser tab, not PWA) — try orientation anyway
-                if (screen.orientation && screen.orientation.lock) {
+                if (screen.orientation && screen.orientation.lock)
                     screen.orientation.lock('portrait').catch(() => {});
-                }
             });
+        }
+
+        function requestOrientationPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                return DeviceOrientationEvent.requestPermission().catch(() => {});
+            }
+            return Promise.resolve('granted');
         }
 
         // ── CANVAS ───────────────────────────────────────────────────
@@ -278,9 +344,9 @@
         }
 
         function getPos(e) {
-            const rect  = canvas.getBoundingClientRect();
-            const touch = e.touches ? e.touches[0] : e;
-            return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+            const rect = canvas.getBoundingClientRect();
+            const src  = e.touches ? e.touches[0] : e;
+            return { x: src.clientX - rect.left, y: src.clientY - rect.top };
         }
 
         function startDrawing(e) {
@@ -314,7 +380,6 @@
         canvas.addEventListener('touchmove',  draw, { passive: false });
         canvas.addEventListener('touchend',   stopDrawing);
 
-        // Tools
         ['pen','eraser','text'].forEach(tool => {
             document.getElementById(tool + 'Btn').addEventListener('click', () => {
                 currentTool = tool;
@@ -325,7 +390,6 @@
             });
         });
 
-        // Text tool
         canvas.addEventListener('click', (e) => {
             if (currentTool !== 'text') return;
             commitTextInput();
@@ -350,14 +414,13 @@
             if (text && textInput.style.display !== 'none') {
                 const x = parseInt(textInput.style.left) + 6;
                 const y = parseInt(textInput.style.top) + 24;
-                ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
-                ctx.fillText(text, x, y); ctx.restore();
+                ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'alphabetic'; ctx.fillText(text, x, y); ctx.restore();
                 strokes.push([{ x, y, tool: 'text', text }]); redoStack = []; updateButtons();
             }
             textInput.style.display = 'none'; textInput.value = '';
         }
 
-        // Undo / redo / clear
         document.getElementById('undoBtn').addEventListener('click', () => {
             if (strokes.length) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
         });
@@ -373,8 +436,8 @@
             strokes.forEach(stroke => {
                 if (!stroke.length) return;
                 if (stroke[0].tool === 'text') {
-                    ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
-                    ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y); ctx.restore();
+                    ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff';
+                    ctx.textBaseline = 'alphabetic'; ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y); ctx.restore();
                 } else {
                     ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
                     ctx.strokeStyle = stroke[0].tool === 'pen' ? '#fff' : '#1a1a1a';
@@ -405,33 +468,43 @@
         function saveFlipDrawings() {
             localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings));
         }
-
-        let triggerAngle = parseInt(localStorage.getItem('magicFlipAngle') || '40');
         loadFlipDrawings();
 
-        // ── FLIP PAGE ────────────────────────────────────────────────
-        document.getElementById('flipMenuBtn').addEventListener('click', () => {
-            // Request iOS permission on user gesture before opening menu
-            requestOrientationPermission().then(() => {
-                stopWatching();
-                flipPage.classList.add('active');
-                updateFlipSlotIndicators();
-                setStatus('Place phone face-down to arm', '');
-            });
+        // Settings: angle threshold and fast/slow speed boundary
+        let triggerAngle = parseInt(localStorage.getItem('magicFlipAngle') || '40');
+        let fastThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '150'); // deg/s above = fast
+
+        const angleSlider = document.getElementById('angleSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        angleSlider.value = triggerAngle;
+        speedSlider.value = fastThreshold;
+        document.getElementById('angleVal').textContent = triggerAngle;
+        document.getElementById('speedVal').textContent = fastThreshold;
+
+        angleSlider.addEventListener('input', () => {
+            triggerAngle = parseInt(angleSlider.value);
+            document.getElementById('angleVal').textContent = triggerAngle;
+            localStorage.setItem('magicFlipAngle', triggerAngle);
+        });
+        speedSlider.addEventListener('input', () => {
+            fastThreshold = parseInt(speedSlider.value);
+            document.getElementById('speedVal').textContent = fastThreshold;
+            localStorage.setItem('magicFlipSpeed', fastThreshold);
         });
 
-        document.getElementById('flipBackBtn').addEventListener('click', () => {
-            flipPage.classList.remove('active');
+        // ── FLIP PAGE OPEN / CLOSE ───────────────────────────────────
+        document.getElementById('flipMenuBtn').addEventListener('click', () => {
+            flipPage.classList.add('active');
+            updateFlipSlotIndicators();
+            // Start watching immediately when menu opens
             beginFaceDownWatch();
         });
 
-        const flipAngleSlider = document.getElementById('flipAngleSlider');
-        flipAngleSlider.value = triggerAngle;
-        document.getElementById('flipAngleVal').textContent = triggerAngle;
-        flipAngleSlider.addEventListener('input', () => {
-            triggerAngle = parseInt(flipAngleSlider.value);
-            document.getElementById('flipAngleVal').textContent = triggerAngle;
-            localStorage.setItem('magicFlipAngle', triggerAngle);
+        // Back button just closes — watching already stopped by triggerReveal or user leaving
+        document.getElementById('flipBackBtn').addEventListener('click', () => {
+            stopWatching();
+            flipPage.classList.remove('active');
+            setStatus('Open menu, place phone face-down to arm', 'idle');
         });
 
         function updateFlipSlotIndicators() {
@@ -441,80 +514,90 @@
 
         function setStatus(msg, mode) {
             statusEl.textContent = msg;
-            statusEl.className   = 'flip-status' + (mode ? ' ' + mode : '');
-        }
-
-        // ── SENSOR PERMISSION ────────────────────────────────────────
-        function requestOrientationPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' &&
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
-                return DeviceOrientationEvent.requestPermission().catch(() => {});
-            }
-            return Promise.resolve('granted');
+            statusEl.className   = 'flip-status ' + (mode || 'idle');
         }
 
         // ── FLIP DETECTION ───────────────────────────────────────────
         //
-        // Galaxy S22 deviceorientation values (portrait, screen facing up = 0°):
+        // PHASE 1 — FACE-DOWN WATCH (menu open):
+        //   Monitor deviceorientation. On Galaxy S22, beta ≈ ±180 when face-down.
+        //   Wait STABLE_MS of continuous face-down before arming.
         //
-        //   beta  = tilt around X-axis (front-back)
-        //     Screen up flat  →  beta ≈ 0
-        //     Screen down flat → beta ≈ 180 (or -180)
-        //     Tilting top edge away from you (tilt "up") → beta increases toward 180
-        //     Tilting bottom edge away from you (tilt "down") → beta decreases toward 0
+        // PHASE 2 — ARMED:
+        //   Snapshot baseBeta/baseGamma at arm moment.
+        //   Monitor BOTH deviceorientation (for angle) and devicemotion
+        //   rotationRate (for speed in deg/s).
+        //   On each orientation event:
+        //     - Compute deltaBeta, deltaGamma from baseline
+        //     - If dominant delta >= triggerAngle → check speed, fire
         //
-        //   gamma = tilt around Y-axis (left-right)
-        //     Flat → gamma ≈ 0
-        //     Right edge down → gamma positive
-        //     Left edge down  → gamma negative
+        //   Speed classification:
+        //     We track peak rotationRate magnitude over a 300ms rolling window.
+        //     At the moment angle threshold is crossed, if peak rate >= fastThreshold
+        //     → "fast", otherwise → "slow".
         //
-        // PHASE 1 — FACE-DOWN WATCH:
-        //   We wait until |beta| > (180 - FACEDOWN_THRESHOLD).
-        //   Once stable for STABLE_MS we snapshot baseBeta/baseGamma and arm.
-        //
-        // PHASE 2 — TILT WATCH:
-        //   On every event compute delta from baseline.
-        //   The dominant axis (larger absolute delta) picks direction.
-        //   If delta >= triggerAngle → fire.
-        //
-        //   Direction mapping (phone face-down, screen toward table):
-        //     deltaBeta < 0  → top edge lifting = "up" tilt
-        //     deltaBeta > 0  → bottom edge lifting = "down" tilt
-        //     deltaGamma < 0 → left edge lifting = "left" tilt
-        //     deltaGamma > 0 → right edge lifting = "right" tilt
+        // DIRECTION MAPPING (phone face-down, screen toward table):
+        //   deltaBeta < 0  → top edge lifting = "up"
+        //   deltaBeta > 0  → bottom edge lifting = "down"
+        //   deltaGamma < 0 → left edge lifting = "left"
+        //   deltaGamma > 0 → right edge lifting = "right"
 
-        const FACEDOWN_THRESHOLD = 25;  // degrees tolerance from flat face-down
+        const FACEDOWN_THRESHOLD = 25;  // |beta| must be > 180-25 = 155 to count as face-down
         const STABLE_MS          = 250; // ms held face-down before arming
+        const RATE_WINDOW_MS     = 350; // rolling window to track peak rotation rate
 
-        let isWatching   = false;
-        let isArmed      = false;
-        let stableTimer  = null;
-        let baseBeta     = 0;
-        let baseGamma    = 0;
+        let isWatching    = false;
+        let isArmed       = false;
+        let stableTimer   = null;
+        let baseBeta      = 0;
+        let baseGamma     = 0;
         let orientHandler = null;
+        let motionHandler = null;
+
+        // Rolling peak rotation rate
+        let peakRate      = 0;
+        let rateResetTimer = null;
 
         function beginFaceDownWatch() {
+            stopWatching();
+
             if (!Object.keys(flipDrawings).length) {
-                setStatus('No drawings saved — nothing to arm', '');
+                setStatus('No drawings saved yet', 'idle');
                 return;
             }
-            stopWatching();
+
             isWatching = true;
             isArmed    = false;
-            setStatus('Place phone face-down to arm', 'waiting');
+            peakRate   = 0;
+            setStatus('Place phone face-down to arm…', 'waiting');
 
             orientHandler = handleOrientation;
+            motionHandler = handleMotion;
             window.addEventListener('deviceorientation', orientHandler, true);
+            window.addEventListener('devicemotion',      motionHandler, true);
         }
 
         function stopWatching() {
             isWatching = false;
             isArmed    = false;
             clearTimeout(stableTimer);
+            clearTimeout(rateResetTimer);
             stableTimer = null;
-            if (orientHandler) {
-                window.removeEventListener('deviceorientation', orientHandler, true);
-                orientHandler = null;
+            if (orientHandler) { window.removeEventListener('deviceorientation', orientHandler, true); orientHandler = null; }
+            if (motionHandler) { window.removeEventListener('devicemotion',      motionHandler, true); motionHandler = null; }
+        }
+
+        // Track peak rotation rate in a rolling window
+        function handleMotion(e) {
+            if (!isWatching) return;
+            const rr = e.rotationRate;
+            if (!rr) return;
+            const rate = Math.max(Math.abs(rr.beta || 0), Math.abs(rr.gamma || 0), Math.abs(rr.alpha || 0));
+            if (rate > peakRate) {
+                peakRate = rate;
+                // Reset peak after window
+                clearTimeout(rateResetTimer);
+                rateResetTimer = setTimeout(() => { peakRate = 0; }, RATE_WINDOW_MS);
             }
         }
 
@@ -525,10 +608,8 @@
             const gamma = e.gamma ?? 0;
 
             if (!isArmed) {
-                // Phase 1: detect face-down
-                // beta near ±180 means face-down on Android
-                const absBeta    = Math.abs(beta);
-                const isFaceDown = absBeta > (180 - FACEDOWN_THRESHOLD);
+                // Phase 1: wait for face-down (beta near ±180)
+                const isFaceDown = Math.abs(beta) > (180 - FACEDOWN_THRESHOLD);
 
                 if (isFaceDown && !stableTimer) {
                     stableTimer = setTimeout(() => {
@@ -536,7 +617,8 @@
                         isArmed    = true;
                         baseBeta   = beta;
                         baseGamma  = gamma;
-                        setStatus('Armed ✓  —  tilt to reveal', 'armed');
+                        peakRate   = 0; // reset rate tracking from arm moment
+                        setStatus('Armed ✓ — tilt to reveal', 'armed');
                     }, STABLE_MS);
                 } else if (!isFaceDown) {
                     clearTimeout(stableTimer);
@@ -548,30 +630,47 @@
                 let deltaBeta  = beta  - baseBeta;
                 let deltaGamma = gamma - baseGamma;
 
-                // Handle ±180 wraparound for beta
+                // Handle ±180 wraparound
                 if (deltaBeta >  180) deltaBeta -= 360;
                 if (deltaBeta < -180) deltaBeta += 360;
 
                 const absDeltaBeta  = Math.abs(deltaBeta);
                 const absDeltaGamma = Math.abs(deltaGamma);
+                const maxDelta      = Math.max(absDeltaBeta, absDeltaGamma);
 
-                if (Math.max(absDeltaBeta, absDeltaGamma) >= triggerAngle) {
+                if (maxDelta >= triggerAngle) {
+                    // Determine direction
                     let direction;
                     if (absDeltaBeta >= absDeltaGamma) {
                         direction = deltaBeta < 0 ? 'up' : 'down';
                     } else {
                         direction = deltaGamma < 0 ? 'left' : 'right';
                     }
-                    triggerReveal(direction);
+
+                    // Classify speed using peak rotation rate captured so far
+                    const speed = peakRate >= fastThreshold ? 'fast' : 'slow';
+                    const slotKey = direction + '-' + speed;
+
+                    triggerReveal(slotKey);
                 }
             }
         }
 
-        function triggerReveal(direction) {
+        function triggerReveal(slotKey) {
+            const drawing = flipDrawings[slotKey];
             stopWatching();
-            const drawing = flipDrawings[direction];
-            if (!drawing) return;
+
+            if (!drawing) {
+                // No drawing for this slot — re-arm silently so performer can try again
+                setStatus('No drawing for that direction/speed — try again', 'waiting');
+                setTimeout(() => beginFaceDownWatch(), 1500);
+                return;
+            }
+
+            // Close menu and show drawing
             flipPage.classList.remove('active');
+            setStatus('Open menu, place phone face-down to arm', 'idle');
+
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -587,26 +686,30 @@
         document.querySelectorAll('.flip-save-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
-                currentFlipSlot = btn.dataset.flip;
-                const item  = btn.closest('.flip-item');
+                // Pause watching while modal is open to avoid accidental triggers
+                stopWatching();
 
-                document.getElementById('flipModalTitle').textContent    = `Set Drawing — ${item.querySelector('.flip-label').textContent}`;
+                currentFlipSlot = btn.dataset.flip;
+                const item = btn.closest('.flip-item');
+
+                document.getElementById('flipModalTitle').textContent    = item.querySelector('.flip-label').textContent;
                 document.getElementById('flipModalEmoji').textContent    = item.querySelector('.flip-emoji').textContent;
                 document.getElementById('flipModalSlotName').textContent = item.querySelector('.flip-label').textContent;
 
                 const preview = document.getElementById('flipDrawingPreview');
                 if (flipDrawings[currentFlipSlot]) {
-                    preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="150"></canvas>`;
+                    preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
                     const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
                     const img  = new Image();
                     img.onload = () => {
-                        const s = Math.min(200 / canvas.width, 150 / canvas.height);
-                        pCtx.drawImage(img, (200 - canvas.width*s)/2, (150 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
+                        const s = Math.min(200 / canvas.width, 140 / canvas.height);
+                        pCtx.drawImage(img, (200 - canvas.width*s)/2, (140 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
                     };
                     img.src = flipDrawings[currentFlipSlot];
                 } else {
                     preview.innerHTML = '<span class="drawing-preview-empty">No drawing saved</span>';
                 }
+
                 flipModal.classList.add('active');
             });
         });
@@ -616,17 +719,17 @@
             flipDrawings[currentFlipSlot] = canvas.toDataURL('image/png');
             saveFlipDrawings();
             updateFlipSlotIndicators();
-            // Refresh preview
+
             const preview = document.getElementById('flipDrawingPreview');
-            preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="150"></canvas>`;
+            preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
             const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
             const img  = new Image();
             img.onload = () => {
-                const s = Math.min(200 / canvas.width, 150 / canvas.height);
-                pCtx.drawImage(img, (200 - canvas.width*s)/2, (150 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
+                const s = Math.min(200 / canvas.width, 140 / canvas.height);
+                pCtx.drawImage(img, (200 - canvas.width*s)/2, (140 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
             };
             img.src = flipDrawings[currentFlipSlot];
-            alert(`Drawing saved for "${currentFlipSlot}"!`);
+            alert(`Saved!`);
         });
 
         document.getElementById('flipClearDrawingBtn').addEventListener('click', () => {
@@ -638,8 +741,17 @@
                 '<span class="drawing-preview-empty">No drawing saved</span>';
         });
 
-        document.getElementById('flipModalClose').addEventListener('click', () => flipModal.classList.remove('active'));
-        flipModal.addEventListener('click', e => { if (e.target === flipModal) flipModal.classList.remove('active'); });
+        // When modal closes, resume watching
+        function closeFlipModal() {
+            flipModal.classList.remove('active');
+            // Resume face-down watch if flip page still open
+            if (flipPage.classList.contains('active')) {
+                beginFaceDownWatch();
+            }
+        }
+
+        document.getElementById('flipModalClose').addEventListener('click', closeFlipModal);
+        flipModal.addEventListener('click', e => { if (e.target === flipModal) closeFlipModal(); });
     </script>
 </body>
 </html>
