@@ -39,6 +39,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="x5-orientation" content="portrait">
     <title>Samsung Notes</title>
     <style>
         * {
@@ -47,6 +49,8 @@
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
+
+        /* Orientation lock is handled via Screen Orientation API in JS */
 
         body {
             font-family: 'Samsung One', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1604,9 +1608,10 @@
 
         function enterFullscreen() {
             const el = document.documentElement;
-            if      (el.requestFullscreen)        el.requestFullscreen().catch(()=>{});
-            else if (el.webkitRequestFullscreen)  el.webkitRequestFullscreen();
-            else if (el.msRequestFullscreen)      el.msRequestFullscreen();
+            const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+            if (req) {
+                req.call(el).catch(() => {});
+            }
         }
 
         const canvas = document.getElementById('drawingCanvas');
@@ -1835,12 +1840,15 @@
         document.getElementById('flipMenuBtn').addEventListener('click', () => {
             flipPage.classList.add('active');
             updateFlipSlotIndicators();
-            startFlipListeners(); // arm immediately on open
+            startFlipListeners(); // arm when menu opens
         });
 
         document.getElementById('flipBackBtn').addEventListener('click', () => {
             flipPage.classList.remove('active');
-            // Listeners stay running — phone can already be face-down
+            // Fully disarm when back is pressed — prevents triggering outside menu
+            // and prevents interference with speech recognition microphone
+            disarmFlipListener();
+            updateFlipStatus('Place phone face-down to arm', false);
         });
 
         const flipSpeedSlider = document.getElementById('flipSpeedSlider');
@@ -1919,45 +1927,39 @@
         flipModal.addEventListener('click', (e) => { if (e.target === flipModal) flipModal.classList.remove('active'); });
 
         // ============================================================
-        // GYROSCOPE FLIP DETECTION — REWRITTEN FOR GALAXY S22
+        // GYROSCOPE FLIP DETECTION — GALAXY S22
         //
-        // APPROACH:
-        // Uses deviceorientation (beta/gamma/alpha) continuously.
+        // DESIGN:
+        // - Listener STARTS when flip menu opens, STOPS when it closes
+        //   via back button OR after a successful trigger.
+        // - ONE-SHOT per menu open: after triggering, listener is fully
+        //   removed. Performer must re-open menu to use again.
+        // - Stopping the listener when not needed prevents any
+        //   interference with the speech recognition microphone.
+        //
+        // HOW ORIENTATION LOCK WORKS ON ANDROID:
+        // screen.orientation.lock() only works when the app is
+        // installed as a PWA (Add to Home Screen). In a browser tab
+        // it silently fails. To lock rotation, install as PWA OR
+        // disable auto-rotate in Android Quick Settings before performing.
         //
         // STATE MACHINE:
-        //   IDLE      → waiting for face-down (|beta| > 120)
-        //   FACE_DOWN → phone is face-down; snapshot beta/gamma taken;
-        //               watching for a 45-degree change on either axis
-        //   COOLDOWN  → 500ms after a trigger, ignores further events
+        //   IDLE      — waiting for face-down (|beta| > 120°)
+        //   FACE_DOWN — armed; snapshot taken; watching for 45° rotation
+        //   DONE      — triggered and disarmed
         //
-        // DIRECTION LOGIC:
-        //   When face-down, snapshot = {beta0, gamma0}.
-        //   On each orientation update, compute:
-        //     deltaBeta  = beta  - beta0
-        //     deltaGamma = gamma - gamma0
-        //   If |deltaBeta| >= 45 or |deltaGamma| >= 45, trigger fires.
-        //   Dominant axis (larger delta) determines direction.
-        //   Sign determines up/down/left/right.
-        //
-        // SPEED LOGIC:
-        //   We track the time between face-down snapshot and trigger.
-        //   Speed threshold maps slider 1-10 → 2000ms–200ms:
-        //     threshold_ms = 2200 - (flipSpeedThreshold * 200)
-        //   If elapsed < threshold_ms → "fast", else → "slow"
-        //
-        // STATUS BAR:
-        //   Updates in real-time so performer knows current state.
+        // DIRECTION: dominant axis (beta vs gamma) from face-down snapshot.
+        // SPEED: ms elapsed from face-down to trigger vs slider setting.
         // ============================================================
 
         let flipOrientationHandler = null;
-        let flipState = 'IDLE';   // IDLE | FACE_DOWN | COOLDOWN
-        let flipBeta0  = 0;       // beta  snapshot at face-down moment
-        let flipGamma0 = 0;       // gamma snapshot at face-down moment
-        let flipFaceDownTime = 0; // timestamp when face-down was detected
+        let flipState = 'IDLE';
+        let flipBeta0 = 0;
+        let flipGamma0 = 0;
+        let flipFaceDownTime = 0;
 
-        const FACE_DOWN_THRESHOLD = 120; // |beta| degrees to count as face-down
-        const FLIP_ANGLE          = 45;  // degrees of rotation needed to trigger
-        const COOLDOWN_MS         = 500; // ms to ignore events after triggering
+        const FACE_DOWN_THRESHOLD = 120; // |beta| to count as face-down
+        const FLIP_ANGLE = 45;           // degrees of rotation to trigger
 
         function updateFlipStatus(text, armed) {
             const el = document.getElementById('flipStatus');
@@ -1966,31 +1968,33 @@
             el.className = 'flip-status' + (armed ? ' armed' : '');
         }
 
-        function startFlipListeners() {
-            // Remove any existing listener first
+        function disarmFlipListener() {
             if (flipOrientationHandler) {
                 window.removeEventListener('deviceorientation', flipOrientationHandler);
                 flipOrientationHandler = null;
             }
-
             flipState = 'IDLE';
+        }
+
+        function startFlipListeners() {
+            // Always remove any previous listener first — prevents duplicate handlers
+            // from stacking if menu is opened multiple times
+            disarmFlipListener();
+
             updateFlipStatus('Place phone face-down to arm', false);
 
-            // Only arm if at least one slot has a drawing saved
             const hasAny = Object.keys(flipDrawings).length > 0;
             if (!hasAny) {
                 updateFlipStatus('No drawings saved — set a drawing first', false);
                 return;
             }
 
-            // Request iOS 13+ permission if needed
+            // iOS 13+ requires explicit permission for DeviceOrientation
             if (typeof DeviceOrientationEvent !== 'undefined' &&
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(state => {
-                    if (state === 'granted') attachOrientationListener();
-                }).catch(() => {
-                    updateFlipStatus('Sensor permission denied', false);
-                });
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => { if (state === 'granted') attachOrientationListener(); })
+                    .catch(() => { updateFlipStatus('Sensor permission denied', false); });
             } else {
                 attachOrientationListener();
             }
@@ -2001,15 +2005,12 @@
                 const beta  = e.beta  || 0;
                 const gamma = e.gamma || 0;
 
-                if (flipState === 'COOLDOWN') return;
-
                 if (flipState === 'IDLE') {
-                    // Detect face-down: beta near ±180 (or >120 in abs terms)
-                    // Galaxy S22 reports beta ~170-180 when fully face-down
+                    // Wait for phone to go face-down
                     if (Math.abs(beta) > FACE_DOWN_THRESHOLD) {
-                        flipState     = 'FACE_DOWN';
-                        flipBeta0     = beta;
-                        flipGamma0    = gamma;
+                        flipState        = 'FACE_DOWN';
+                        flipBeta0        = beta;
+                        flipGamma0       = gamma;
                         flipFaceDownTime = Date.now();
                         updateFlipStatus('🟢 Armed — flip now!', true);
                     }
@@ -2017,52 +2018,42 @@
                 }
 
                 if (flipState === 'FACE_DOWN') {
-                    // Calculate how far the phone has rotated since face-down
                     const deltaBeta  = beta  - flipBeta0;
                     const deltaGamma = gamma - flipGamma0;
-
                     const absDeltaBeta  = Math.abs(deltaBeta);
                     const absDeltaGamma = Math.abs(deltaGamma);
 
-                    // Trigger once either axis reaches 45 degrees of rotation
+                    // Fire when phone has rotated 45° from face-down position
                     if (absDeltaBeta >= FLIP_ANGLE || absDeltaGamma >= FLIP_ANGLE) {
-                        flipState = 'COOLDOWN';
-                        updateFlipStatus('✓ Triggered!', false);
 
-                        // Determine direction from dominant axis
-                        let direction, speed;
+                        // ONE-SHOT: fully remove listener before doing anything else
+                        flipState = 'DONE';
+                        disarmFlipListener();
+                        updateFlipStatus('Place phone face-down to arm', false);
 
+                        // Calculate speed from elapsed time
                         const elapsed = Date.now() - flipFaceDownTime;
-                        // Speed: slider 1 = needs < 2000ms, slider 10 = needs < 200ms
                         const speedThresholdMs = 2200 - (flipSpeedThreshold * 200);
-                        speed = elapsed < speedThresholdMs ? 'fast' : 'slow';
+                        const speed = elapsed < speedThresholdMs ? 'fast' : 'slow';
 
+                        // Calculate direction from dominant axis
+                        let direction;
                         if (absDeltaBeta >= absDeltaGamma) {
-                            // Beta axis = tipping top/bottom of phone
-                            // Positive deltaBeta = phone tipped away from you = "up"
-                            // Negative deltaBeta = phone tipped toward you = "down"
                             direction = deltaBeta > 0 ? 'up' : 'down';
                         } else {
-                            // Gamma axis = tipping left/right side of phone
-                            // Positive deltaGamma = right side tipped down = "right"
-                            // Negative deltaGamma = left side tipped down = "left"
                             direction = deltaGamma > 0 ? 'right' : 'left';
                         }
 
-                        const slotKey = `${direction}-${speed}`;
+                        const slotKey = direction + '-' + speed;
 
-                        // Close the menu immediately at trigger time — unconditional,
-                        // regardless of whether a drawing exists for this slot.
-                        // This ensures the spectator never sees the menu during reveal.
-                        document.getElementById('flipPage').classList.remove('active');
-
-                        applyFlipDrawing(slotKey);
-
-                        // Reset to IDLE after cooldown
-                        setTimeout(() => {
-                            flipState = 'IDLE';
-                            updateFlipStatus('Place phone face-down to arm', false);
-                        }, COOLDOWN_MS);
+                        // Only act if a drawing exists for this slot
+                        if (flipDrawings[slotKey]) {
+                            // Close the menu immediately
+                            document.getElementById('flipPage').classList.remove('active');
+                            // Apply the drawing
+                            applyFlipDrawing(slotKey);
+                        }
+                        // If no drawing for this slot, do nothing — menu stays open
                     }
                 }
             };
@@ -2071,21 +2062,18 @@
         }
 
         function applyFlipDrawing(slotKey) {
-            if (!flipDrawings[slotKey]) return; // no drawing for this slot, fail silently
+            if (!flipDrawings[slotKey]) return;
 
             function revealDrawing(img) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
                 strokes = []; redoStack = [];
                 updateButtons();
-                // Close flip page so spectator sees the canvas
-                document.getElementById('flipPage').classList.remove('active');
             }
 
             const img = new Image();
             img.onload = () => revealDrawing(img);
             img.src = flipDrawings[slotKey];
-            // If browser already cached the image, onload won't fire — handle immediately
             if (img.complete) revealDrawing(img);
         }
 
