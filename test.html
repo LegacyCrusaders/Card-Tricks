@@ -30,58 +30,112 @@
         /* MAIN APP */
         #mainApp { display: none; width: 100vw; height: 100vh; background: #1a1a1a; flex-direction: column; }
         #mainApp.active { display: flex; }
-        .top-bar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; }
-        .top-bar-center { display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); }
-        .top-icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
-        .top-icon-btn:active { background: #3a3a3a; }
-        .action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
+
+        .top-bar {
+            background: #2a2a2a; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #3a3a3a; height: 56px;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: 12px; }
+        .top-bar-center {
+            display: flex; align-items: center; gap: 20px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+        }
+        .top-bar-right { display: flex; align-items: center; gap: 8px; }
+
+        .menu-btn, .top-icon-btn {
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: transparent; border: none; cursor: pointer;
+        }
+        .menu-btn:active, .top-icon-btn:active { background: #3a3a3a; }
+
+        .action-btn {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: none; border-radius: 50%; cursor: pointer;
+        }
         .action-btn:active { background: #3a3a3a; }
         .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
         .canvas-container { flex: 1; position: relative; background: #1a1a1a; overflow: hidden; }
         #drawingCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
-        .bottom-toolbar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #3a3a3a; height: 64px; }
+
+        .bottom-toolbar {
+            background: #2a2a2a; padding: 12px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-top: 1px solid #3a3a3a; height: 64px;
+        }
         .tool-group { display: flex; align-items: center; gap: 16px; }
         .tool-btn { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
         .tool-btn.active { background: #3a3a3a; }
         .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
         .tool-label { font-size: 11px; color: #b0b0b0; }
         .tool-btn.active .tool-label { color: #fff; }
+
+        /* Dummy mic button — looks real, does nothing */
+        .mic-btn {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border: none; border-radius: 50%; cursor: pointer;
+        }
+        .mic-btn:active { background: #e0e0e0; }
+
         #textInput { position: absolute; background: transparent; border: 1px dashed rgba(255,255,255,0.4); color: #fff; font-size: 24px; font-family: Arial, sans-serif; outline: none; padding: 2px 6px; min-width: 60px; z-index: 500; caret-color: #fff; display: none; }
 
-        /* FLIP PAGE */
+        /* ── FLIP PAGE ── */
         #flipPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; }
         #flipPage.active { display: flex; }
 
-        .flip-header { background: #2a2a2a; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0; gap: 8px; }
-        .flip-header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .flip-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
-        .settings-back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; flex-shrink: 0; }
-        .settings-back-btn:active { background: #3a3a3a; }
-        .settings-title { font-size: 18px; font-weight: 500; color: #fff; white-space: nowrap; }
-
-        .ctrl-group { display: flex; align-items: center; gap: 5px; }
-        .ctrl-label { font-size: 10px; color: #888; white-space: nowrap; }
-        .ctrl-val { font-size: 10px; color: #fff; font-weight: 600; min-width: 26px; }
-        .ctrl-slider { width: 60px; accent-color: #5e35b1; }
-
-        /* Practice mode toggle */
-        .practice-toggle {
-            display: flex; align-items: center; gap: 6px; cursor: pointer;
-            background: #333; border: none; border-radius: 16px; padding: 5px 10px;
+        /* Three-row header */
+        .flip-header {
+            background: #2a2a2a;
+            border-bottom: 1px solid #3a3a3a;
             flex-shrink: 0;
         }
+        /* Row 1: back + title + practice toggle */
+        .flip-header-row1 {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 14px; height: 50px;
+        }
+        /* Row 2: angle slider — full width */
+        .flip-header-row2 {
+            display: flex; align-items: center;
+            padding: 6px 14px; gap: 10px;
+            border-top: 1px solid #333;
+        }
+        /* Row 3: speed slider — full width */
+        .flip-header-row3 {
+            display: flex; align-items: center;
+            padding: 6px 14px 8px; gap: 10px;
+            border-top: 1px solid #333;
+        }
+
+        .flip-header-left { display: flex; align-items: center; gap: 10px; }
+        .settings-back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
+        .settings-back-btn:active { background: #3a3a3a; }
+        .settings-title { font-size: 18px; font-weight: 500; color: #fff; }
+
+        /* Practice toggle */
+        .practice-toggle {
+            display: flex; align-items: center; gap: 7px; cursor: pointer;
+            background: #3a3a3a; border: none; border-radius: 20px; padding: 7px 14px;
+        }
         .practice-toggle.on { background: #5e35b1; }
-        .practice-toggle-label { font-size: 11px; color: #aaa; white-space: nowrap; font-weight: 500; }
-        .practice-toggle.on .practice-toggle-label { color: #fff; }
-        .practice-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; flex-shrink: 0; }
+        .practice-dot { width: 9px; height: 9px; border-radius: 50%; background: #777; flex-shrink: 0; }
         .practice-toggle.on .practice-dot { background: #fff; }
+        .practice-toggle-label { font-size: 13px; color: #aaa; font-weight: 500; white-space: nowrap; }
+        .practice-toggle.on .practice-toggle-label { color: #fff; }
+
+        /* Slider rows */
+        .ctrl-label { font-size: 12px; color: #888; white-space: nowrap; min-width: 68px; }
+        .ctrl-slider { flex: 1; accent-color: #5e35b1; height: 20px; }
+        .ctrl-val { font-size: 12px; color: #fff; font-weight: 600; min-width: 36px; text-align: right; }
 
         /* Status bar */
         .flip-status { text-align: center; font-size: 13px; font-weight: 500; padding: 9px 12px; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
-        .flip-status.idle    { background: #2a2a2a; color: #888; }
-        .flip-status.waiting { background: #4a3800; color: #ffe082; }
-        .flip-status.armed   { background: #1b5e20; color: #a5d6a7; }
-        /* Practice mode feedback — briefly shows which slot fired */
+        .flip-status.idle      { background: #2a2a2a; color: #888; }
+        .flip-status.waiting   { background: #4a3800; color: #ffe082; }
+        .flip-status.armed     { background: #1b5e20; color: #a5d6a7; }
         .flip-status.fired-fast { background: #1a237e; color: #90caf9; }
         .flip-status.fired-slow { background: #4a148c; color: #ce93d8; }
         .flip-status.fired-none { background: #4e342e; color: #ffab91; }
@@ -95,8 +149,7 @@
         .flip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow-y: auto; flex: 1; }
         .flip-item { background: #2a2a2a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 56px; transition: border-left 0.2s, background 0.2s; }
         .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
-        /* Flash when triggered in practice mode */
-        .flip-item.just-fired { background: #1a237e; }
+        .flip-item.just-fired  { background: #1a237e; }
         .flip-item-left { display: flex; align-items: center; gap: 8px; }
         .flip-emoji { font-size: 18px; flex-shrink: 0; }
         .flip-text { display: flex; flex-direction: column; gap: 1px; }
@@ -143,7 +196,16 @@
     <!-- MAIN APP -->
     <div id="mainApp">
         <div class="top-bar">
-            <div style="width:40px;"></div>
+            <div class="top-bar-left">
+                <!-- Dummy ⋮ menu button — cosmetic only -->
+                <button class="menu-btn" aria-label="Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="6" r="2" fill="#fff"/>
+                        <circle cx="12" cy="12" r="2" fill="#fff"/>
+                        <circle cx="12" cy="18" r="2" fill="#fff"/>
+                    </svg>
+                </button>
+            </div>
             <div class="top-bar-center">
                 <button class="action-btn" id="undoBtn" disabled>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/></svg>
@@ -155,14 +217,19 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/></svg>
                 </button>
             </div>
-            <button class="top-icon-btn" id="flipMenuBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
-            </button>
+            <div class="top-bar-right">
+                <!-- Share / flip menu button — functional -->
+                <button class="top-icon-btn" id="flipMenuBtn" aria-label="Flip Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
+                </button>
+            </div>
         </div>
+
         <div class="canvas-container">
             <canvas id="drawingCanvas"></canvas>
             <input type="text" id="textInput" placeholder="Type here...">
         </div>
+
         <div class="bottom-toolbar">
             <div class="tool-group">
                 <button class="tool-btn active" id="penBtn">
@@ -178,35 +245,43 @@
                     <span class="tool-label">Text</span>
                 </button>
             </div>
-            <div style="width:48px;"></div>
+            <!-- Dummy mic button — cosmetic only -->
+            <button class="mic-btn" aria-label="Microphone">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#000"/>
+                </svg>
+            </button>
         </div>
     </div>
 
     <!-- FLIP PAGE -->
     <div id="flipPage">
         <div class="flip-header">
-            <div class="flip-header-left">
-                <button class="settings-back-btn" id="flipBackBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
-                </button>
-                <span class="settings-title">Flip Reveal</span>
-            </div>
-            <div class="flip-header-right">
-                <div class="ctrl-group">
-                    <span class="ctrl-label">Angle</span>
-                    <input type="range" id="angleSlider" min="15" max="70" value="40" class="ctrl-slider">
-                    <span class="ctrl-val"><span id="angleVal">40</span>°</span>
+            <!-- Row 1: back + title + practice toggle -->
+            <div class="flip-header-row1">
+                <div class="flip-header-left">
+                    <button class="settings-back-btn" id="flipBackBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
+                    </button>
+                    <span class="settings-title">Flip Reveal</span>
                 </div>
-                <div class="ctrl-group">
-                    <span class="ctrl-label">Fast°/s</span>
-                    <input type="range" id="speedSlider" min="30" max="400" value="150" class="ctrl-slider">
-                    <span class="ctrl-val" id="speedVal">150</span>
-                </div>
-                <!-- Practice mode toggle -->
                 <button class="practice-toggle" id="practiceToggle">
                     <span class="practice-dot"></span>
-                    <span class="practice-toggle-label">Practice</span>
+                    <span class="practice-toggle-label">Practice Mode</span>
                 </button>
+            </div>
+            <!-- Row 2: tilt angle slider — full width -->
+            <div class="flip-header-row2">
+                <span class="ctrl-label">Tilt Angle</span>
+                <input type="range" id="angleSlider" min="15" max="70" value="40" class="ctrl-slider">
+                <span class="ctrl-val"><span id="angleVal">40</span>°</span>
+            </div>
+            <!-- Row 3: fast/slow speed threshold slider — full width -->
+            <div class="flip-header-row3">
+                <span class="ctrl-label">Fast Speed °/s</span>
+                <input type="range" id="speedSlider" min="30" max="400" value="150" class="ctrl-slider">
+                <span class="ctrl-val" id="speedVal">150</span>
             </div>
         </div>
 
@@ -491,40 +566,21 @@
         }
 
         // ── FLIP DETECTION ───────────────────────────────────────────
-        //
-        // Speed measurement — the key fix from before:
-        // Rather than a decaying peak window, we now sample rotationRate
-        // continuously and record the MAX rate seen between arm time and
-        // the moment the angle threshold is crossed. This gives a much
-        // cleaner reading because we're measuring the actual motion that
-        // CAUSED the tilt, not a window that might have already decayed.
-        //
-        // rotationRate is in deg/s. Typical values on S22:
-        //   Gentle slow tilt:  20–80  deg/s
-        //   Normal flip:      100–200 deg/s
-        //   Fast snap:        250–500 deg/s
-        //
-        // Default fastThreshold = 150 deg/s — adjust with slider.
-
-        const FACEDOWN_THRESHOLD = 25;  // beta must be > 155° to count as face-down
-        const STABLE_MS          = 250; // ms held face-down before arming
-        const REARM_DELAY_MS     = 800; // ms after a trigger before re-arming (practice mode)
+        const FACEDOWN_THRESHOLD = 25;
+        const STABLE_MS          = 250;
+        const REARM_DELAY_MS     = 800;
 
         let isWatching    = false;
         let isArmed       = false;
         let stableTimer   = null;
         let baseBeta      = 0;
         let baseGamma     = 0;
-        let peakRate      = 0;          // max rotation rate seen since arming
+        let peakRate      = 0;
         let orientHandler = null;
         let motionHandler = null;
 
         function beginFaceDownWatch() {
             stopWatching();
-            if (!Object.keys(flipDrawings).length && !practiceMode) {
-                setStatus('No drawings saved yet', 'idle');
-                return;
-            }
             isWatching = true;
             isArmed    = false;
             peakRate   = 0;
@@ -544,17 +600,11 @@
             if (motionHandler) { window.removeEventListener('devicemotion',      motionHandler, true); motionHandler = null; }
         }
 
-        // Accumulate peak rotation rate from arm moment onward
         function handleMotion(e) {
             if (!isWatching || !isArmed) return;
             const rr = e.rotationRate;
             if (!rr) return;
-            // Use whichever axis is moving fastest
-            const rate = Math.max(
-                Math.abs(rr.beta  || 0),
-                Math.abs(rr.gamma || 0),
-                Math.abs(rr.alpha || 0)
-            );
+            const rate = Math.max(Math.abs(rr.beta||0), Math.abs(rr.gamma||0), Math.abs(rr.alpha||0));
             if (rate > peakRate) peakRate = rate;
         }
 
@@ -564,7 +614,6 @@
             const gamma = e.gamma ?? 0;
 
             if (!isArmed) {
-                // Phase 1: wait for face-down (beta near ±180 on Android)
                 const isFaceDown = Math.abs(beta) > (180 - FACEDOWN_THRESHOLD);
                 if (isFaceDown && !stableTimer) {
                     stableTimer = setTimeout(() => {
@@ -579,12 +628,9 @@
                     clearTimeout(stableTimer);
                     stableTimer = null;
                 }
-
             } else {
-                // Phase 2: measure delta from baseline
                 let deltaBeta  = beta  - baseBeta;
                 let deltaGamma = gamma - baseGamma;
-                // Normalise ±180 wraparound
                 if (deltaBeta >  180) deltaBeta -= 360;
                 if (deltaBeta < -180) deltaBeta += 360;
 
@@ -593,11 +639,10 @@
 
                 if (Math.max(absDeltaBeta, absDeltaGamma) >= triggerAngle) {
                     const direction = absDeltaBeta >= absDeltaGamma
-                        ? (deltaBeta  < 0 ? 'up'    : 'down')
-                        : (deltaGamma < 0 ? 'left'  : 'right');
+                        ? (deltaBeta  < 0 ? 'up'   : 'down')
+                        : (deltaGamma < 0 ? 'left' : 'right');
                     const speed   = peakRate >= fastThreshold ? 'fast' : 'slow';
-                    const slotKey = direction + '-' + speed;
-                    triggerReveal(slotKey, speed);
+                    triggerReveal(direction + '-' + speed, speed);
                 }
             }
         }
@@ -606,36 +651,24 @@
             stopWatching();
 
             if (practiceMode) {
-                // In practice mode: show which slot fired, highlight it, then re-arm
                 const fired = !!flipDrawings[slotKey];
-                const statusMode = fired
-                    ? (speed === 'fast' ? 'fired-fast' : 'fired-slow')
-                    : 'fired-none';
                 const label = slotKey.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
                 setStatus(
-                    fired
-                        ? `⚡ Fired: ${label}`
-                        : `✗ No drawing for: ${label}`,
-                    statusMode
+                    fired ? `Fired: ${label}` : `No drawing for: ${label}`,
+                    fired ? (speed === 'fast' ? 'fired-fast' : 'fired-slow') : 'fired-none'
                 );
-
-                // Flash the matching row
                 const matchEl = document.querySelector(`.flip-item[data-flip="${slotKey}"]`);
                 if (matchEl) {
                     matchEl.classList.add('just-fired');
                     setTimeout(() => matchEl.classList.remove('just-fired'), 600);
                 }
-
-                // Re-arm after short delay so phone can return to face-down
                 setTimeout(() => {
                     if (flipPage.classList.contains('active')) beginFaceDownWatch();
                 }, REARM_DELAY_MS);
 
             } else {
-                // Normal mode: close menu, load drawing
                 const drawing = flipDrawings[slotKey];
                 if (!drawing) {
-                    // No drawing — re-arm silently
                     setTimeout(() => {
                         if (flipPage.classList.contains('active')) beginFaceDownWatch();
                     }, 800);
@@ -659,20 +692,19 @@
         document.querySelectorAll('.flip-save-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
-                stopWatching(); // pause while modal open
+                stopWatching();
                 currentFlipSlot = btn.dataset.flip;
                 const item = btn.closest('.flip-item');
                 document.getElementById('flipModalTitle').textContent    = item.querySelector('.flip-label').textContent;
                 document.getElementById('flipModalEmoji').textContent    = item.querySelector('.flip-emoji').textContent;
                 document.getElementById('flipModalSlotName').textContent = item.querySelector('.flip-label').textContent;
-
                 const preview = document.getElementById('flipDrawingPreview');
                 if (flipDrawings[currentFlipSlot]) {
                     preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
                     const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
                     const img  = new Image();
                     img.onload = () => {
-                        const s = Math.min(200 / canvas.width, 140 / canvas.height);
+                        const s = Math.min(200/canvas.width, 140/canvas.height);
                         pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
                     };
                     img.src = flipDrawings[currentFlipSlot];
@@ -693,7 +725,7 @@
             const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
             const img  = new Image();
             img.onload = () => {
-                const s = Math.min(200 / canvas.width, 140 / canvas.height);
+                const s = Math.min(200/canvas.width, 140/canvas.height);
                 pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
             };
             img.src = flipDrawings[currentFlipSlot];
