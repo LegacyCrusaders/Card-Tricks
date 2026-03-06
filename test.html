@@ -4,749 +4,761 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Samsung Notes</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; background: #000; }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; overflow:hidden; background:#000; }
 
-        /* START SCREEN */
+        /* ── START SCREEN ── */
         #startScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; transition: opacity 0.5s ease; cursor: pointer;
+            position:fixed; inset:0;
+            background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            z-index:1000; transition:opacity .5s; cursor:pointer;
         }
-        #startScreen.fade-out { opacity: 0; pointer-events: none; }
-        .app-icon { width: 120px; height: 120px; background: white; border-radius: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .app-icon svg { width: 70px; height: 70px; }
-        .app-title { color: white; font-size: 32px; font-weight: 600; margin-bottom: 10px; }
-        .app-version { color: rgba(255,255,255,0.8); font-size: 16px; }
-        .tap-to-start { color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px; animation: fadeInOut 2s infinite; }
-        @keyframes fadeInOut { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        #startScreen.fade-out { opacity:0; pointer-events:none; }
+        .app-icon { width:120px; height:120px; background:#fff; border-radius:28px; display:flex; align-items:center; justify-content:center; margin-bottom:30px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+        .app-title { color:#fff; font-size:32px; font-weight:600; margin-bottom:10px; }
+        .app-version { color:rgba(255,255,255,.8); font-size:16px; }
+        .tap-to-start { color:rgba(255,255,255,.9); font-size:18px; margin-top:40px; animation:fio 2s infinite; }
+        @keyframes fio { 0%,100%{opacity:.5} 50%{opacity:1} }
 
-        /* MAIN APP */
-        #mainApp { display: none; width: 100vw; height: 100vh; background: #1a1a1a; flex-direction: column; }
-        #mainApp.active { display: flex; }
-
-        .top-bar {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #3a3a3a; height: 56px;
-        }
-        .top-bar-left { display: flex; align-items: center; gap: 12px; }
-        .top-bar-center {
-            display: flex; align-items: center; gap: 20px;
-            position: absolute; left: 50%; transform: translateX(-50%);
-        }
-        .top-bar-right { display: flex; align-items: center; gap: 8px; }
-
-        .menu-btn, .top-icon-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: transparent; border: none; cursor: pointer;
-        }
-        .menu-btn:active, .top-icon-btn:active { background: #3a3a3a; }
-
-        .action-btn {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            background: transparent; border: none; border-radius: 50%; cursor: pointer;
-        }
-        .action-btn:active { background: #3a3a3a; }
-        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-        .canvas-container { flex: 1; position: relative; background: #1a1a1a; overflow: hidden; }
-        #drawingCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
-
-        .bottom-toolbar {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-top: 1px solid #3a3a3a; height: 64px;
-        }
-        .tool-group { display: flex; align-items: center; gap: 16px; }
-        .tool-btn { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
-        .tool-btn.active { background: #3a3a3a; }
-        .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
-        .tool-label { font-size: 11px; color: #b0b0b0; }
-        .tool-btn.active .tool-label { color: #fff; }
-
-        /* Dummy mic button — looks real, does nothing */
-        .mic-btn {
-            width: 48px; height: 48px;
-            display: flex; align-items: center; justify-content: center;
-            background: #fff; border: none; border-radius: 50%; cursor: pointer;
-        }
-        .mic-btn:active { background: #e0e0e0; }
-
-        #textInput { position: absolute; background: transparent; border: 1px dashed rgba(255,255,255,0.4); color: #fff; font-size: 24px; font-family: Arial, sans-serif; outline: none; padding: 2px 6px; min-width: 60px; z-index: 500; caret-color: #fff; display: none; }
+        /* ── MAIN APP ── */
+        #mainApp { display:none; width:100vw; height:100vh; background:#1a1a1a; flex-direction:column; }
+        #mainApp.active { display:flex; }
+        .top-bar { background:#2a2a2a; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #3a3a3a; height:56px; position:relative; }
+        .top-bar-center { display:flex; align-items:center; gap:20px; position:absolute; left:50%; transform:translateX(-50%); }
+        .icon-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:transparent; border:none; cursor:pointer; }
+        .icon-btn:active { background:#3a3a3a; }
+        .icon-btn:disabled { opacity:.3; cursor:not-allowed; }
+        .canvas-container { flex:1; position:relative; background:#1a1a1a; overflow:hidden; }
+        #drawingCanvas { position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; }
+        .bottom-toolbar { background:#2a2a2a; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid #3a3a3a; height:64px; }
+        .tool-group { display:flex; align-items:center; gap:16px; }
+        .tool-btn { display:flex; flex-direction:column; align-items:center; background:transparent; border:none; cursor:pointer; padding:4px 8px; border-radius:8px; }
+        .tool-btn.active { background:#3a3a3a; }
+        .tool-btn svg { width:24px; height:24px; margin-bottom:2px; }
+        .tool-label { font-size:11px; color:#b0b0b0; }
+        .tool-btn.active .tool-label { color:#fff; }
+        .mic-btn { width:48px; height:48px; display:flex; align-items:center; justify-content:center; background:#fff; border:none; border-radius:50%; cursor:pointer; flex-shrink:0; }
+        .mic-btn:active { background:#e0e0e0; }
+        #textInput { position:absolute; background:transparent; border:1px dashed rgba(255,255,255,.4); color:#fff; font-size:24px; font-family:Arial,sans-serif; outline:none; padding:2px 6px; min-width:60px; z-index:500; caret-color:#fff; display:none; }
 
         /* ── FLIP PAGE ── */
-        #flipPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; }
-        #flipPage.active { display: flex; }
+        #flipPage { position:fixed; inset:0; background:#1a1a1a; z-index:2000; display:none; flex-direction:column; }
+        #flipPage.active { display:flex; }
 
-        /* Three-row header */
-        .flip-header {
-            background: #2a2a2a;
-            border-bottom: 1px solid #3a3a3a;
-            flex-shrink: 0;
-        }
-        /* Row 1: back + title + practice toggle */
-        .flip-header-row1 {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 8px 14px; height: 50px;
-        }
-        /* Row 2: angle slider — full width */
-        .flip-header-row2 {
-            display: flex; align-items: center;
-            padding: 6px 14px; gap: 10px;
-            border-top: 1px solid #333;
-        }
-        /* Row 3: speed slider — full width */
-        .flip-header-row3 {
-            display: flex; align-items: center;
-            padding: 6px 14px 8px; gap: 10px;
-            border-top: 1px solid #333;
-        }
+        .flip-header { background:#2a2a2a; border-bottom:1px solid #3a3a3a; flex-shrink:0; }
 
-        .flip-header-left { display: flex; align-items: center; gap: 10px; }
-        .settings-back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
-        .settings-back-btn:active { background: #3a3a3a; }
-        .settings-title { font-size: 18px; font-weight: 500; color: #fff; }
+        /* Row 1 — back · title · practice */
+        .fh-row1 { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; height:50px; }
+        .fh-left { display:flex; align-items:center; gap:8px; }
+        .back-btn { width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:transparent; border:none; cursor:pointer; }
+        .back-btn:active { background:#3a3a3a; }
+        .fh-title { font-size:17px; font-weight:500; color:#fff; }
 
-        /* Practice toggle */
-        .practice-toggle {
-            display: flex; align-items: center; gap: 7px; cursor: pointer;
-            background: #3a3a3a; border: none; border-radius: 20px; padding: 7px 14px;
+        .practice-btn { display:flex; align-items:center; gap:6px; background:#3a3a3a; border:none; border-radius:20px; padding:6px 13px; cursor:pointer; }
+        .practice-btn.on { background:#5e35b1; }
+        .p-dot { width:8px; height:8px; border-radius:50%; background:#666; }
+        .practice-btn.on .p-dot { background:#fff; }
+        .p-label { font-size:12px; color:#999; font-weight:500; white-space:nowrap; }
+        .practice-btn.on .p-label { color:#fff; }
+
+        /* Row 2 — deck selector */
+        .fh-row2 { display:flex; align-items:center; gap:8px; padding:6px 12px; border-top:1px solid #333; }
+        .deck-select-wrap { flex:1; position:relative; }
+        .deck-select {
+            width:100%; background:#1e1e1e; color:#fff; border:1px solid #444;
+            border-radius:8px; padding:7px 32px 7px 10px; font-size:13px;
+            appearance:none; -webkit-appearance:none; cursor:pointer; outline:none;
         }
-        .practice-toggle.on { background: #5e35b1; }
-        .practice-dot { width: 9px; height: 9px; border-radius: 50%; background: #777; flex-shrink: 0; }
-        .practice-toggle.on .practice-dot { background: #fff; }
-        .practice-toggle-label { font-size: 13px; color: #aaa; font-weight: 500; white-space: nowrap; }
-        .practice-toggle.on .practice-toggle-label { color: #fff; }
+        .deck-select-arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
+        .deck-manage-btn { display:flex; align-items:center; justify-content:center; width:34px; height:34px; background:#3a3a3a; border:none; border-radius:8px; cursor:pointer; flex-shrink:0; }
+        .deck-manage-btn:active { background:#4a4a4a; }
 
-        /* Slider rows */
-        .ctrl-label { font-size: 12px; color: #888; white-space: nowrap; min-width: 68px; }
-        .ctrl-slider { flex: 1; accent-color: #5e35b1; height: 20px; }
-        .ctrl-val { font-size: 12px; color: #fff; font-weight: 600; min-width: 36px; text-align: right; }
+        /* Row 3 — tilt angle slider */
+        .fh-row3 { display:flex; align-items:center; gap:10px; padding:5px 12px; border-top:1px solid #333; }
+        /* Row 4 — fast speed slider */
+        .fh-row4 { display:flex; align-items:center; gap:10px; padding:5px 12px 8px; border-top:1px solid #333; }
+        .ctrl-label { font-size:11px; color:#777; white-space:nowrap; min-width:72px; }
+        .ctrl-slider { flex:1; accent-color:#5e35b1; }
+        .ctrl-val { font-size:11px; color:#fff; font-weight:600; min-width:34px; text-align:right; }
 
-        /* Status bar */
-        .flip-status { text-align: center; font-size: 13px; font-weight: 500; padding: 9px 12px; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
-        .flip-status.idle      { background: #2a2a2a; color: #888; }
-        .flip-status.waiting   { background: #4a3800; color: #ffe082; }
-        .flip-status.armed     { background: #1b5e20; color: #a5d6a7; }
-        .flip-status.fired-fast { background: #1a237e; color: #90caf9; }
-        .flip-status.fired-slow { background: #4a148c; color: #ce93d8; }
-        .flip-status.fired-none { background: #4e342e; color: #ffab91; }
+        /* Status */
+        .flip-status { text-align:center; font-size:13px; font-weight:500; padding:8px 12px; flex-shrink:0; transition:background .3s,color .3s; }
+        .flip-status.idle      { background:#2a2a2a; color:#666; }
+        .flip-status.waiting   { background:#4a3800; color:#ffe082; }
+        .flip-status.armed     { background:#1b5e20; color:#a5d6a7; }
+        .flip-status.fired-fast { background:#1a237e; color:#90caf9; }
+        .flip-status.fired-slow { background:#4a148c; color:#ce93d8; }
+        .flip-status.fired-none { background:#4e342e; color:#ffab91; }
 
         /* Col headers */
-        .flip-col-headers { display: grid; grid-template-columns: 1fr 1fr; flex-shrink: 0; }
-        .flip-col-header { background: #222; color: #888; font-size: 11px; font-weight: 600; text-align: center; padding: 6px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid #3a3a3a; }
-        .flip-col-header + .flip-col-header { border-left: 1px solid #3a3a3a; }
+        .flip-col-headers { display:grid; grid-template-columns:1fr 1fr; flex-shrink:0; }
+        .fch { background:#222; color:#777; font-size:11px; font-weight:600; text-align:center; padding:5px; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid #3a3a3a; }
+        .fch+.fch { border-left:1px solid #3a3a3a; }
 
-        /* Grid */
-        .flip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow-y: auto; flex: 1; }
-        .flip-item { background: #2a2a2a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 56px; transition: border-left 0.2s, background 0.2s; }
-        .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
-        .flip-item.just-fired  { background: #1a237e; }
-        .flip-item-left { display: flex; align-items: center; gap: 8px; }
-        .flip-emoji { font-size: 18px; flex-shrink: 0; }
-        .flip-text { display: flex; flex-direction: column; gap: 1px; }
-        .flip-label { font-size: 12px; color: #fff; font-weight: 500; }
-        .flip-hint  { font-size: 10px; color: #666; }
-        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-        .flip-save-btn:active { background: #4a2c8f; }
-        .flip-item.has-drawing .flip-save-btn { background: #2e7d32; }
+        /* Slots grid — shorter rows */
+        .flip-grid { display:grid; grid-template-columns:1fr 1fr; overflow-y:auto; flex:1; }
+        .flip-item {
+            background:#2a2a2a; padding:7px 10px;
+            display:flex; align-items:center; justify-content:space-between;
+            border-bottom:1px solid #3a3a3a; border-right:1px solid #3a3a3a;
+            min-height:46px; transition:border-left .2s,background .2s;
+        }
+        .flip-item.has-drawing { border-left:3px solid #5e35b1; }
+        .flip-item.just-fired  { background:#1a237e; }
+        .fi-left { display:flex; align-items:center; gap:7px; }
+        .fi-emoji { font-size:16px; flex-shrink:0; }
+        .fi-text { display:flex; flex-direction:column; gap:1px; }
+        .fi-label { font-size:11px; color:#fff; font-weight:500; }
+        .fi-hint  { font-size:10px; color:#555; }
+        .set-btn { background:#5e35b1; color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+        .set-btn:active { background:#4a2c8f; }
+        .flip-item.has-drawing .set-btn { background:#2e7d32; }
 
-        /* FLIP MODAL */
-        #flipModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        #flipModal.active { display: flex; }
-        .modal-content { background: #2a2a2a; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .modal-title { font-size: 18px; color: #fff; font-weight: 500; }
-        .modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
-        .modal-close:active { background: #3a3a3a; }
-        .modal-item-display { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .modal-emoji { font-size: 40px; }
-        .modal-item-name { font-size: 20px; color: #fff; }
-        .drawing-preview { width: 100%; height: 140px; background: #1a1a1a; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .drawing-preview-empty { color: #555; font-size: 13px; }
-        .modal-drawing-btn { width: 100%; background: #4CAF50; border: none; border-radius: 8px; padding: 13px; color: #fff; font-size: 15px; font-weight: 500; cursor: pointer; margin-bottom: 10px; }
-        .modal-drawing-btn:active { background: #45a049; }
-        .flip-clear-btn { width: 100%; background: #c62828; border: none; border-radius: 8px; padding: 11px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
-        .flip-clear-btn:active { background: #b71c1c; }
+        /* ── MODALS base ── */
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:3000; display:none; align-items:center; justify-content:center; padding:16px; }
+        .modal-overlay.active { display:flex; }
+        .modal-box { background:#2a2a2a; border-radius:12px; padding:20px; width:100%; max-width:400px; }
+        .modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .modal-title { font-size:17px; color:#fff; font-weight:500; }
+        .modal-x { width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; border-radius:50%; cursor:pointer; }
+        .modal-x:active { background:#3a3a3a; }
+
+        /* Slot modal */
+        .slot-meta { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .slot-meta-emoji { font-size:36px; }
+        .slot-meta-name { font-size:18px; color:#fff; }
+        .drawing-preview { width:100%; height:130px; background:#1a1a1a; border-radius:8px; margin-bottom:14px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .drawing-preview-empty { color:#555; font-size:13px; }
+        .btn-full { width:100%; border:none; border-radius:8px; padding:12px; font-size:14px; font-weight:500; cursor:pointer; margin-bottom:8px; color:#fff; }
+        .btn-full:last-child { margin-bottom:0; }
+        .btn-green { background:#4CAF50; } .btn-green:active { background:#388e3c; }
+        .btn-red   { background:#c62828; } .btn-red:active   { background:#b71c1c; }
+
+        /* Deck manager modal */
+        .deck-list { display:flex; flex-direction:column; gap:6px; max-height:300px; overflow-y:auto; margin-bottom:14px; }
+        .deck-row {
+            display:flex; align-items:center; gap:8px;
+            background:#1e1e1e; border-radius:8px; padding:8px 10px;
+            border:1px solid #3a3a3a;
+        }
+        .deck-row.is-active { border-color:#5e35b1; }
+        .deck-row.is-default { border-color:#2e7d32; }
+        .deck-row.is-active.is-default { border-color:#5e35b1; }
+        .deck-name-input {
+            flex:1; background:transparent; border:none; color:#fff; font-size:13px;
+            outline:none; padding:0;
+        }
+        .deck-badge { font-size:10px; border-radius:4px; padding:2px 5px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+        .badge-active  { background:#5e35b1; color:#fff; }
+        .badge-default { background:#2e7d32; color:#fff; }
+        .deck-actions { display:flex; gap:4px; flex-shrink:0; }
+        .deck-action-btn { width:28px; height:28px; display:flex; align-items:center; justify-content:center; background:#333; border:none; border-radius:6px; cursor:pointer; }
+        .deck-action-btn:active { background:#444; }
+        .deck-action-btn.danger:active { background:#c62828; }
+        .add-deck-btn { width:100%; background:#3a3a3a; border:none; border-radius:8px; padding:10px; color:#aaa; font-size:13px; cursor:pointer; margin-bottom:10px; }
+        .add-deck-btn:active { background:#4a4a4a; }
+        .deck-close-btn { width:100%; background:#5e35b1; border:none; border-radius:8px; padding:11px; color:#fff; font-size:14px; font-weight:500; cursor:pointer; }
+        .deck-close-btn:active { background:#4a2c8f; }
     </style>
 </head>
 <body>
 
-    <!-- START SCREEN -->
-    <div id="startScreen">
-        <div class="app-icon">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" stroke="#667eea" stroke-width="2" fill="none"/>
-                <path d="M7 7h10M7 11h10M7 15h7" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <div class="app-title">Samsung Notes</div>
-        <div class="app-version">Version 2.0</div>
-        <div class="tap-to-start">Tap to Start</div>
+<!-- ── START SCREEN ── -->
+<div id="startScreen">
+    <div class="app-icon">
+        <svg width="70" height="70" viewBox="0 0 24 24" fill="none">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" stroke="#667eea" stroke-width="2"/>
+            <path d="M7 7h10M7 11h10M7 15h7" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
+        </svg>
     </div>
+    <div class="app-title">Samsung Notes</div>
+    <div class="app-version">Version 2.0</div>
+    <div class="tap-to-start">Tap to Start</div>
+</div>
 
-    <!-- MAIN APP -->
-    <div id="mainApp">
-        <div class="top-bar">
-            <div class="top-bar-left">
-                <!-- Dummy ⋮ menu button — cosmetic only -->
-                <button class="menu-btn" aria-label="Menu">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="6" r="2" fill="#fff"/>
-                        <circle cx="12" cy="12" r="2" fill="#fff"/>
-                        <circle cx="12" cy="18" r="2" fill="#fff"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="top-bar-center">
-                <button class="action-btn" id="undoBtn" disabled>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/></svg>
-                </button>
-                <button class="action-btn" id="redoBtn" disabled>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/></svg>
-                </button>
-                <button class="action-btn" id="clearBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/></svg>
-                </button>
-            </div>
-            <div class="top-bar-right">
-                <!-- Share / flip menu button — functional -->
-                <button class="top-icon-btn" id="flipMenuBtn" aria-label="Flip Menu">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <div class="canvas-container">
-            <canvas id="drawingCanvas"></canvas>
-            <input type="text" id="textInput" placeholder="Type here...">
-        </div>
-
-        <div class="bottom-toolbar">
-            <div class="tool-group">
-                <button class="tool-btn active" id="penBtn">
-                    <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/></svg>
-                    <span class="tool-label">Pen</span>
-                </button>
-                <button class="tool-btn" id="eraserBtn">
-                    <svg viewBox="0 0 24 24" fill="none"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/></svg>
-                    <span class="tool-label">Eraser</span>
-                </button>
-                <button class="tool-btn" id="textBtn">
-                    <svg viewBox="0 0 24 24" fill="none"><path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/></svg>
-                    <span class="tool-label">Text</span>
-                </button>
-            </div>
-            <!-- Dummy mic button — cosmetic only -->
-            <button class="mic-btn" aria-label="Microphone">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
-                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#000"/>
-                </svg>
+<!-- ── MAIN APP ── -->
+<div id="mainApp">
+    <div class="top-bar">
+        <!-- Dummy ⋮ menu -->
+        <button class="icon-btn">
+            <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2" fill="#fff"/><circle cx="12" cy="12" r="2" fill="#fff"/><circle cx="12" cy="19" r="2" fill="#fff"/></svg>
+        </button>
+        <div class="top-bar-center">
+            <button class="icon-btn" id="undoBtn" disabled>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/></svg>
+            </button>
+            <button class="icon-btn" id="redoBtn" disabled>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/></svg>
+            </button>
+            <button class="icon-btn" id="clearBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/></svg>
             </button>
         </div>
+        <button class="icon-btn" id="flipMenuBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
+        </button>
+    </div>
+    <div class="canvas-container">
+        <canvas id="drawingCanvas"></canvas>
+        <input type="text" id="textInput" placeholder="Type here...">
+    </div>
+    <div class="bottom-toolbar">
+        <div class="tool-group">
+            <button class="tool-btn active" id="penBtn">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/></svg>
+                <span class="tool-label">Pen</span>
+            </button>
+            <button class="tool-btn" id="eraserBtn">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/></svg>
+                <span class="tool-label">Eraser</span>
+            </button>
+            <button class="tool-btn" id="textBtn">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/></svg>
+                <span class="tool-label">Text</span>
+            </button>
+        </div>
+        <!-- Dummy mic -->
+        <button class="mic-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" fill="#000"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<!-- ── FLIP PAGE ── -->
+<div id="flipPage">
+    <div class="flip-header">
+        <!-- Row 1: back · title · practice -->
+        <div class="fh-row1">
+            <div class="fh-left">
+                <button class="back-btn" id="flipBackBtn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
+                </button>
+                <span class="fh-title">Flip Reveal</span>
+            </div>
+            <button class="practice-btn" id="practiceToggle">
+                <span class="p-dot"></span>
+                <span class="p-label">Practice Mode</span>
+            </button>
+        </div>
+        <!-- Row 2: deck selector + manage -->
+        <div class="fh-row2">
+            <div class="deck-select-wrap">
+                <select class="deck-select" id="deckSelect"></select>
+                <svg class="deck-select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5H7z" fill="#888"/></svg>
+            </div>
+            <button class="deck-manage-btn" id="deckManageBtn" title="Manage decks">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" fill="#ccc"/></svg>
+            </button>
+        </div>
+        <!-- Row 3: tilt angle -->
+        <div class="fh-row3">
+            <span class="ctrl-label">Tilt Angle</span>
+            <input type="range" id="angleSlider" min="15" max="70" value="40" class="ctrl-slider">
+            <span class="ctrl-val"><span id="angleVal">40</span>°</span>
+        </div>
+        <!-- Row 4: fast threshold -->
+        <div class="fh-row4">
+            <span class="ctrl-label">Fast Speed °/s</span>
+            <input type="range" id="speedSlider" min="30" max="400" value="150" class="ctrl-slider">
+            <span class="ctrl-val" id="speedVal">150</span>
+        </div>
     </div>
 
-    <!-- FLIP PAGE -->
-    <div id="flipPage">
-        <div class="flip-header">
-            <!-- Row 1: back + title + practice toggle -->
-            <div class="flip-header-row1">
-                <div class="flip-header-left">
-                    <button class="settings-back-btn" id="flipBackBtn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
-                    </button>
-                    <span class="settings-title">Flip Reveal</span>
+    <div class="flip-status idle" id="flipStatus">Place phone face-down to arm</div>
+
+    <div class="flip-col-headers">
+        <div class="fch">⚡ Fast</div>
+        <div class="fch">🐢 Slow</div>
+    </div>
+
+    <div class="flip-grid" id="flipGrid">
+        <!-- Populated by JS -->
+    </div>
+</div>
+
+<!-- ── SLOT MODAL ── -->
+<div class="modal-overlay" id="slotModal">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <span class="modal-title" id="slotModalTitle">Set Drawing</span>
+            <button class="modal-x" id="slotModalClose"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg></button>
+        </div>
+        <div class="slot-meta">
+            <span class="slot-meta-emoji" id="slotModalEmoji"></span>
+            <span class="slot-meta-name" id="slotModalName"></span>
+        </div>
+        <div class="drawing-preview" id="slotPreview">
+            <span class="drawing-preview-empty">No drawing saved</span>
+        </div>
+        <button class="btn-full btn-green" id="slotSaveBtn">Save Current Drawing to This Slot</button>
+        <button class="btn-full btn-red"   id="slotClearBtn">Clear Drawing</button>
+    </div>
+</div>
+
+<!-- ── DECK MANAGER MODAL ── -->
+<div class="modal-overlay" id="deckModal">
+    <div class="modal-box">
+        <div class="modal-hdr">
+            <span class="modal-title">Manage Decks</span>
+            <button class="modal-x" id="deckModalClose"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg></button>
+        </div>
+        <div class="deck-list" id="deckList"></div>
+        <button class="add-deck-btn" id="addDeckBtn">+ New Deck</button>
+        <button class="deck-close-btn" id="deckModalDone">Done</button>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CANVAS + DRAWING
+// ═══════════════════════════════════════════════════════
+const canvas  = document.getElementById('drawingCanvas');
+const ctx     = canvas.getContext('2d');
+const textInp = document.getElementById('textInput');
+let isDrawing=false, currentTool='pen', strokes=[], currentStroke=[], redoStack=[];
+
+function initCanvas(){
+    canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight;
+    ctx.lineCap='round'; ctx.lineJoin='round';
+}
+function getPos(e){
+    const r=canvas.getBoundingClientRect(), s=e.touches?e.touches[0]:e;
+    return{x:s.clientX-r.left,y:s.clientY-r.top};
+}
+function startDraw(e){ if(currentTool==='text')return; isDrawing=true; const p=getPos(e); currentStroke=[{x:p.x,y:p.y,tool:currentTool}]; ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+function doDraw(e){ if(!isDrawing)return; e.preventDefault(); const p=getPos(e); currentStroke.push({x:p.x,y:p.y,tool:currentTool}); ctx.strokeStyle=currentTool==='pen'?'#fff':'#1a1a1a'; ctx.lineWidth=currentTool==='pen'?2:20; ctx.lineTo(p.x,p.y); ctx.stroke(); }
+function endDraw(){ if(!isDrawing)return; isDrawing=false; if(currentStroke.length){strokes.push([...currentStroke]);redoStack=[];updateBtns();} }
+canvas.addEventListener('mousedown',startDraw); canvas.addEventListener('mousemove',doDraw); canvas.addEventListener('mouseup',endDraw); canvas.addEventListener('mouseout',endDraw);
+canvas.addEventListener('touchstart',startDraw); canvas.addEventListener('touchmove',doDraw,{passive:false}); canvas.addEventListener('touchend',endDraw);
+
+['pen','eraser','text'].forEach(t=>{
+    document.getElementById(t+'Btn').addEventListener('click',()=>{
+        currentTool=t;
+        ['pen','eraser','text'].forEach(x=>document.getElementById(x+'Btn').classList.toggle('active',x===t));
+        canvas.style.cursor=t==='pen'?'crosshair':t==='text'?'text':'pointer';
+        if(t!=='text')commitText();
+    });
+});
+canvas.addEventListener('click',e=>{
+    if(currentTool!=='text')return; commitText();
+    const r=canvas.getBoundingClientRect();
+    textInp.style.left=(e.clientX-r.left)+'px'; textInp.style.top=(e.clientY-r.top-20)+'px';
+    textInp.style.display='block'; textInp.value=''; textInp.focus();
+});
+canvas.addEventListener('touchend',e=>{
+    if(currentTool!=='text')return; e.preventDefault(); commitText();
+    const r=canvas.getBoundingClientRect(),t=e.changedTouches[0];
+    textInp.style.left=(t.clientX-r.left)+'px'; textInp.style.top=(t.clientY-r.top-20)+'px';
+    textInp.style.display='block'; textInp.value=''; textInp.focus();
+},{passive:false});
+textInp.addEventListener('keydown',e=>{if(e.key==='Enter')commitText();});
+textInp.addEventListener('blur',()=>setTimeout(commitText,100));
+function commitText(){
+    const txt=textInp.value.trim();
+    if(txt&&textInp.style.display!=='none'){
+        const x=parseInt(textInp.style.left)+6,y=parseInt(textInp.style.top)+24;
+        ctx.save();ctx.font='24px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(txt,x,y);ctx.restore();
+        strokes.push([{x,y,tool:'text',text:txt}]);redoStack=[];updateBtns();
+    }
+    textInp.style.display='none';textInp.value='';
+}
+document.getElementById('undoBtn').addEventListener('click',()=>{ if(strokes.length){redoStack.push(strokes.pop());redraw();updateBtns();} });
+document.getElementById('redoBtn').addEventListener('click',()=>{ if(redoStack.length){strokes.push(redoStack.pop());redraw();updateBtns();} });
+document.getElementById('clearBtn').addEventListener('click',()=>{ strokes=[];redoStack=[];ctx.clearRect(0,0,canvas.width,canvas.height);updateBtns(); });
+function redraw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    strokes.forEach(s=>{
+        if(!s.length)return;
+        if(s[0].tool==='text'){ctx.save();ctx.font='24px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(s[0].text,s[0].x,s[0].y);ctx.restore();}
+        else{ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);ctx.strokeStyle=s[0].tool==='pen'?'#fff':'#1a1a1a';ctx.lineWidth=s[0].tool==='pen'?2:20;for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);ctx.stroke();}
+    });
+}
+function updateBtns(){ document.getElementById('undoBtn').disabled=!strokes.length; document.getElementById('redoBtn').disabled=!redoStack.length; }
+window.addEventListener('resize',()=>{ const sv=[...strokes]; canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight; strokes=sv; redraw(); });
+
+// ═══════════════════════════════════════════════════════
+// DECK STORAGE
+// ═══════════════════════════════════════════════════════
+// Schema in localStorage:
+//   magicDecks      → [ { id, name, drawings:{slot:dataURL,...} }, ... ]
+//   magicActiveDeck → id string
+//   magicDefaultDeck→ id string
+//   magicFlipAngle  → number
+//   magicFlipSpeed  → number
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+const DEFAULT_DECK_NAME = 'ESP Symbols';
+let decks       = [];
+let activeDeckId = '';
+let defaultDeckId= '';
+
+function loadDecks(){
+    try{ decks=JSON.parse(localStorage.getItem('magicDecks')||'[]'); }catch(e){ decks=[]; }
+    if(!decks.length){
+        const d={id:uid(),name:DEFAULT_DECK_NAME,drawings:{}};
+        decks=[d];
+        saveDecks();
+    }
+    activeDeckId  = localStorage.getItem('magicActiveDeck')  || decks[0].id;
+    defaultDeckId = localStorage.getItem('magicDefaultDeck') || decks[0].id;
+    // Ensure IDs still exist
+    if(!decks.find(d=>d.id===activeDeckId))  activeDeckId  = decks[0].id;
+    if(!decks.find(d=>d.id===defaultDeckId)) defaultDeckId = decks[0].id;
+}
+function saveDecks(){ localStorage.setItem('magicDecks',JSON.stringify(decks)); }
+function saveActiveDeck(){ localStorage.setItem('magicActiveDeck',activeDeckId); }
+function saveDefaultDeck(){ localStorage.setItem('magicDefaultDeck',defaultDeckId); }
+
+function activeDeck(){ return decks.find(d=>d.id===activeDeckId)||decks[0]; }
+
+loadDecks();
+
+// ═══════════════════════════════════════════════════════
+// START SCREEN
+// ═══════════════════════════════════════════════════════
+document.getElementById('startScreen').addEventListener('click',()=>{
+    document.getElementById('startScreen').classList.add('fade-out');
+    setTimeout(()=>{
+        document.getElementById('startScreen').style.display='none';
+        document.getElementById('mainApp').classList.add('active');
+        initCanvas();
+        lockOrientation();
+        requestSensorPermission();
+        // Boot to default deck
+        activeDeckId=defaultDeckId;
+        saveActiveDeck();
+    },500);
+});
+function lockOrientation(){
+    const el=document.documentElement;
+    const fs=el.requestFullscreen?el.requestFullscreen():el.webkitRequestFullscreen?new Promise(r=>{el.webkitRequestFullscreen();r();}):Promise.resolve();
+    fs.then(()=>{ if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('portrait').catch(()=>{}); }).catch(()=>{ if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('portrait').catch(()=>{}); });
+}
+function requestSensorPermission(){
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function')
+        DeviceOrientationEvent.requestPermission().catch(()=>{});
+}
+
+// ═══════════════════════════════════════════════════════
+// FLIP PAGE
+// ═══════════════════════════════════════════════════════
+const SLOTS=[
+    {key:'up-fast',    emoji:'⬆️', label:'Up — Fast',    hint:'top edge tilts down'},
+    {key:'up-slow',    emoji:'⬆️', label:'Up — Slow',    hint:'top edge tilts down'},
+    {key:'down-fast',  emoji:'⬇️', label:'Down — Fast',  hint:'bottom edge tilts down'},
+    {key:'down-slow',  emoji:'⬇️', label:'Down — Slow',  hint:'bottom edge tilts down'},
+    {key:'left-fast',  emoji:'⬅️', label:'Left — Fast',  hint:'left edge tilts down'},
+    {key:'left-slow',  emoji:'⬅️', label:'Left — Slow',  hint:'left edge tilts down'},
+    {key:'right-fast', emoji:'➡️', label:'Right — Fast', hint:'right edge tilts down'},
+    {key:'right-slow', emoji:'➡️', label:'Right — Slow', hint:'right edge tilts down'},
+];
+
+function buildGrid(){
+    const grid=document.getElementById('flipGrid');
+    grid.innerHTML='';
+    const deck=activeDeck();
+    SLOTS.forEach(s=>{
+        const hasDrw=!!deck.drawings[s.key];
+        const div=document.createElement('div');
+        div.className='flip-item'+(hasDrw?' has-drawing':'');
+        div.dataset.flip=s.key;
+        div.innerHTML=`
+            <div class="fi-left">
+                <span class="fi-emoji">${s.emoji}</span>
+                <div class="fi-text">
+                    <span class="fi-label">${s.label}</span>
+                    <span class="fi-hint">${s.hint}</span>
                 </div>
-                <button class="practice-toggle" id="practiceToggle">
-                    <span class="practice-dot"></span>
-                    <span class="practice-toggle-label">Practice Mode</span>
-                </button>
             </div>
-            <!-- Row 2: tilt angle slider — full width -->
-            <div class="flip-header-row2">
-                <span class="ctrl-label">Tilt Angle</span>
-                <input type="range" id="angleSlider" min="15" max="70" value="40" class="ctrl-slider">
-                <span class="ctrl-val"><span id="angleVal">40</span>°</span>
-            </div>
-            <!-- Row 3: fast/slow speed threshold slider — full width -->
-            <div class="flip-header-row3">
-                <span class="ctrl-label">Fast Speed °/s</span>
-                <input type="range" id="speedSlider" min="30" max="400" value="150" class="ctrl-slider">
-                <span class="ctrl-val" id="speedVal">150</span>
-            </div>
-        </div>
+            <button class="set-btn" data-flip="${s.key}">Set</button>`;
+        grid.appendChild(div);
+    });
+    // Attach set-btn listeners
+    grid.querySelectorAll('.set-btn').forEach(btn=>{
+        btn.addEventListener('click',e=>{ e.stopPropagation(); openSlotModal(btn.dataset.flip); });
+    });
+}
 
-        <div class="flip-status idle" id="flipStatus">Place phone face-down to arm</div>
+function buildDeckSelect(){
+    const sel=document.getElementById('deckSelect');
+    sel.innerHTML='';
+    decks.forEach(d=>{
+        const opt=document.createElement('option');
+        opt.value=d.id;
+        opt.textContent=d.name+(d.id===defaultDeckId?' ★':'');
+        if(d.id===activeDeckId)opt.selected=true;
+        sel.appendChild(opt);
+    });
+}
 
-        <div class="flip-col-headers">
-            <div class="flip-col-header">⚡ Fast</div>
-            <div class="flip-col-header">🐢 Slow</div>
-        </div>
+document.getElementById('deckSelect').addEventListener('change',e=>{
+    activeDeckId=e.target.value;
+    saveActiveDeck();
+    buildGrid();
+    // Re-arm if watching
+    if(isWatching) beginFaceDownWatch();
+});
 
-        <div class="flip-grid">
-            <div class="flip-item" data-flip="up-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up — Fast</span><span class="flip-hint">top edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="up-fast">Set</button>
-            </div>
-            <div class="flip-item" data-flip="up-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up — Slow</span><span class="flip-hint">top edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="up-slow">Set</button>
-            </div>
-            <div class="flip-item" data-flip="down-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down — Fast</span><span class="flip-hint">bottom edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="down-fast">Set</button>
-            </div>
-            <div class="flip-item" data-flip="down-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down — Slow</span><span class="flip-hint">bottom edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="down-slow">Set</button>
-            </div>
-            <div class="flip-item" data-flip="left-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left — Fast</span><span class="flip-hint">left edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="left-fast">Set</button>
-            </div>
-            <div class="flip-item" data-flip="left-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left — Slow</span><span class="flip-hint">left edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="left-slow">Set</button>
-            </div>
-            <div class="flip-item" data-flip="right-fast">
-                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right — Fast</span><span class="flip-hint">right edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="right-fast">Set</button>
-            </div>
-            <div class="flip-item" data-flip="right-slow">
-                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right — Slow</span><span class="flip-hint">right edge tilts down</span></div></div>
-                <button class="flip-save-btn" data-flip="right-slow">Set</button>
-            </div>
-        </div>
-    </div>
+document.getElementById('flipMenuBtn').addEventListener('click',()=>{
+    // On open always load the default deck
+    activeDeckId=defaultDeckId;
+    saveActiveDeck();
+    buildDeckSelect();
+    buildGrid();
+    document.getElementById('flipPage').classList.add('active');
+    beginFaceDownWatch();
+});
+document.getElementById('flipBackBtn').addEventListener('click',()=>{
+    stopWatching();
+    document.getElementById('flipPage').classList.remove('active');
+    setStatus('Place phone face-down to arm','idle');
+});
 
-    <!-- FLIP SLOT MODAL -->
-    <div id="flipModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span class="modal-title" id="flipModalTitle">Set Drawing</span>
-                <button class="modal-close" id="flipModalClose">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>
-                </button>
-            </div>
-            <div class="modal-item-display">
-                <span class="modal-emoji" id="flipModalEmoji"></span>
-                <span class="modal-item-name" id="flipModalSlotName"></span>
-            </div>
-            <div class="drawing-preview" id="flipDrawingPreview">
-                <span class="drawing-preview-empty">No drawing saved</span>
-            </div>
-            <button class="modal-drawing-btn" id="flipSaveDrawingBtn">Save Current Drawing</button>
-            <button class="flip-clear-btn" id="flipClearDrawingBtn">Clear Drawing</button>
-        </div>
-    </div>
+// Sliders
+let triggerAngle  = parseInt(localStorage.getItem('magicFlipAngle')||'40');
+let fastThreshold = parseInt(localStorage.getItem('magicFlipSpeed')||'150');
+document.getElementById('angleSlider').value=triggerAngle;
+document.getElementById('speedSlider').value=fastThreshold;
+document.getElementById('angleVal').textContent=triggerAngle;
+document.getElementById('speedVal').textContent=fastThreshold;
+document.getElementById('angleSlider').addEventListener('input',e=>{ triggerAngle=+e.target.value; document.getElementById('angleVal').textContent=triggerAngle; localStorage.setItem('magicFlipAngle',triggerAngle); });
+document.getElementById('speedSlider').addEventListener('input',e=>{ fastThreshold=+e.target.value; document.getElementById('speedVal').textContent=fastThreshold; localStorage.setItem('magicFlipSpeed',fastThreshold); });
 
-    <script>
-        // ── DOM ──────────────────────────────────────────────────────
-        const startScreen = document.getElementById('startScreen');
-        const mainApp     = document.getElementById('mainApp');
-        const canvas      = document.getElementById('drawingCanvas');
-        const ctx         = canvas.getContext('2d');
-        const textInput   = document.getElementById('textInput');
-        const flipPage    = document.getElementById('flipPage');
-        const flipModal   = document.getElementById('flipModal');
-        const statusEl    = document.getElementById('flipStatus');
+// Practice mode
+let practiceMode=false;
+document.getElementById('practiceToggle').addEventListener('click',()=>{
+    practiceMode=!practiceMode;
+    document.getElementById('practiceToggle').classList.toggle('on',practiceMode);
+});
 
-        // ── START SCREEN ─────────────────────────────────────────────
-        startScreen.addEventListener('click', () => {
-            startScreen.classList.add('fade-out');
-            setTimeout(() => {
-                startScreen.style.display = 'none';
-                mainApp.classList.add('active');
-                initCanvas();
-                lockOrientationAndFullscreen();
-                requestOrientationPermission();
-            }, 500);
+function setStatus(msg,mode){
+    const el=document.getElementById('flipStatus');
+    el.textContent=msg; el.className='flip-status '+(mode||'idle');
+}
+
+// ═══════════════════════════════════════════════════════
+// FLIP DETECTION
+// ═══════════════════════════════════════════════════════
+const FACEDOWN_THR = 25;   // |beta| > 155 = face down
+const STABLE_MS    = 250;
+const REARM_MS     = 800;
+let isWatching=false, isArmed=false, stableTimer=null;
+let baseBeta=0, baseGamma=0, peakRate=0;
+let orientH=null, motionH=null;
+
+function beginFaceDownWatch(){
+    stopWatching();
+    isWatching=true; isArmed=false; peakRate=0;
+    setStatus('Place phone face-down to arm…','waiting');
+    orientH=handleOrientation; motionH=handleMotion;
+    window.addEventListener('deviceorientation',orientH,true);
+    window.addEventListener('devicemotion',motionH,true);
+}
+function stopWatching(){
+    isWatching=false; isArmed=false;
+    clearTimeout(stableTimer); stableTimer=null;
+    if(orientH){window.removeEventListener('deviceorientation',orientH,true);orientH=null;}
+    if(motionH){window.removeEventListener('devicemotion',motionH,true);motionH=null;}
+}
+function handleMotion(e){
+    if(!isWatching||!isArmed)return;
+    const rr=e.rotationRate; if(!rr)return;
+    const r=Math.max(Math.abs(rr.beta||0),Math.abs(rr.gamma||0),Math.abs(rr.alpha||0));
+    if(r>peakRate)peakRate=r;
+}
+function handleOrientation(e){
+    if(!isWatching)return;
+    const beta=e.beta??0, gamma=e.gamma??0;
+    if(!isArmed){
+        const fd=Math.abs(beta)>(180-FACEDOWN_THR);
+        if(fd&&!stableTimer){
+            stableTimer=setTimeout(()=>{
+                stableTimer=null; isArmed=true;
+                baseBeta=beta; baseGamma=gamma; peakRate=0;
+                setStatus('Armed ✓ — tilt to reveal','armed');
+            },STABLE_MS);
+        } else if(!fd){ clearTimeout(stableTimer); stableTimer=null; }
+    } else {
+        let db=beta-baseBeta, dg=gamma-baseGamma;
+        if(db>180)db-=360; if(db<-180)db+=360;
+        const abd=Math.abs(db), abg=Math.abs(dg);
+        if(Math.max(abd,abg)>=triggerAngle){
+            const dir=abd>=abg?(db<0?'up':'down'):(dg<0?'left':'right');
+            const spd=peakRate>=fastThreshold?'fast':'slow';
+            triggerReveal(dir+'-'+spd,spd);
+        }
+    }
+}
+function triggerReveal(slotKey,speed){
+    stopWatching();
+    const deck=activeDeck();
+    const drawing=deck.drawings[slotKey];
+
+    if(practiceMode){
+        const label=slotKey.replace('-',' ').replace(/\b\w/g,c=>c.toUpperCase());
+        setStatus(drawing?`Fired: ${label}`:`No drawing: ${label}`,
+                  drawing?(speed==='fast'?'fired-fast':'fired-slow'):'fired-none');
+        const el=document.querySelector(`.flip-item[data-flip="${slotKey}"]`);
+        if(el){el.classList.add('just-fired');setTimeout(()=>el.classList.remove('just-fired'),600);}
+        setTimeout(()=>{ if(document.getElementById('flipPage').classList.contains('active'))beginFaceDownWatch(); },REARM_MS);
+    } else {
+        if(!drawing){
+            setTimeout(()=>{ if(document.getElementById('flipPage').classList.contains('active'))beginFaceDownWatch(); },800);
+            return;
+        }
+        document.getElementById('flipPage').classList.remove('active');
+        setStatus('Place phone face-down to arm','idle');
+        const img=new Image();
+        img.onload=()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); strokes=[];redoStack=[];updateBtns(); };
+        img.src=drawing;
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+// SLOT MODAL
+// ═══════════════════════════════════════════════════════
+let currentSlotKey=null;
+function openSlotModal(slotKey){
+    stopWatching();
+    currentSlotKey=slotKey;
+    const s=SLOTS.find(x=>x.key===slotKey);
+    document.getElementById('slotModalTitle').textContent=s.label;
+    document.getElementById('slotModalEmoji').textContent=s.emoji;
+    document.getElementById('slotModalName').textContent=s.label;
+    renderSlotPreview();
+    document.getElementById('slotModal').classList.add('active');
+}
+function renderSlotPreview(){
+    const preview=document.getElementById('slotPreview');
+    const drw=activeDeck().drawings[currentSlotKey];
+    if(drw){
+        preview.innerHTML=`<canvas id="slotPrevCanvas" width="260" height="130"></canvas>`;
+        const pc=document.getElementById('slotPrevCanvas').getContext('2d');
+        const img=new Image();
+        img.onload=()=>{ const s=Math.min(260/canvas.width,130/canvas.height); pc.drawImage(img,(260-canvas.width*s)/2,(130-canvas.height*s)/2,canvas.width*s,canvas.height*s); };
+        img.src=drw;
+    } else {
+        preview.innerHTML='<span class="drawing-preview-empty">No drawing saved</span>';
+    }
+}
+document.getElementById('slotSaveBtn').addEventListener('click',()=>{
+    if(!currentSlotKey)return;
+    activeDeck().drawings[currentSlotKey]=canvas.toDataURL('image/png');
+    saveDecks(); buildGrid(); renderSlotPreview();
+    alert('Saved!');
+});
+document.getElementById('slotClearBtn').addEventListener('click',()=>{
+    if(!currentSlotKey)return;
+    delete activeDeck().drawings[currentSlotKey];
+    saveDecks(); buildGrid(); renderSlotPreview();
+});
+function closeSlotModal(){
+    document.getElementById('slotModal').classList.remove('active');
+    if(document.getElementById('flipPage').classList.contains('active'))beginFaceDownWatch();
+}
+document.getElementById('slotModalClose').addEventListener('click',closeSlotModal);
+document.getElementById('slotModal').addEventListener('click',e=>{ if(e.target===document.getElementById('slotModal'))closeSlotModal(); });
+
+// ═══════════════════════════════════════════════════════
+// DECK MANAGER MODAL
+// ═══════════════════════════════════════════════════════
+function openDeckModal(){
+    stopWatching();
+    renderDeckList();
+    document.getElementById('deckModal').classList.add('active');
+}
+function closeDeckModal(){
+    // Persist any name edits
+    document.querySelectorAll('.deck-name-input').forEach(inp=>{
+        const deck=decks.find(d=>d.id===inp.dataset.id);
+        if(deck){ deck.name=inp.value.trim()||deck.name; }
+    });
+    saveDecks();
+    buildDeckSelect();
+    buildGrid();
+    document.getElementById('deckModal').classList.remove('active');
+    if(document.getElementById('flipPage').classList.contains('active'))beginFaceDownWatch();
+}
+document.getElementById('deckManageBtn').addEventListener('click',openDeckModal);
+document.getElementById('deckModalClose').addEventListener('click',closeDeckModal);
+document.getElementById('deckModalDone').addEventListener('click',closeDeckModal);
+document.getElementById('deckModal').addEventListener('click',e=>{ if(e.target===document.getElementById('deckModal'))closeDeckModal(); });
+
+document.getElementById('addDeckBtn').addEventListener('click',()=>{
+    const d={id:uid(),name:'New Deck',drawings:{}};
+    decks.push(d);
+    saveDecks();
+    renderDeckList();
+});
+
+function renderDeckList(){
+    const list=document.getElementById('deckList');
+    list.innerHTML='';
+    decks.forEach((d,idx)=>{
+        const row=document.createElement('div');
+        row.className='deck-row'+(d.id===activeDeckId?' is-active':'')+(d.id===defaultDeckId?' is-default':'');
+
+        // Name input
+        const nameInp=document.createElement('input');
+        nameInp.type='text'; nameInp.className='deck-name-input';
+        nameInp.value=d.name; nameInp.dataset.id=d.id;
+        nameInp.addEventListener('blur',()=>{ d.name=nameInp.value.trim()||d.name; saveDecks(); buildDeckSelect(); });
+
+        // Badges
+        const badges=document.createElement('div');
+        badges.style.display='flex'; badges.style.gap='4px';
+        if(d.id===activeDeckId){ const b=document.createElement('span'); b.className='deck-badge badge-active'; b.textContent='Active'; badges.appendChild(b); }
+        if(d.id===defaultDeckId){ const b=document.createElement('span'); b.className='deck-badge badge-default'; b.textContent='Default'; badges.appendChild(b); }
+
+        // Action buttons
+        const actions=document.createElement('div');
+        actions.className='deck-actions';
+
+        // ★ Set as default
+        const starBtn=document.createElement('button');
+        starBtn.className='deck-action-btn'; starBtn.title='Set as default';
+        starBtn.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="${d.id===defaultDeckId?'#ffd700':'none'}" stroke="${d.id===defaultDeckId?'#ffd700':'#888'}" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+        starBtn.addEventListener('click',()=>{
+            defaultDeckId=d.id; saveDefaultDeck();
+            // Rebuild (star icons update)
+            renderDeckList(); buildDeckSelect();
         });
 
-        function lockOrientationAndFullscreen() {
-            const el = document.documentElement;
-            const fs = el.requestFullscreen
-                ? el.requestFullscreen()
-                : el.webkitRequestFullscreen
-                    ? new Promise(r => { el.webkitRequestFullscreen(); r(); })
-                    : Promise.resolve();
-            fs.then(() => {
-                if (screen.orientation && screen.orientation.lock)
-                    screen.orientation.lock('portrait').catch(() => {});
-            }).catch(() => {
-                if (screen.orientation && screen.orientation.lock)
-                    screen.orientation.lock('portrait').catch(() => {});
-            });
-        }
-
-        function requestOrientationPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' &&
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
-                return DeviceOrientationEvent.requestPermission().catch(() => {});
-            }
-            return Promise.resolve('granted');
-        }
-
-        // ── CANVAS ───────────────────────────────────────────────────
-        let isDrawing = false, currentTool = 'pen';
-        let strokes = [], currentStroke = [], redoStack = [];
-
-        function initCanvas() {
-            canvas.width  = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        }
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect(), src = e.touches ? e.touches[0] : e;
-            return { x: src.clientX - rect.left, y: src.clientY - rect.top };
-        }
-        function startDrawing(e) {
-            if (currentTool === 'text') return;
-            isDrawing = true; const p = getPos(e);
-            currentStroke = [{ x: p.x, y: p.y, tool: currentTool }];
-            ctx.beginPath(); ctx.moveTo(p.x, p.y);
-        }
-        function draw(e) {
-            if (!isDrawing) return; e.preventDefault(); const p = getPos(e);
-            currentStroke.push({ x: p.x, y: p.y, tool: currentTool });
-            ctx.strokeStyle = currentTool === 'pen' ? '#fff' : '#1a1a1a';
-            ctx.lineWidth   = currentTool === 'pen' ? 2 : 20;
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.lineTo(p.x, p.y); ctx.stroke();
-        }
-        function stopDrawing() {
-            if (!isDrawing) return; isDrawing = false;
-            if (currentStroke.length) { strokes.push([...currentStroke]); redoStack = []; updateButtons(); }
-        }
-        canvas.addEventListener('mousedown',  startDrawing);
-        canvas.addEventListener('mousemove',  draw);
-        canvas.addEventListener('mouseup',    stopDrawing);
-        canvas.addEventListener('mouseout',   stopDrawing);
-        canvas.addEventListener('touchstart', startDrawing);
-        canvas.addEventListener('touchmove',  draw, { passive: false });
-        canvas.addEventListener('touchend',   stopDrawing);
-
-        ['pen','eraser','text'].forEach(tool => {
-            document.getElementById(tool + 'Btn').addEventListener('click', () => {
-                currentTool = tool;
-                ['pen','eraser','text'].forEach(t =>
-                    document.getElementById(t + 'Btn').classList.toggle('active', t === tool));
-                canvas.style.cursor = tool === 'pen' ? 'crosshair' : tool === 'text' ? 'text' : 'pointer';
-                if (tool !== 'text') commitTextInput();
-            });
-        });
-        canvas.addEventListener('click', (e) => {
-            if (currentTool !== 'text') return;
-            commitTextInput();
-            const rect = canvas.getBoundingClientRect();
-            textInput.style.left = (e.clientX - rect.left) + 'px';
-            textInput.style.top  = (e.clientY - rect.top - 20) + 'px';
-            textInput.style.display = 'block'; textInput.value = ''; textInput.focus();
-        });
-        canvas.addEventListener('touchend', (e) => {
-            if (currentTool !== 'text') return;
-            e.preventDefault(); commitTextInput();
-            const rect = canvas.getBoundingClientRect(), t = e.changedTouches[0];
-            textInput.style.left = (t.clientX - rect.left) + 'px';
-            textInput.style.top  = (t.clientY - rect.top - 20) + 'px';
-            textInput.style.display = 'block'; textInput.value = ''; textInput.focus();
-        }, { passive: false });
-        textInput.addEventListener('keydown', e => { if (e.key === 'Enter') commitTextInput(); });
-        textInput.addEventListener('blur', () => setTimeout(commitTextInput, 100));
-        function commitTextInput() {
-            const text = textInput.value.trim();
-            if (text && textInput.style.display !== 'none') {
-                const x = parseInt(textInput.style.left) + 6, y = parseInt(textInput.style.top) + 24;
-                ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff';
-                ctx.textBaseline = 'alphabetic'; ctx.fillText(text, x, y); ctx.restore();
-                strokes.push([{ x, y, tool: 'text', text }]); redoStack = []; updateButtons();
-            }
-            textInput.style.display = 'none'; textInput.value = '';
-        }
-        document.getElementById('undoBtn').addEventListener('click', () => {
-            if (strokes.length) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
-        });
-        document.getElementById('redoBtn').addEventListener('click', () => {
-            if (redoStack.length) { strokes.push(redoStack.pop()); redrawCanvas(); updateButtons(); }
-        });
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            strokes = []; redoStack = []; ctx.clearRect(0, 0, canvas.width, canvas.height); updateButtons();
-        });
-        function redrawCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            strokes.forEach(stroke => {
-                if (!stroke.length) return;
-                if (stroke[0].tool === 'text') {
-                    ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff';
-                    ctx.textBaseline = 'alphabetic'; ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y); ctx.restore();
-                } else {
-                    ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
-                    ctx.strokeStyle = stroke[0].tool === 'pen' ? '#fff' : '#1a1a1a';
-                    ctx.lineWidth = stroke[0].tool === 'pen' ? 2 : 20;
-                    ctx.globalCompositeOperation = 'source-over';
-                    for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
-                    ctx.stroke();
-                }
-            });
-        }
-        function updateButtons() {
-            document.getElementById('undoBtn').disabled = !strokes.length;
-            document.getElementById('redoBtn').disabled = !redoStack.length;
-        }
-        window.addEventListener('resize', () => {
-            const saved = [...strokes];
-            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
-            strokes = saved; redrawCanvas();
+        // ▶ Set as active
+        const activeBtn=document.createElement('button');
+        activeBtn.className='deck-action-btn'; activeBtn.title='Use this deck';
+        activeBtn.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="${d.id===activeDeckId?'#5e35b1':'#888'}"><path d="M8 5v14l11-7z"/></svg>`;
+        activeBtn.addEventListener('click',()=>{
+            activeDeckId=d.id; saveActiveDeck();
+            buildGrid(); renderDeckList(); buildDeckSelect();
         });
 
-        // ── FLIP STORAGE ─────────────────────────────────────────────
-        const flipDrawings = {};
-        function loadFlipDrawings() {
-            try { Object.assign(flipDrawings, JSON.parse(localStorage.getItem('magicFlipDrawings') || '{}')); } catch(e) {}
-        }
-        function saveFlipDrawings() { localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings)); }
-        loadFlipDrawings();
-
-        let triggerAngle  = parseInt(localStorage.getItem('magicFlipAngle') || '40');
-        let fastThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '150');
-
-        const angleSlider = document.getElementById('angleSlider');
-        const speedSlider = document.getElementById('speedSlider');
-        angleSlider.value = triggerAngle;
-        speedSlider.value = fastThreshold;
-        document.getElementById('angleVal').textContent = triggerAngle;
-        document.getElementById('speedVal').textContent = fastThreshold;
-        angleSlider.addEventListener('input', () => {
-            triggerAngle = parseInt(angleSlider.value);
-            document.getElementById('angleVal').textContent = triggerAngle;
-            localStorage.setItem('magicFlipAngle', triggerAngle);
-        });
-        speedSlider.addEventListener('input', () => {
-            fastThreshold = parseInt(speedSlider.value);
-            document.getElementById('speedVal').textContent = fastThreshold;
-            localStorage.setItem('magicFlipSpeed', fastThreshold);
+        // 🗑 Delete (not if only one)
+        const delBtn=document.createElement('button');
+        delBtn.className='deck-action-btn danger'; delBtn.title='Delete deck';
+        delBtn.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#c62828"/></svg>`;
+        delBtn.addEventListener('click',()=>{
+            if(decks.length===1){ alert("Can't delete the last deck."); return; }
+            if(!confirm(`Delete "${d.name}"?`))return;
+            decks.splice(idx,1);
+            if(activeDeckId===d.id){ activeDeckId=decks[0].id; saveActiveDeck(); }
+            if(defaultDeckId===d.id){ defaultDeckId=decks[0].id; saveDefaultDeck(); }
+            saveDecks(); buildGrid(); buildDeckSelect(); renderDeckList();
         });
 
-        // ── PRACTICE MODE ────────────────────────────────────────────
-        let practiceMode = false;
-        const practiceBtn = document.getElementById('practiceToggle');
-        practiceBtn.addEventListener('click', () => {
-            practiceMode = !practiceMode;
-            practiceBtn.classList.toggle('on', practiceMode);
-        });
-
-        // ── FLIP PAGE ────────────────────────────────────────────────
-        document.getElementById('flipMenuBtn').addEventListener('click', () => {
-            flipPage.classList.add('active');
-            updateFlipSlotIndicators();
-            beginFaceDownWatch();
-        });
-        document.getElementById('flipBackBtn').addEventListener('click', () => {
-            stopWatching();
-            flipPage.classList.remove('active');
-            setStatus('Place phone face-down to arm', 'idle');
-        });
-
-        function updateFlipSlotIndicators() {
-            document.querySelectorAll('.flip-item').forEach(item =>
-                item.classList.toggle('has-drawing', !!flipDrawings[item.dataset.flip]));
-        }
-        function setStatus(msg, mode) {
-            statusEl.textContent = msg;
-            statusEl.className   = 'flip-status ' + (mode || 'idle');
-        }
-
-        // ── FLIP DETECTION ───────────────────────────────────────────
-        const FACEDOWN_THRESHOLD = 25;
-        const STABLE_MS          = 250;
-        const REARM_DELAY_MS     = 800;
-
-        let isWatching    = false;
-        let isArmed       = false;
-        let stableTimer   = null;
-        let baseBeta      = 0;
-        let baseGamma     = 0;
-        let peakRate      = 0;
-        let orientHandler = null;
-        let motionHandler = null;
-
-        function beginFaceDownWatch() {
-            stopWatching();
-            isWatching = true;
-            isArmed    = false;
-            peakRate   = 0;
-            setStatus('Place phone face-down to arm…', 'waiting');
-            orientHandler = handleOrientation;
-            motionHandler = handleMotion;
-            window.addEventListener('deviceorientation', orientHandler, true);
-            window.addEventListener('devicemotion',      motionHandler, true);
-        }
-
-        function stopWatching() {
-            isWatching = false;
-            isArmed    = false;
-            clearTimeout(stableTimer);
-            stableTimer = null;
-            if (orientHandler) { window.removeEventListener('deviceorientation', orientHandler, true); orientHandler = null; }
-            if (motionHandler) { window.removeEventListener('devicemotion',      motionHandler, true); motionHandler = null; }
-        }
-
-        function handleMotion(e) {
-            if (!isWatching || !isArmed) return;
-            const rr = e.rotationRate;
-            if (!rr) return;
-            const rate = Math.max(Math.abs(rr.beta||0), Math.abs(rr.gamma||0), Math.abs(rr.alpha||0));
-            if (rate > peakRate) peakRate = rate;
-        }
-
-        function handleOrientation(e) {
-            if (!isWatching) return;
-            const beta  = e.beta  ?? 0;
-            const gamma = e.gamma ?? 0;
-
-            if (!isArmed) {
-                const isFaceDown = Math.abs(beta) > (180 - FACEDOWN_THRESHOLD);
-                if (isFaceDown && !stableTimer) {
-                    stableTimer = setTimeout(() => {
-                        stableTimer = null;
-                        isArmed   = true;
-                        baseBeta  = beta;
-                        baseGamma = gamma;
-                        peakRate  = 0;
-                        setStatus('Armed ✓ — tilt to reveal', 'armed');
-                    }, STABLE_MS);
-                } else if (!isFaceDown) {
-                    clearTimeout(stableTimer);
-                    stableTimer = null;
-                }
-            } else {
-                let deltaBeta  = beta  - baseBeta;
-                let deltaGamma = gamma - baseGamma;
-                if (deltaBeta >  180) deltaBeta -= 360;
-                if (deltaBeta < -180) deltaBeta += 360;
-
-                const absDeltaBeta  = Math.abs(deltaBeta);
-                const absDeltaGamma = Math.abs(deltaGamma);
-
-                if (Math.max(absDeltaBeta, absDeltaGamma) >= triggerAngle) {
-                    const direction = absDeltaBeta >= absDeltaGamma
-                        ? (deltaBeta  < 0 ? 'up'   : 'down')
-                        : (deltaGamma < 0 ? 'left' : 'right');
-                    const speed   = peakRate >= fastThreshold ? 'fast' : 'slow';
-                    triggerReveal(direction + '-' + speed, speed);
-                }
-            }
-        }
-
-        function triggerReveal(slotKey, speed) {
-            stopWatching();
-
-            if (practiceMode) {
-                const fired = !!flipDrawings[slotKey];
-                const label = slotKey.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
-                setStatus(
-                    fired ? `Fired: ${label}` : `No drawing for: ${label}`,
-                    fired ? (speed === 'fast' ? 'fired-fast' : 'fired-slow') : 'fired-none'
-                );
-                const matchEl = document.querySelector(`.flip-item[data-flip="${slotKey}"]`);
-                if (matchEl) {
-                    matchEl.classList.add('just-fired');
-                    setTimeout(() => matchEl.classList.remove('just-fired'), 600);
-                }
-                setTimeout(() => {
-                    if (flipPage.classList.contains('active')) beginFaceDownWatch();
-                }, REARM_DELAY_MS);
-
-            } else {
-                const drawing = flipDrawings[slotKey];
-                if (!drawing) {
-                    setTimeout(() => {
-                        if (flipPage.classList.contains('active')) beginFaceDownWatch();
-                    }, 800);
-                    return;
-                }
-                flipPage.classList.remove('active');
-                setStatus('Place phone face-down to arm', 'idle');
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    strokes = []; redoStack = []; updateButtons();
-                };
-                img.src = drawing;
-            }
-        }
-
-        // ── FLIP MODAL ───────────────────────────────────────────────
-        let currentFlipSlot = null;
-
-        document.querySelectorAll('.flip-save-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                e.stopPropagation();
-                stopWatching();
-                currentFlipSlot = btn.dataset.flip;
-                const item = btn.closest('.flip-item');
-                document.getElementById('flipModalTitle').textContent    = item.querySelector('.flip-label').textContent;
-                document.getElementById('flipModalEmoji').textContent    = item.querySelector('.flip-emoji').textContent;
-                document.getElementById('flipModalSlotName').textContent = item.querySelector('.flip-label').textContent;
-                const preview = document.getElementById('flipDrawingPreview');
-                if (flipDrawings[currentFlipSlot]) {
-                    preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
-                    const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
-                    const img  = new Image();
-                    img.onload = () => {
-                        const s = Math.min(200/canvas.width, 140/canvas.height);
-                        pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
-                    };
-                    img.src = flipDrawings[currentFlipSlot];
-                } else {
-                    preview.innerHTML = '<span class="drawing-preview-empty">No drawing saved</span>';
-                }
-                flipModal.classList.add('active');
-            });
-        });
-
-        document.getElementById('flipSaveDrawingBtn').addEventListener('click', () => {
-            if (!currentFlipSlot) return;
-            flipDrawings[currentFlipSlot] = canvas.toDataURL('image/png');
-            saveFlipDrawings();
-            updateFlipSlotIndicators();
-            const preview = document.getElementById('flipDrawingPreview');
-            preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
-            const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
-            const img  = new Image();
-            img.onload = () => {
-                const s = Math.min(200/canvas.width, 140/canvas.height);
-                pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
-            };
-            img.src = flipDrawings[currentFlipSlot];
-            alert('Saved!');
-        });
-
-        document.getElementById('flipClearDrawingBtn').addEventListener('click', () => {
-            if (!currentFlipSlot) return;
-            delete flipDrawings[currentFlipSlot];
-            saveFlipDrawings();
-            updateFlipSlotIndicators();
-            document.getElementById('flipDrawingPreview').innerHTML =
-                '<span class="drawing-preview-empty">No drawing saved</span>';
-        });
-
-        function closeFlipModal() {
-            flipModal.classList.remove('active');
-            if (flipPage.classList.contains('active')) beginFaceDownWatch();
-        }
-        document.getElementById('flipModalClose').addEventListener('click', closeFlipModal);
-        flipModal.addEventListener('click', e => { if (e.target === flipModal) closeFlipModal(); });
-    </script>
+        actions.append(starBtn,activeBtn,delBtn);
+        row.append(nameInp,badges,actions);
+        list.appendChild(row);
+    });
+}
+</script>
 </body>
 </html>
