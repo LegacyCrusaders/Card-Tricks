@@ -9,228 +9,91 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <style>
-        * {
-            margin: 0; padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden;
-            background: #000;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; background: #000; }
 
-        /* START SCREEN */
         #startScreen {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
-            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 0.5s ease; cursor: pointer;
         }
         #startScreen.fade-out { opacity: 0; pointer-events: none; }
-        .app-icon {
-            width: 120px; height: 120px;
-            background: white; border-radius: 28px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
+        .app-icon { width: 120px; height: 120px; background: white; border-radius: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .app-icon svg { width: 70px; height: 70px; }
         .app-title { color: white; font-size: 32px; font-weight: 600; margin-bottom: 10px; }
         .app-version { color: rgba(255,255,255,0.8); font-size: 16px; }
-        .tap-to-start {
-            color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px;
-            animation: fadeInOut 2s infinite;
-        }
+        .tap-to-start { color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px; animation: fadeInOut 2s infinite; }
         @keyframes fadeInOut { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* MAIN APP */
-        #mainApp {
-            display: none; width: 100vw; height: 100vh;
-            background: #1a1a1a; flex-direction: column;
-        }
+        #mainApp { display: none; width: 100vw; height: 100vh; background: #1a1a1a; flex-direction: column; }
         #mainApp.active { display: flex; }
 
-        /* TOP BAR */
-        .top-bar {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #3a3a3a; height: 56px;
-        }
-        .top-bar-center {
-            display: flex; align-items: center; gap: 20px;
-            position: absolute; left: 50%; transform: translateX(-50%);
-        }
-        .top-icon-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: transparent; border: none;
-            cursor: pointer; transition: background 0.2s;
-        }
+        .top-bar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; }
+        .top-bar-center { display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); }
+        .top-icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
         .top-icon-btn:active { background: #3a3a3a; }
-        .action-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            background: transparent; border: none; border-radius: 50%;
-            cursor: pointer; transition: background 0.2s;
-        }
+        .action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
         .action-btn:active { background: #3a3a3a; }
         .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .action-btn:disabled:active { background: transparent; }
 
-        /* CANVAS */
-        .canvas-container {
-            flex: 1; position: relative;
-            background: #1a1a1a; overflow: hidden;
-        }
-        #drawingCanvas {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; cursor: crosshair;
-        }
+        .canvas-container { flex: 1; position: relative; background: #1a1a1a; overflow: hidden; }
+        #drawingCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
 
-        /* BOTTOM TOOLBAR */
-        .bottom-toolbar {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-top: 1px solid #3a3a3a; height: 64px;
-        }
+        .bottom-toolbar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #3a3a3a; height: 64px; }
         .tool-group { display: flex; align-items: center; gap: 16px; }
-        .tool-btn {
-            display: flex; flex-direction: column; align-items: center;
-            background: transparent; border: none; cursor: pointer;
-            padding: 4px 8px; border-radius: 8px; transition: background 0.2s;
-        }
-        .tool-btn:active { background: #3a3a3a; }
+        .tool-btn { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
         .tool-btn.active { background: #3a3a3a; }
         .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
         .tool-label { font-size: 11px; color: #b0b0b0; }
         .tool-btn.active .tool-label { color: #fff; }
 
-        /* TEXT INPUT OVERLAY */
-        #textInput {
-            position: absolute; background: transparent;
-            border: 1px dashed rgba(255,255,255,0.4);
-            color: #fff; font-size: 24px; font-family: Arial, sans-serif;
-            outline: none; padding: 2px 6px; min-width: 60px;
-            z-index: 500; caret-color: #fff; display: none;
-        }
+        #textInput { position: absolute; background: transparent; border: 1px dashed rgba(255,255,255,0.4); color: #fff; font-size: 24px; font-family: Arial, sans-serif; outline: none; padding: 2px 6px; min-width: 60px; z-index: 500; caret-color: #fff; display: none; }
 
         /* FLIP PAGE */
-        #flipPage {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #1a1a1a; z-index: 2000;
-            display: none; flex-direction: column;
-        }
+        #flipPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; }
         #flipPage.active { display: flex; }
-
-        .flip-header {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0;
-        }
+        .flip-header { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0; }
         .flip-header-left { display: flex; align-items: center; gap: 12px; }
         .flip-header-right { display: flex; align-items: center; gap: 10px; }
+        .flip-angle-label { font-size: 12px; color: #b0b0b0; white-space: nowrap; }
+        .flip-angle-slider { width: 80px; accent-color: #5e35b1; }
+        .settings-back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
+        .settings-back-btn:active { background: #3a3a3a; }
+        .settings-title { font-size: 20px; font-weight: 500; color: #fff; }
 
-        .flip-speed-label { font-size: 12px; color: #b0b0b0; white-space: nowrap; }
-        .flip-speed-slider { width: 80px; accent-color: #5e35b1; }
+        .flip-status { text-align: center; font-size: 13px; padding: 8px; flex-shrink: 0; background: #333; color: #aaa; }
+        .flip-status.waiting { background: #4a3800; color: #ffe082; }
+        .flip-status.armed   { background: #1b5e20; color: #a5d6a7; }
 
-        .flip-status {
-            background: #333; color: #aaa;
-            text-align: center; font-size: 12px;
-            padding: 6px; flex-shrink: 0;
-        }
-        .flip-status.armed { background: #1b5e20; color: #a5d6a7; }
-
-        .flip-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 0; overflow-y: auto; flex: 1;
-        }
-
-        .flip-item {
-            background: #2a2a2a; padding: 12px 10px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a;
-            min-height: 60px;
-        }
+        .flip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow-y: auto; flex: 1; }
+        .flip-item { background: #2a2a2a; padding: 12px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 60px; }
         .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
         .flip-item-left { display: flex; align-items: center; gap: 8px; }
         .flip-emoji { font-size: 22px; flex-shrink: 0; }
         .flip-text { display: flex; flex-direction: column; gap: 2px; }
         .flip-label { font-size: 13px; color: #fff; font-weight: 500; }
-        .flip-speed-tag { font-size: 10px; color: #888; }
-
-        .flip-save-btn {
-            background: #5e35b1; color: #fff; border: none;
-            border-radius: 6px; padding: 6px 10px;
-            font-size: 11px; cursor: pointer; white-space: nowrap;
-        }
+        .flip-hint  { font-size: 10px; color: #888; }
+        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer; white-space: nowrap; }
         .flip-save-btn:active { background: #4a2c8f; }
         .flip-item.has-drawing .flip-save-btn { background: #2e7d32; }
-        .flip-item.has-drawing .flip-save-btn:active { background: #1b5e20; }
-
-        .flip-clear-btn {
-            width: 100%; background: #c62828; border: none;
-            border-radius: 8px; padding: 12px; color: #fff;
-            font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 8px;
-        }
-        .flip-clear-btn:active { background: #b71c1c; }
 
         /* FLIP MODAL */
-        #flipModal {
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 3000;
-            display: none; align-items: center; justify-content: center;
-        }
+        #flipModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; }
         #flipModal.active { display: flex; }
-
-        .settings-back-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: transparent; border: none;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .settings-back-btn:active { background: #3a3a3a; }
-        .settings-title { font-size: 20px; font-weight: 500; color: #fff; }
-
-        .modal-content {
-            background: #2a2a2a; border-radius: 12px;
-            padding: 24px; width: 90%; max-width: 400px;
-        }
-        .modal-header {
-            display: flex; align-items: center;
-            justify-content: space-between; margin-bottom: 20px;
-        }
+        .modal-content { background: #2a2a2a; border-radius: 12px; padding: 24px; width: 90%; max-width: 400px; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
         .modal-title { font-size: 20px; color: #fff; font-weight: 500; }
-        .modal-close {
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            background: transparent; border: none; border-radius: 50%; cursor: pointer;
-        }
-        .modal-close:active { background: #3a3a3a; }
+        .modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
         .modal-item-display { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
         .modal-emoji { font-size: 48px; }
         .modal-item-name { font-size: 24px; color: #fff; }
-
-        .drawing-preview {
-            width: 100%; height: 150px;
-            background: #1a1a1a; border-radius: 8px; margin-bottom: 20px;
-            display: flex; align-items: center; justify-content: center; overflow: hidden;
-        }
-        .drawing-preview canvas { max-width: 100%; max-height: 100%; }
+        .drawing-preview { width: 100%; height: 150px; background: #1a1a1a; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .drawing-preview-empty { color: #666; font-size: 14px; }
-
-        .modal-drawing-btn {
-            width: 100%; background: #4CAF50; border: none;
-            border-radius: 8px; padding: 14px; color: #fff;
-            font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 10px;
-        }
+        .modal-drawing-btn { width: 100%; background: #4CAF50; border: none; border-radius: 8px; padding: 14px; color: #fff; font-size: 16px; font-weight: 500; cursor: pointer; margin-bottom: 10px; }
         .modal-drawing-btn:active { background: #45a049; }
+        .flip-clear-btn { width: 100%; background: #c62828; border: none; border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .flip-clear-btn:active { background: #b71c1c; }
     </style>
 </head>
 <body>
@@ -251,29 +114,20 @@
     <!-- MAIN APP -->
     <div id="mainApp">
         <div class="top-bar">
-            <div style="width:40px;"></div><!-- spacer -->
+            <div style="width:40px;"></div>
             <div class="top-bar-center">
                 <button class="action-btn" id="undoBtn" disabled>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/></svg>
                 </button>
                 <button class="action-btn" id="redoBtn" disabled>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/></svg>
                 </button>
                 <button class="action-btn" id="clearBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/></svg>
                 </button>
             </div>
-            <!-- Share button opens Flip Menu -->
-            <button class="top-icon-btn" id="flipMenuBtn" aria-label="Flip Menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/>
-                </svg>
+            <button class="top-icon-btn" id="flipMenuBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
             </button>
         </div>
 
@@ -285,25 +139,19 @@
         <div class="bottom-toolbar">
             <div class="tool-group">
                 <button class="tool-btn active" id="penBtn">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/></svg>
                     <span class="tool-label">Pen</span>
                 </button>
                 <button class="tool-btn" id="eraserBtn">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/></svg>
                     <span class="tool-label">Eraser</span>
                 </button>
                 <button class="tool-btn" id="textBtn">
-                    <svg viewBox="0 0 24 24" fill="none">
-                        <path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/></svg>
                     <span class="tool-label">Text</span>
                 </button>
             </div>
-            <div style="width:48px;"></div><!-- spacer where mic was -->
+            <div style="width:48px;"></div>
         </div>
     </div>
 
@@ -312,50 +160,44 @@
         <div class="flip-header">
             <div class="flip-header-left">
                 <button class="settings-back-btn" id="flipBackBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
                 </button>
                 <span class="settings-title">Flip Reveal</span>
             </div>
             <div class="flip-header-right">
-                <label class="flip-speed-label">Speed: <span id="flipSpeedVal">5</span></label>
-                <input type="range" id="flipSpeedSlider" min="1" max="10" value="5" class="flip-speed-slider">
+                <label class="flip-angle-label">Angle: <span id="flipAngleVal">40</span>°</label>
+                <input type="range" id="flipAngleSlider" min="15" max="70" value="40" class="flip-angle-slider">
             </div>
         </div>
-        <div class="flip-status" id="flipStatus">Close menu to arm flip detection</div>
+        <div class="flip-status" id="flipStatus">Place phone face-down to arm</div>
         <div class="flip-grid">
-            <div class="flip-item" data-flip="up-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up</span><span class="flip-speed-tag">Fast</span></div></div>
-                <button class="flip-save-btn" data-flip="up-fast">Set Drawing</button>
+            <div class="flip-item" data-flip="up">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬆️</span>
+                    <div class="flip-text"><span class="flip-label">Tilt Up</span><span class="flip-hint">top edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="up">Set Drawing</button>
             </div>
-            <div class="flip-item" data-flip="up-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up</span><span class="flip-speed-tag">Slow</span></div></div>
-                <button class="flip-save-btn" data-flip="up-slow">Set Drawing</button>
+            <div class="flip-item" data-flip="down">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬇️</span>
+                    <div class="flip-text"><span class="flip-label">Tilt Down</span><span class="flip-hint">bottom edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="down">Set Drawing</button>
             </div>
-            <div class="flip-item" data-flip="down-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down</span><span class="flip-speed-tag">Fast</span></div></div>
-                <button class="flip-save-btn" data-flip="down-fast">Set Drawing</button>
+            <div class="flip-item" data-flip="left">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">⬅️</span>
+                    <div class="flip-text"><span class="flip-label">Tilt Left</span><span class="flip-hint">left edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="left">Set Drawing</button>
             </div>
-            <div class="flip-item" data-flip="down-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down</span><span class="flip-speed-tag">Slow</span></div></div>
-                <button class="flip-save-btn" data-flip="down-slow">Set Drawing</button>
-            </div>
-            <div class="flip-item" data-flip="left-fast">
-                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left</span><span class="flip-speed-tag">Fast</span></div></div>
-                <button class="flip-save-btn" data-flip="left-fast">Set Drawing</button>
-            </div>
-            <div class="flip-item" data-flip="left-slow">
-                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left</span><span class="flip-speed-tag">Slow</span></div></div>
-                <button class="flip-save-btn" data-flip="left-slow">Set Drawing</button>
-            </div>
-            <div class="flip-item" data-flip="right-fast">
-                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right</span><span class="flip-speed-tag">Fast</span></div></div>
-                <button class="flip-save-btn" data-flip="right-fast">Set Drawing</button>
-            </div>
-            <div class="flip-item" data-flip="right-slow">
-                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right</span><span class="flip-speed-tag">Slow</span></div></div>
-                <button class="flip-save-btn" data-flip="right-slow">Set Drawing</button>
+            <div class="flip-item" data-flip="right">
+                <div class="flip-item-left">
+                    <span class="flip-emoji">➡️</span>
+                    <div class="flip-text"><span class="flip-label">Tilt Right</span><span class="flip-hint">right edge tilts down</span></div>
+                </div>
+                <button class="flip-save-btn" data-flip="right">Set Drawing</button>
             </div>
         </div>
     </div>
@@ -366,9 +208,7 @@
             <div class="modal-header">
                 <span class="modal-title" id="flipModalTitle">Set Drawing</span>
                 <button class="modal-close" id="flipModalClose">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/>
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>
                 </button>
             </div>
             <div class="modal-item-display">
@@ -392,6 +232,7 @@
         const textInput   = document.getElementById('textInput');
         const flipPage    = document.getElementById('flipPage');
         const flipModal   = document.getElementById('flipModal');
+        const statusEl    = document.getElementById('flipStatus');
 
         // ── START SCREEN ─────────────────────────────────────────────
         startScreen.addEventListener('click', () => {
@@ -400,32 +241,43 @@
                 startScreen.style.display = 'none';
                 mainApp.classList.add('active');
                 initCanvas();
-                enterFullscreen();
+                lockOrientationAndFullscreen();
             }, 500);
         });
 
-        function enterFullscreen() {
+        function lockOrientationAndFullscreen() {
+            // Fullscreen first — orientation lock requires fullscreen on many browsers
             const el = document.documentElement;
-            if      (el.requestFullscreen)       el.requestFullscreen().catch(()=>{});
-            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-            else if (el.msRequestFullscreen)     el.msRequestFullscreen();
+            const fsPromise = el.requestFullscreen
+                ? el.requestFullscreen()
+                : el.webkitRequestFullscreen
+                    ? new Promise(r => { el.webkitRequestFullscreen(); r(); })
+                    : Promise.resolve();
+
+            fsPromise.then(() => {
+                // Now try orientation lock
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('portrait').catch(() => {});
+                }
+            }).catch(() => {
+                // Fullscreen failed (browser tab, not PWA) — try orientation anyway
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('portrait').catch(() => {});
+                }
+            });
         }
 
         // ── CANVAS ───────────────────────────────────────────────────
-        let isDrawing     = false;
-        let currentTool   = 'pen';
-        let strokes       = [];
-        let currentStroke = [];
-        let redoStack     = [];
+        let isDrawing = false, currentTool = 'pen';
+        let strokes = [], currentStroke = [], redoStack = [];
 
         function initCanvas() {
             canvas.width  = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            ctx.lineCap  = 'round';
-            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         }
 
-        function getPosition(e) {
+        function getPos(e) {
             const rect  = canvas.getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
             return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
@@ -434,32 +286,24 @@
         function startDrawing(e) {
             if (currentTool === 'text') return;
             isDrawing = true;
-            const pos = getPosition(e);
-            currentStroke = [{ x: pos.x, y: pos.y, tool: currentTool }];
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
+            const p = getPos(e);
+            currentStroke = [{ x: p.x, y: p.y, tool: currentTool }];
+            ctx.beginPath(); ctx.moveTo(p.x, p.y);
         }
-
         function draw(e) {
             if (!isDrawing) return;
             e.preventDefault();
-            const pos = getPosition(e);
-            currentStroke.push({ x: pos.x, y: pos.y, tool: currentTool });
+            const p = getPos(e);
+            currentStroke.push({ x: p.x, y: p.y, tool: currentTool });
             ctx.strokeStyle = currentTool === 'pen' ? '#fff' : '#1a1a1a';
             ctx.lineWidth   = currentTool === 'pen' ? 2 : 20;
             ctx.globalCompositeOperation = 'source-over';
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
+            ctx.lineTo(p.x, p.y); ctx.stroke();
         }
-
         function stopDrawing() {
             if (!isDrawing) return;
             isDrawing = false;
-            if (currentStroke.length > 0) {
-                strokes.push([...currentStroke]);
-                redoStack = [];
-                updateButtons();
-            }
+            if (currentStroke.length) { strokes.push([...currentStroke]); redoStack = []; updateButtons(); }
         }
 
         canvas.addEventListener('mousedown',  startDrawing);
@@ -470,91 +314,58 @@
         canvas.addEventListener('touchmove',  draw, { passive: false });
         canvas.addEventListener('touchend',   stopDrawing);
 
-        // ── TOOLS ────────────────────────────────────────────────────
-        document.getElementById('penBtn').addEventListener('click', () => {
-            currentTool = 'pen';
-            document.getElementById('penBtn').classList.add('active');
-            document.getElementById('eraserBtn').classList.remove('active');
-            document.getElementById('textBtn').classList.remove('active');
-            canvas.style.cursor = 'crosshair';
-            commitTextInput();
+        // Tools
+        ['pen','eraser','text'].forEach(tool => {
+            document.getElementById(tool + 'Btn').addEventListener('click', () => {
+                currentTool = tool;
+                ['pen','eraser','text'].forEach(t =>
+                    document.getElementById(t + 'Btn').classList.toggle('active', t === tool));
+                canvas.style.cursor = tool === 'pen' ? 'crosshair' : tool === 'text' ? 'text' : 'pointer';
+                if (tool !== 'text') commitTextInput();
+            });
         });
 
-        document.getElementById('eraserBtn').addEventListener('click', () => {
-            currentTool = 'eraser';
-            document.getElementById('eraserBtn').classList.add('active');
-            document.getElementById('penBtn').classList.remove('active');
-            document.getElementById('textBtn').classList.remove('active');
-            canvas.style.cursor = 'pointer';
-            commitTextInput();
-        });
-
-        document.getElementById('textBtn').addEventListener('click', () => {
-            currentTool = 'text';
-            document.getElementById('textBtn').classList.add('active');
-            document.getElementById('penBtn').classList.remove('active');
-            document.getElementById('eraserBtn').classList.remove('active');
-            canvas.style.cursor = 'text';
-        });
-
-        // ── TEXT TOOL ────────────────────────────────────────────────
+        // Text tool
         canvas.addEventListener('click', (e) => {
             if (currentTool !== 'text') return;
             commitTextInput();
             const rect = canvas.getBoundingClientRect();
-            textInput.style.left    = (e.clientX - rect.left) + 'px';
-            textInput.style.top     = (e.clientY - rect.top - 20) + 'px';
-            textInput.style.display = 'block';
-            textInput.value = '';
-            textInput.focus();
+            textInput.style.left = (e.clientX - rect.left) + 'px';
+            textInput.style.top  = (e.clientY - rect.top - 20) + 'px';
+            textInput.style.display = 'block'; textInput.value = ''; textInput.focus();
         });
-
         canvas.addEventListener('touchend', (e) => {
             if (currentTool !== 'text') return;
-            e.preventDefault();
-            commitTextInput();
-            const rect  = canvas.getBoundingClientRect();
-            const touch = e.changedTouches[0];
-            textInput.style.left    = (touch.clientX - rect.left) + 'px';
-            textInput.style.top     = (touch.clientY - rect.top - 20) + 'px';
-            textInput.style.display = 'block';
-            textInput.value = '';
-            textInput.focus();
+            e.preventDefault(); commitTextInput();
+            const rect = canvas.getBoundingClientRect(), t = e.changedTouches[0];
+            textInput.style.left = (t.clientX - rect.left) + 'px';
+            textInput.style.top  = (t.clientY - rect.top - 20) + 'px';
+            textInput.style.display = 'block'; textInput.value = ''; textInput.focus();
         }, { passive: false });
-
-        textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') commitTextInput(); });
-        textInput.addEventListener('blur',    () => setTimeout(commitTextInput, 100));
+        textInput.addEventListener('keydown', e => { if (e.key === 'Enter') commitTextInput(); });
+        textInput.addEventListener('blur', () => setTimeout(commitTextInput, 100));
 
         function commitTextInput() {
             const text = textInput.value.trim();
             if (text && textInput.style.display !== 'none') {
                 const x = parseInt(textInput.style.left) + 6;
-                const y = parseInt(textInput.style.top)  + 24;
-                ctx.save();
-                ctx.font         = '24px Arial';
-                ctx.fillStyle    = '#fff';
-                ctx.textBaseline = 'alphabetic';
-                ctx.fillText(text, x, y);
-                ctx.restore();
-                strokes.push([{ x, y, tool: 'text', text }]);
-                redoStack = [];
-                updateButtons();
+                const y = parseInt(textInput.style.top) + 24;
+                ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
+                ctx.fillText(text, x, y); ctx.restore();
+                strokes.push([{ x, y, tool: 'text', text }]); redoStack = []; updateButtons();
             }
-            textInput.style.display = 'none';
-            textInput.value = '';
+            textInput.style.display = 'none'; textInput.value = '';
         }
 
-        // ── UNDO / REDO / CLEAR ──────────────────────────────────────
+        // Undo / redo / clear
         document.getElementById('undoBtn').addEventListener('click', () => {
-            if (strokes.length > 0) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
+            if (strokes.length) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
         });
         document.getElementById('redoBtn').addEventListener('click', () => {
-            if (redoStack.length > 0) { strokes.push(redoStack.pop()); redrawCanvas(); updateButtons(); }
+            if (redoStack.length) { strokes.push(redoStack.pop()); redrawCanvas(); updateButtons(); }
         });
         document.getElementById('clearBtn').addEventListener('click', () => {
-            strokes = []; redoStack = [];
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            updateButtons();
+            strokes = []; redoStack = []; ctx.clearRect(0, 0, canvas.width, canvas.height); updateButtons();
         });
 
         function redrawCanvas() {
@@ -562,14 +373,12 @@
             strokes.forEach(stroke => {
                 if (!stroke.length) return;
                 if (stroke[0].tool === 'text') {
-                    ctx.save();
-                    ctx.font = '24px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
-                    ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y);
-                    ctx.restore();
+                    ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
+                    ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y); ctx.restore();
                 } else {
                     ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
                     ctx.strokeStyle = stroke[0].tool === 'pen' ? '#fff' : '#1a1a1a';
-                    ctx.lineWidth   = stroke[0].tool === 'pen' ? 2 : 20;
+                    ctx.lineWidth = stroke[0].tool === 'pen' ? 2 : 20;
                     ctx.globalCompositeOperation = 'source-over';
                     for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
                     ctx.stroke();
@@ -578,8 +387,8 @@
         }
 
         function updateButtons() {
-            document.getElementById('undoBtn').disabled = strokes.length === 0;
-            document.getElementById('redoBtn').disabled = redoStack.length === 0;
+            document.getElementById('undoBtn').disabled = !strokes.length;
+            document.getElementById('redoBtn').disabled = !redoStack.length;
         }
 
         window.addEventListener('resize', () => {
@@ -588,63 +397,202 @@
             strokes = saved; redrawCanvas();
         });
 
-        // ── FLIP DRAWINGS STORAGE ────────────────────────────────────
+        // ── FLIP STORAGE ─────────────────────────────────────────────
         const flipDrawings = {};
-
         function loadFlipDrawings() {
-            const saved = localStorage.getItem('magicFlipDrawings');
-            if (saved) { try { Object.assign(flipDrawings, JSON.parse(saved)); } catch(e) {} }
+            try { Object.assign(flipDrawings, JSON.parse(localStorage.getItem('magicFlipDrawings') || '{}')); } catch(e) {}
         }
         function saveFlipDrawings() {
             localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings));
         }
 
-        let flipSpeedThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '5');
+        let triggerAngle = parseInt(localStorage.getItem('magicFlipAngle') || '40');
         loadFlipDrawings();
 
-        // ── FLIP PAGE OPEN / CLOSE ───────────────────────────────────
+        // ── FLIP PAGE ────────────────────────────────────────────────
         document.getElementById('flipMenuBtn').addEventListener('click', () => {
-            flipPage.classList.add('active');
-            updateFlipSlotIndicators();
-            disarmFlip();
+            // Request iOS permission on user gesture before opening menu
+            requestOrientationPermission().then(() => {
+                stopWatching();
+                flipPage.classList.add('active');
+                updateFlipSlotIndicators();
+                setStatus('Place phone face-down to arm', '');
+            });
         });
 
         document.getElementById('flipBackBtn').addEventListener('click', () => {
             flipPage.classList.remove('active');
-            armFlip();
+            beginFaceDownWatch();
         });
 
-        // Speed slider
-        const flipSpeedSlider = document.getElementById('flipSpeedSlider');
-        flipSpeedSlider.value = flipSpeedThreshold;
-        document.getElementById('flipSpeedVal').textContent = flipSpeedThreshold;
-        flipSpeedSlider.addEventListener('input', () => {
-            flipSpeedThreshold = parseInt(flipSpeedSlider.value);
-            document.getElementById('flipSpeedVal').textContent = flipSpeedThreshold;
-            localStorage.setItem('magicFlipSpeed', flipSpeedThreshold);
+        const flipAngleSlider = document.getElementById('flipAngleSlider');
+        flipAngleSlider.value = triggerAngle;
+        document.getElementById('flipAngleVal').textContent = triggerAngle;
+        flipAngleSlider.addEventListener('input', () => {
+            triggerAngle = parseInt(flipAngleSlider.value);
+            document.getElementById('flipAngleVal').textContent = triggerAngle;
+            localStorage.setItem('magicFlipAngle', triggerAngle);
         });
 
         function updateFlipSlotIndicators() {
-            document.querySelectorAll('.flip-item').forEach(item => {
-                item.classList.toggle('has-drawing', !!flipDrawings[item.dataset.flip]);
-            });
+            document.querySelectorAll('.flip-item').forEach(item =>
+                item.classList.toggle('has-drawing', !!flipDrawings[item.dataset.flip]));
+        }
+
+        function setStatus(msg, mode) {
+            statusEl.textContent = msg;
+            statusEl.className   = 'flip-status' + (mode ? ' ' + mode : '');
+        }
+
+        // ── SENSOR PERMISSION ────────────────────────────────────────
+        function requestOrientationPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                return DeviceOrientationEvent.requestPermission().catch(() => {});
+            }
+            return Promise.resolve('granted');
+        }
+
+        // ── FLIP DETECTION ───────────────────────────────────────────
+        //
+        // Galaxy S22 deviceorientation values (portrait, screen facing up = 0°):
+        //
+        //   beta  = tilt around X-axis (front-back)
+        //     Screen up flat  →  beta ≈ 0
+        //     Screen down flat → beta ≈ 180 (or -180)
+        //     Tilting top edge away from you (tilt "up") → beta increases toward 180
+        //     Tilting bottom edge away from you (tilt "down") → beta decreases toward 0
+        //
+        //   gamma = tilt around Y-axis (left-right)
+        //     Flat → gamma ≈ 0
+        //     Right edge down → gamma positive
+        //     Left edge down  → gamma negative
+        //
+        // PHASE 1 — FACE-DOWN WATCH:
+        //   We wait until |beta| > (180 - FACEDOWN_THRESHOLD).
+        //   Once stable for STABLE_MS we snapshot baseBeta/baseGamma and arm.
+        //
+        // PHASE 2 — TILT WATCH:
+        //   On every event compute delta from baseline.
+        //   The dominant axis (larger absolute delta) picks direction.
+        //   If delta >= triggerAngle → fire.
+        //
+        //   Direction mapping (phone face-down, screen toward table):
+        //     deltaBeta < 0  → top edge lifting = "up" tilt
+        //     deltaBeta > 0  → bottom edge lifting = "down" tilt
+        //     deltaGamma < 0 → left edge lifting = "left" tilt
+        //     deltaGamma > 0 → right edge lifting = "right" tilt
+
+        const FACEDOWN_THRESHOLD = 25;  // degrees tolerance from flat face-down
+        const STABLE_MS          = 250; // ms held face-down before arming
+
+        let isWatching   = false;
+        let isArmed      = false;
+        let stableTimer  = null;
+        let baseBeta     = 0;
+        let baseGamma    = 0;
+        let orientHandler = null;
+
+        function beginFaceDownWatch() {
+            if (!Object.keys(flipDrawings).length) {
+                setStatus('No drawings saved — nothing to arm', '');
+                return;
+            }
+            stopWatching();
+            isWatching = true;
+            isArmed    = false;
+            setStatus('Place phone face-down to arm', 'waiting');
+
+            orientHandler = handleOrientation;
+            window.addEventListener('deviceorientation', orientHandler, true);
+        }
+
+        function stopWatching() {
+            isWatching = false;
+            isArmed    = false;
+            clearTimeout(stableTimer);
+            stableTimer = null;
+            if (orientHandler) {
+                window.removeEventListener('deviceorientation', orientHandler, true);
+                orientHandler = null;
+            }
+        }
+
+        function handleOrientation(e) {
+            if (!isWatching) return;
+
+            const beta  = e.beta  ?? 0;
+            const gamma = e.gamma ?? 0;
+
+            if (!isArmed) {
+                // Phase 1: detect face-down
+                // beta near ±180 means face-down on Android
+                const absBeta    = Math.abs(beta);
+                const isFaceDown = absBeta > (180 - FACEDOWN_THRESHOLD);
+
+                if (isFaceDown && !stableTimer) {
+                    stableTimer = setTimeout(() => {
+                        stableTimer = null;
+                        isArmed    = true;
+                        baseBeta   = beta;
+                        baseGamma  = gamma;
+                        setStatus('Armed ✓  —  tilt to reveal', 'armed');
+                    }, STABLE_MS);
+                } else if (!isFaceDown) {
+                    clearTimeout(stableTimer);
+                    stableTimer = null;
+                }
+
+            } else {
+                // Phase 2: watch for tilt from baseline
+                let deltaBeta  = beta  - baseBeta;
+                let deltaGamma = gamma - baseGamma;
+
+                // Handle ±180 wraparound for beta
+                if (deltaBeta >  180) deltaBeta -= 360;
+                if (deltaBeta < -180) deltaBeta += 360;
+
+                const absDeltaBeta  = Math.abs(deltaBeta);
+                const absDeltaGamma = Math.abs(deltaGamma);
+
+                if (Math.max(absDeltaBeta, absDeltaGamma) >= triggerAngle) {
+                    let direction;
+                    if (absDeltaBeta >= absDeltaGamma) {
+                        direction = deltaBeta < 0 ? 'up' : 'down';
+                    } else {
+                        direction = deltaGamma < 0 ? 'left' : 'right';
+                    }
+                    triggerReveal(direction);
+                }
+            }
+        }
+
+        function triggerReveal(direction) {
+            stopWatching();
+            const drawing = flipDrawings[direction];
+            if (!drawing) return;
+            flipPage.classList.remove('active');
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                strokes = []; redoStack = []; updateButtons();
+            };
+            img.src = drawing;
         }
 
         // ── FLIP MODAL ───────────────────────────────────────────────
         let currentFlipSlot = null;
 
         document.querySelectorAll('.flip-save-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', e => {
                 e.stopPropagation();
                 currentFlipSlot = btn.dataset.flip;
                 const item  = btn.closest('.flip-item');
-                const emoji = item.querySelector('.flip-emoji').textContent;
-                const label = item.querySelector('.flip-label').textContent;
-                const speed = item.querySelector('.flip-speed-tag').textContent;
 
-                document.getElementById('flipModalTitle').textContent    = `Set Drawing — ${label} ${speed}`;
-                document.getElementById('flipModalEmoji').textContent    = emoji;
-                document.getElementById('flipModalSlotName').textContent = `${label} ${speed}`;
+                document.getElementById('flipModalTitle').textContent    = `Set Drawing — ${item.querySelector('.flip-label').textContent}`;
+                document.getElementById('flipModalEmoji').textContent    = item.querySelector('.flip-emoji').textContent;
+                document.getElementById('flipModalSlotName').textContent = item.querySelector('.flip-label').textContent;
 
                 const preview = document.getElementById('flipDrawingPreview');
                 if (flipDrawings[currentFlipSlot]) {
@@ -652,17 +600,13 @@
                     const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
                     const img  = new Image();
                     img.onload = () => {
-                        const scale = Math.min(200 / canvas.width, 150 / canvas.height);
-                        pCtx.drawImage(img,
-                            (200 - canvas.width * scale) / 2,
-                            (150 - canvas.height * scale) / 2,
-                            canvas.width * scale, canvas.height * scale);
+                        const s = Math.min(200 / canvas.width, 150 / canvas.height);
+                        pCtx.drawImage(img, (200 - canvas.width*s)/2, (150 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
                     };
                     img.src = flipDrawings[currentFlipSlot];
                 } else {
                     preview.innerHTML = '<span class="drawing-preview-empty">No drawing saved</span>';
                 }
-
                 flipModal.classList.add('active');
             });
         });
@@ -672,20 +616,17 @@
             flipDrawings[currentFlipSlot] = canvas.toDataURL('image/png');
             saveFlipDrawings();
             updateFlipSlotIndicators();
-
+            // Refresh preview
             const preview = document.getElementById('flipDrawingPreview');
             preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="150"></canvas>`;
             const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
             const img  = new Image();
             img.onload = () => {
-                const scale = Math.min(200 / canvas.width, 150 / canvas.height);
-                pCtx.drawImage(img,
-                    (200 - canvas.width * scale) / 2,
-                    (150 - canvas.height * scale) / 2,
-                    canvas.width * scale, canvas.height * scale);
+                const s = Math.min(200 / canvas.width, 150 / canvas.height);
+                pCtx.drawImage(img, (200 - canvas.width*s)/2, (150 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
             };
             img.src = flipDrawings[currentFlipSlot];
-            alert(`Drawing saved for ${currentFlipSlot}!`);
+            alert(`Drawing saved for "${currentFlipSlot}"!`);
         });
 
         document.getElementById('flipClearDrawingBtn').addEventListener('click', () => {
@@ -698,111 +639,7 @@
         });
 
         document.getElementById('flipModalClose').addEventListener('click', () => flipModal.classList.remove('active'));
-        flipModal.addEventListener('click', (e) => { if (e.target === flipModal) flipModal.classList.remove('active'); });
-
-        // ── GYROSCOPE / FLIP DETECTION ───────────────────────────────
-        let flipArmed        = false;
-        let flipFaceDown     = false;
-        let flipPeakBeta     = 0;
-        let flipPeakGamma    = 0;
-        let motionHandler      = null;
-        let orientationHandler = null;
-
-        function armFlip() {
-            const hasAny = Object.keys(flipDrawings).length > 0;
-            const statusEl = document.getElementById('flipStatus');
-            if (!hasAny) {
-                statusEl.textContent = 'No drawings saved — nothing to arm';
-                statusEl.classList.remove('armed');
-                return;
-            }
-
-            flipArmed    = true;
-            flipFaceDown = false;
-            flipPeakBeta = 0; flipPeakGamma = 0;
-
-            statusEl.textContent = 'Armed — flip to reveal';
-            statusEl.classList.add('armed');
-
-            if (typeof DeviceMotionEvent !== 'undefined' &&
-                typeof DeviceMotionEvent.requestPermission === 'function') {
-                DeviceMotionEvent.requestPermission().then(state => {
-                    if (state === 'granted') startFlipListeners();
-                }).catch(() => {});
-            } else {
-                startFlipListeners();
-            }
-        }
-
-        function disarmFlip() {
-            flipArmed    = false;
-            flipFaceDown = false;
-            const statusEl = document.getElementById('flipStatus');
-            statusEl.textContent = 'Close menu to arm flip detection';
-            statusEl.classList.remove('armed');
-            if (motionHandler)      { window.removeEventListener('devicemotion',      motionHandler);      motionHandler = null; }
-            if (orientationHandler) { window.removeEventListener('deviceorientation', orientationHandler); orientationHandler = null; }
-        }
-
-        function startFlipListeners() {
-            orientationHandler = (e) => {
-                if (!flipArmed) return;
-                const beta = Math.abs(e.beta || 0);
-                if (beta > 150) {
-                    if (!flipFaceDown) {
-                        flipFaceDown  = true;
-                        flipPeakBeta  = 0;
-                        flipPeakGamma = 0;
-                    }
-                } else if (flipFaceDown && beta < 30) {
-                    evaluateFlip();
-                }
-            };
-
-            motionHandler = (e) => {
-                if (!flipArmed || !flipFaceDown) return;
-                const rr = e.rotationRate;
-                if (!rr) return;
-                if (Math.abs(rr.beta)  > Math.abs(flipPeakBeta))  flipPeakBeta  = rr.beta;
-                if (Math.abs(rr.gamma) > Math.abs(flipPeakGamma)) flipPeakGamma = rr.gamma;
-            };
-
-            window.addEventListener('deviceorientation', orientationHandler);
-            window.addEventListener('devicemotion',      motionHandler);
-        }
-
-        function evaluateFlip() {
-            if (!flipArmed) return;
-            disarmFlip();
-
-            const absBeta  = Math.abs(flipPeakBeta);
-            const absGamma = Math.abs(flipPeakGamma);
-            const speedNeeded = 500 - (flipSpeedThreshold - 1) * 50;
-
-            let direction = null, speed = null;
-
-            if (absBeta >= absGamma) {
-                if (absBeta < 20) return;
-                direction = flipPeakBeta > 0 ? 'down' : 'up';
-                speed     = absBeta >= speedNeeded ? 'fast' : 'slow';
-            } else {
-                if (absGamma < 20) return;
-                direction = flipPeakGamma > 0 ? 'right' : 'left';
-                speed     = absGamma >= speedNeeded ? 'fast' : 'slow';
-            }
-
-            const slotKey = `${direction}-${speed}`;
-            if (flipDrawings[slotKey]) {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    strokes = []; redoStack = [];
-                    updateButtons();
-                };
-                img.src = flipDrawings[slotKey];
-            }
-        }
+        flipModal.addEventListener('click', e => { if (e.target === flipModal) flipModal.classList.remove('active'); });
     </script>
 </body>
 </html>
