@@ -30,7 +30,6 @@
         /* MAIN APP */
         #mainApp { display: none; width: 100vw; height: 100vh; background: #1a1a1a; flex-direction: column; }
         #mainApp.active { display: flex; }
-
         .top-bar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; }
         .top-bar-center { display: flex; align-items: center; gap: 20px; position: absolute; left: 50%; transform: translateX(-50%); }
         .top-icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
@@ -38,10 +37,8 @@
         .action-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 50%; cursor: pointer; }
         .action-btn:active { background: #3a3a3a; }
         .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
         .canvas-container { flex: 1; position: relative; background: #1a1a1a; overflow: hidden; }
         #drawingCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
-
         .bottom-toolbar { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #3a3a3a; height: 64px; }
         .tool-group { display: flex; align-items: center; gap: 16px; }
         .tool-btn { display: flex; flex-direction: column; align-items: center; background: transparent; border: none; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
@@ -55,39 +52,57 @@
         #flipPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 2000; display: none; flex-direction: column; }
         #flipPage.active { display: flex; }
 
-        .flip-header { background: #2a2a2a; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0; }
-        .flip-header-left { display: flex; align-items: center; gap: 12px; }
-        .flip-header-right { display: flex; align-items: center; gap: 12px; }
-        .settings-back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; }
+        .flip-header { background: #2a2a2a; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; height: 56px; flex-shrink: 0; gap: 8px; }
+        .flip-header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .flip-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+        .settings-back-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; flex-shrink: 0; }
         .settings-back-btn:active { background: #3a3a3a; }
-        .settings-title { font-size: 20px; font-weight: 500; color: #fff; }
+        .settings-title { font-size: 18px; font-weight: 500; color: #fff; white-space: nowrap; }
 
-        /* Speed threshold controls */
-        .speed-controls { display: flex; align-items: center; gap: 8px; }
-        .speed-label { font-size: 11px; color: #888; white-space: nowrap; }
-        .speed-value { font-size: 11px; color: #fff; font-weight: 600; min-width: 28px; }
-        .speed-slider { width: 70px; accent-color: #5e35b1; }
+        .ctrl-group { display: flex; align-items: center; gap: 5px; }
+        .ctrl-label { font-size: 10px; color: #888; white-space: nowrap; }
+        .ctrl-val { font-size: 10px; color: #fff; font-weight: 600; min-width: 26px; }
+        .ctrl-slider { width: 60px; accent-color: #5e35b1; }
+
+        /* Practice mode toggle */
+        .practice-toggle {
+            display: flex; align-items: center; gap: 6px; cursor: pointer;
+            background: #333; border: none; border-radius: 16px; padding: 5px 10px;
+            flex-shrink: 0;
+        }
+        .practice-toggle.on { background: #5e35b1; }
+        .practice-toggle-label { font-size: 11px; color: #aaa; white-space: nowrap; font-weight: 500; }
+        .practice-toggle.on .practice-toggle-label { color: #fff; }
+        .practice-dot { width: 8px; height: 8px; border-radius: 50%; background: #666; flex-shrink: 0; }
+        .practice-toggle.on .practice-dot { background: #fff; }
 
         /* Status bar */
-        .flip-status { text-align: center; font-size: 13px; font-weight: 500; padding: 9px; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
+        .flip-status { text-align: center; font-size: 13px; font-weight: 500; padding: 9px 12px; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
         .flip-status.idle    { background: #2a2a2a; color: #888; }
         .flip-status.waiting { background: #4a3800; color: #ffe082; }
         .flip-status.armed   { background: #1b5e20; color: #a5d6a7; }
+        /* Practice mode feedback — briefly shows which slot fired */
+        .flip-status.fired-fast { background: #1a237e; color: #90caf9; }
+        .flip-status.fired-slow { background: #4a148c; color: #ce93d8; }
+        .flip-status.fired-none { background: #4e342e; color: #ffab91; }
 
-        /* 2-col grid — left col = fast, right col = slow */
+        /* Col headers */
+        .flip-col-headers { display: grid; grid-template-columns: 1fr 1fr; flex-shrink: 0; }
+        .flip-col-header { background: #222; color: #888; font-size: 11px; font-weight: 600; text-align: center; padding: 6px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid #3a3a3a; }
+        .flip-col-header + .flip-col-header { border-left: 1px solid #3a3a3a; }
+
+        /* Grid */
         .flip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow-y: auto; flex: 1; }
-        .flip-col-header { background: #222; color: #888; font-size: 11px; font-weight: 600; text-align: center; padding: 6px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 1px solid #3a3a3a; }
-        .flip-col-header.right-col { border-left: 1px solid #3a3a3a; }
-
-        .flip-item { background: #2a2a2a; padding: 10px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 58px; transition: border-left 0.2s; }
+        .flip-item { background: #2a2a2a; padding: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3a3a3a; border-right: 1px solid #3a3a3a; min-height: 56px; transition: border-left 0.2s, background 0.2s; }
         .flip-item.has-drawing { border-left: 3px solid #5e35b1; }
+        /* Flash when triggered in practice mode */
+        .flip-item.just-fired { background: #1a237e; }
         .flip-item-left { display: flex; align-items: center; gap: 8px; }
-        .flip-emoji { font-size: 20px; flex-shrink: 0; }
+        .flip-emoji { font-size: 18px; flex-shrink: 0; }
         .flip-text { display: flex; flex-direction: column; gap: 1px; }
         .flip-label { font-size: 12px; color: #fff; font-weight: 500; }
         .flip-hint  { font-size: 10px; color: #666; }
-
-        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .flip-save-btn { background: #5e35b1; color: #fff; border: none; border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
         .flip-save-btn:active { background: #4a2c8f; }
         .flip-item.has-drawing .flip-save-btn { background: #2e7d32; }
 
@@ -177,88 +192,62 @@
                 <span class="settings-title">Flip Reveal</span>
             </div>
             <div class="flip-header-right">
-                <div class="speed-controls">
-                    <span class="speed-label">Angle</span>
-                    <input type="range" id="angleSlider" min="15" max="70" value="40" class="speed-slider">
-                    <span class="speed-value"><span id="angleVal">40</span>°</span>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">Angle</span>
+                    <input type="range" id="angleSlider" min="15" max="70" value="40" class="ctrl-slider">
+                    <span class="ctrl-val"><span id="angleVal">40</span>°</span>
                 </div>
-                <div class="speed-controls">
-                    <span class="speed-label">Fast°/s</span>
-                    <input type="range" id="speedSlider" min="50" max="400" value="150" class="speed-slider">
-                    <span class="speed-value" id="speedVal">150</span>
+                <div class="ctrl-group">
+                    <span class="ctrl-label">Fast°/s</span>
+                    <input type="range" id="speedSlider" min="30" max="400" value="150" class="ctrl-slider">
+                    <span class="ctrl-val" id="speedVal">150</span>
                 </div>
+                <!-- Practice mode toggle -->
+                <button class="practice-toggle" id="practiceToggle">
+                    <span class="practice-dot"></span>
+                    <span class="practice-toggle-label">Practice</span>
+                </button>
             </div>
         </div>
 
-        <!-- Status bar: shows idle / waiting for face-down / armed -->
-        <div class="flip-status idle" id="flipStatus">Open menu, place phone face-down to arm</div>
+        <div class="flip-status idle" id="flipStatus">Place phone face-down to arm</div>
 
-        <!-- Column headers -->
-        <div class="flip-grid" style="flex:0;">
+        <div class="flip-col-headers">
             <div class="flip-col-header">⚡ Fast</div>
-            <div class="flip-col-header right-col">🐢 Slow</div>
+            <div class="flip-col-header">🐢 Slow</div>
         </div>
 
-        <!-- 8 slots: fast left col, slow right col, rows = directions -->
         <div class="flip-grid">
-            <!-- UP row -->
             <div class="flip-item" data-flip="up-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬆️</span>
-                    <div class="flip-text"><span class="flip-label">Up — Fast</span><span class="flip-hint">top edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up — Fast</span><span class="flip-hint">top edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="up-fast">Set</button>
             </div>
             <div class="flip-item" data-flip="up-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬆️</span>
-                    <div class="flip-text"><span class="flip-label">Up — Slow</span><span class="flip-hint">top edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬆️</span><div class="flip-text"><span class="flip-label">Up — Slow</span><span class="flip-hint">top edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="up-slow">Set</button>
             </div>
-            <!-- DOWN row -->
             <div class="flip-item" data-flip="down-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬇️</span>
-                    <div class="flip-text"><span class="flip-label">Down — Fast</span><span class="flip-hint">bottom edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down — Fast</span><span class="flip-hint">bottom edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="down-fast">Set</button>
             </div>
             <div class="flip-item" data-flip="down-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬇️</span>
-                    <div class="flip-text"><span class="flip-label">Down — Slow</span><span class="flip-hint">bottom edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬇️</span><div class="flip-text"><span class="flip-label">Down — Slow</span><span class="flip-hint">bottom edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="down-slow">Set</button>
             </div>
-            <!-- LEFT row -->
             <div class="flip-item" data-flip="left-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬅️</span>
-                    <div class="flip-text"><span class="flip-label">Left — Fast</span><span class="flip-hint">left edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left — Fast</span><span class="flip-hint">left edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="left-fast">Set</button>
             </div>
             <div class="flip-item" data-flip="left-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">⬅️</span>
-                    <div class="flip-text"><span class="flip-label">Left — Slow</span><span class="flip-hint">left edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">⬅️</span><div class="flip-text"><span class="flip-label">Left — Slow</span><span class="flip-hint">left edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="left-slow">Set</button>
             </div>
-            <!-- RIGHT row -->
             <div class="flip-item" data-flip="right-fast">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">➡️</span>
-                    <div class="flip-text"><span class="flip-label">Right — Fast</span><span class="flip-hint">right edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right — Fast</span><span class="flip-hint">right edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="right-fast">Set</button>
             </div>
             <div class="flip-item" data-flip="right-slow">
-                <div class="flip-item-left">
-                    <span class="flip-emoji">➡️</span>
-                    <div class="flip-text"><span class="flip-label">Right — Slow</span><span class="flip-hint">right edge tilts down</span></div>
-                </div>
+                <div class="flip-item-left"><span class="flip-emoji">➡️</span><div class="flip-text"><span class="flip-label">Right — Slow</span><span class="flip-hint">right edge tilts down</span></div></div>
                 <button class="flip-save-btn" data-flip="right-slow">Set</button>
             </div>
         </div>
@@ -304,7 +293,6 @@
                 mainApp.classList.add('active');
                 initCanvas();
                 lockOrientationAndFullscreen();
-                // Request sensor permission early on user gesture
                 requestOrientationPermission();
             }, 500);
         });
@@ -342,24 +330,18 @@
             canvas.height = canvas.offsetHeight;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         }
-
         function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const src  = e.touches ? e.touches[0] : e;
+            const rect = canvas.getBoundingClientRect(), src = e.touches ? e.touches[0] : e;
             return { x: src.clientX - rect.left, y: src.clientY - rect.top };
         }
-
         function startDrawing(e) {
             if (currentTool === 'text') return;
-            isDrawing = true;
-            const p = getPos(e);
+            isDrawing = true; const p = getPos(e);
             currentStroke = [{ x: p.x, y: p.y, tool: currentTool }];
             ctx.beginPath(); ctx.moveTo(p.x, p.y);
         }
         function draw(e) {
-            if (!isDrawing) return;
-            e.preventDefault();
-            const p = getPos(e);
+            if (!isDrawing) return; e.preventDefault(); const p = getPos(e);
             currentStroke.push({ x: p.x, y: p.y, tool: currentTool });
             ctx.strokeStyle = currentTool === 'pen' ? '#fff' : '#1a1a1a';
             ctx.lineWidth   = currentTool === 'pen' ? 2 : 20;
@@ -367,11 +349,9 @@
             ctx.lineTo(p.x, p.y); ctx.stroke();
         }
         function stopDrawing() {
-            if (!isDrawing) return;
-            isDrawing = false;
+            if (!isDrawing) return; isDrawing = false;
             if (currentStroke.length) { strokes.push([...currentStroke]); redoStack = []; updateButtons(); }
         }
-
         canvas.addEventListener('mousedown',  startDrawing);
         canvas.addEventListener('mousemove',  draw);
         canvas.addEventListener('mouseup',    stopDrawing);
@@ -389,7 +369,6 @@
                 if (tool !== 'text') commitTextInput();
             });
         });
-
         canvas.addEventListener('click', (e) => {
             if (currentTool !== 'text') return;
             commitTextInput();
@@ -408,19 +387,16 @@
         }, { passive: false });
         textInput.addEventListener('keydown', e => { if (e.key === 'Enter') commitTextInput(); });
         textInput.addEventListener('blur', () => setTimeout(commitTextInput, 100));
-
         function commitTextInput() {
             const text = textInput.value.trim();
             if (text && textInput.style.display !== 'none') {
-                const x = parseInt(textInput.style.left) + 6;
-                const y = parseInt(textInput.style.top) + 24;
+                const x = parseInt(textInput.style.left) + 6, y = parseInt(textInput.style.top) + 24;
                 ctx.save(); ctx.font = '24px Arial'; ctx.fillStyle = '#fff';
                 ctx.textBaseline = 'alphabetic'; ctx.fillText(text, x, y); ctx.restore();
                 strokes.push([{ x, y, tool: 'text', text }]); redoStack = []; updateButtons();
             }
             textInput.style.display = 'none'; textInput.value = '';
         }
-
         document.getElementById('undoBtn').addEventListener('click', () => {
             if (strokes.length) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
         });
@@ -430,7 +406,6 @@
         document.getElementById('clearBtn').addEventListener('click', () => {
             strokes = []; redoStack = []; ctx.clearRect(0, 0, canvas.width, canvas.height); updateButtons();
         });
-
         function redrawCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             strokes.forEach(stroke => {
@@ -448,12 +423,10 @@
                 }
             });
         }
-
         function updateButtons() {
             document.getElementById('undoBtn').disabled = !strokes.length;
             document.getElementById('redoBtn').disabled = !redoStack.length;
         }
-
         window.addEventListener('resize', () => {
             const saved = [...strokes];
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
@@ -465,14 +438,11 @@
         function loadFlipDrawings() {
             try { Object.assign(flipDrawings, JSON.parse(localStorage.getItem('magicFlipDrawings') || '{}')); } catch(e) {}
         }
-        function saveFlipDrawings() {
-            localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings));
-        }
+        function saveFlipDrawings() { localStorage.setItem('magicFlipDrawings', JSON.stringify(flipDrawings)); }
         loadFlipDrawings();
 
-        // Settings: angle threshold and fast/slow speed boundary
-        let triggerAngle = parseInt(localStorage.getItem('magicFlipAngle') || '40');
-        let fastThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '150'); // deg/s above = fast
+        let triggerAngle  = parseInt(localStorage.getItem('magicFlipAngle') || '40');
+        let fastThreshold = parseInt(localStorage.getItem('magicFlipSpeed') || '150');
 
         const angleSlider = document.getElementById('angleSlider');
         const speedSlider = document.getElementById('speedSlider');
@@ -480,7 +450,6 @@
         speedSlider.value = fastThreshold;
         document.getElementById('angleVal').textContent = triggerAngle;
         document.getElementById('speedVal').textContent = fastThreshold;
-
         angleSlider.addEventListener('input', () => {
             triggerAngle = parseInt(angleSlider.value);
             document.getElementById('angleVal').textContent = triggerAngle;
@@ -492,26 +461,30 @@
             localStorage.setItem('magicFlipSpeed', fastThreshold);
         });
 
-        // ── FLIP PAGE OPEN / CLOSE ───────────────────────────────────
+        // ── PRACTICE MODE ────────────────────────────────────────────
+        let practiceMode = false;
+        const practiceBtn = document.getElementById('practiceToggle');
+        practiceBtn.addEventListener('click', () => {
+            practiceMode = !practiceMode;
+            practiceBtn.classList.toggle('on', practiceMode);
+        });
+
+        // ── FLIP PAGE ────────────────────────────────────────────────
         document.getElementById('flipMenuBtn').addEventListener('click', () => {
             flipPage.classList.add('active');
             updateFlipSlotIndicators();
-            // Start watching immediately when menu opens
             beginFaceDownWatch();
         });
-
-        // Back button just closes — watching already stopped by triggerReveal or user leaving
         document.getElementById('flipBackBtn').addEventListener('click', () => {
             stopWatching();
             flipPage.classList.remove('active');
-            setStatus('Open menu, place phone face-down to arm', 'idle');
+            setStatus('Place phone face-down to arm', 'idle');
         });
 
         function updateFlipSlotIndicators() {
             document.querySelectorAll('.flip-item').forEach(item =>
                 item.classList.toggle('has-drawing', !!flipDrawings[item.dataset.flip]));
         }
-
         function setStatus(msg, mode) {
             statusEl.textContent = msg;
             statusEl.className   = 'flip-status ' + (mode || 'idle');
@@ -519,58 +492,43 @@
 
         // ── FLIP DETECTION ───────────────────────────────────────────
         //
-        // PHASE 1 — FACE-DOWN WATCH (menu open):
-        //   Monitor deviceorientation. On Galaxy S22, beta ≈ ±180 when face-down.
-        //   Wait STABLE_MS of continuous face-down before arming.
+        // Speed measurement — the key fix from before:
+        // Rather than a decaying peak window, we now sample rotationRate
+        // continuously and record the MAX rate seen between arm time and
+        // the moment the angle threshold is crossed. This gives a much
+        // cleaner reading because we're measuring the actual motion that
+        // CAUSED the tilt, not a window that might have already decayed.
         //
-        // PHASE 2 — ARMED:
-        //   Snapshot baseBeta/baseGamma at arm moment.
-        //   Monitor BOTH deviceorientation (for angle) and devicemotion
-        //   rotationRate (for speed in deg/s).
-        //   On each orientation event:
-        //     - Compute deltaBeta, deltaGamma from baseline
-        //     - If dominant delta >= triggerAngle → check speed, fire
+        // rotationRate is in deg/s. Typical values on S22:
+        //   Gentle slow tilt:  20–80  deg/s
+        //   Normal flip:      100–200 deg/s
+        //   Fast snap:        250–500 deg/s
         //
-        //   Speed classification:
-        //     We track peak rotationRate magnitude over a 300ms rolling window.
-        //     At the moment angle threshold is crossed, if peak rate >= fastThreshold
-        //     → "fast", otherwise → "slow".
-        //
-        // DIRECTION MAPPING (phone face-down, screen toward table):
-        //   deltaBeta < 0  → top edge lifting = "up"
-        //   deltaBeta > 0  → bottom edge lifting = "down"
-        //   deltaGamma < 0 → left edge lifting = "left"
-        //   deltaGamma > 0 → right edge lifting = "right"
+        // Default fastThreshold = 150 deg/s — adjust with slider.
 
-        const FACEDOWN_THRESHOLD = 25;  // |beta| must be > 180-25 = 155 to count as face-down
+        const FACEDOWN_THRESHOLD = 25;  // beta must be > 155° to count as face-down
         const STABLE_MS          = 250; // ms held face-down before arming
-        const RATE_WINDOW_MS     = 350; // rolling window to track peak rotation rate
+        const REARM_DELAY_MS     = 800; // ms after a trigger before re-arming (practice mode)
 
         let isWatching    = false;
         let isArmed       = false;
         let stableTimer   = null;
         let baseBeta      = 0;
         let baseGamma     = 0;
+        let peakRate      = 0;          // max rotation rate seen since arming
         let orientHandler = null;
         let motionHandler = null;
 
-        // Rolling peak rotation rate
-        let peakRate      = 0;
-        let rateResetTimer = null;
-
         function beginFaceDownWatch() {
             stopWatching();
-
-            if (!Object.keys(flipDrawings).length) {
+            if (!Object.keys(flipDrawings).length && !practiceMode) {
                 setStatus('No drawings saved yet', 'idle');
                 return;
             }
-
             isWatching = true;
             isArmed    = false;
             peakRate   = 0;
             setStatus('Place phone face-down to arm…', 'waiting');
-
             orientHandler = handleOrientation;
             motionHandler = handleMotion;
             window.addEventListener('deviceorientation', orientHandler, true);
@@ -581,43 +539,40 @@
             isWatching = false;
             isArmed    = false;
             clearTimeout(stableTimer);
-            clearTimeout(rateResetTimer);
             stableTimer = null;
             if (orientHandler) { window.removeEventListener('deviceorientation', orientHandler, true); orientHandler = null; }
             if (motionHandler) { window.removeEventListener('devicemotion',      motionHandler, true); motionHandler = null; }
         }
 
-        // Track peak rotation rate in a rolling window
+        // Accumulate peak rotation rate from arm moment onward
         function handleMotion(e) {
-            if (!isWatching) return;
+            if (!isWatching || !isArmed) return;
             const rr = e.rotationRate;
             if (!rr) return;
-            const rate = Math.max(Math.abs(rr.beta || 0), Math.abs(rr.gamma || 0), Math.abs(rr.alpha || 0));
-            if (rate > peakRate) {
-                peakRate = rate;
-                // Reset peak after window
-                clearTimeout(rateResetTimer);
-                rateResetTimer = setTimeout(() => { peakRate = 0; }, RATE_WINDOW_MS);
-            }
+            // Use whichever axis is moving fastest
+            const rate = Math.max(
+                Math.abs(rr.beta  || 0),
+                Math.abs(rr.gamma || 0),
+                Math.abs(rr.alpha || 0)
+            );
+            if (rate > peakRate) peakRate = rate;
         }
 
         function handleOrientation(e) {
             if (!isWatching) return;
-
             const beta  = e.beta  ?? 0;
             const gamma = e.gamma ?? 0;
 
             if (!isArmed) {
-                // Phase 1: wait for face-down (beta near ±180)
+                // Phase 1: wait for face-down (beta near ±180 on Android)
                 const isFaceDown = Math.abs(beta) > (180 - FACEDOWN_THRESHOLD);
-
                 if (isFaceDown && !stableTimer) {
                     stableTimer = setTimeout(() => {
                         stableTimer = null;
-                        isArmed    = true;
-                        baseBeta   = beta;
-                        baseGamma  = gamma;
-                        peakRate   = 0; // reset rate tracking from arm moment
+                        isArmed   = true;
+                        baseBeta  = beta;
+                        baseGamma = gamma;
+                        peakRate  = 0;
                         setStatus('Armed ✓ — tilt to reveal', 'armed');
                     }, STABLE_MS);
                 } else if (!isFaceDown) {
@@ -626,58 +581,76 @@
                 }
 
             } else {
-                // Phase 2: watch for tilt from baseline
+                // Phase 2: measure delta from baseline
                 let deltaBeta  = beta  - baseBeta;
                 let deltaGamma = gamma - baseGamma;
-
-                // Handle ±180 wraparound
+                // Normalise ±180 wraparound
                 if (deltaBeta >  180) deltaBeta -= 360;
                 if (deltaBeta < -180) deltaBeta += 360;
 
                 const absDeltaBeta  = Math.abs(deltaBeta);
                 const absDeltaGamma = Math.abs(deltaGamma);
-                const maxDelta      = Math.max(absDeltaBeta, absDeltaGamma);
 
-                if (maxDelta >= triggerAngle) {
-                    // Determine direction
-                    let direction;
-                    if (absDeltaBeta >= absDeltaGamma) {
-                        direction = deltaBeta < 0 ? 'up' : 'down';
-                    } else {
-                        direction = deltaGamma < 0 ? 'left' : 'right';
-                    }
-
-                    // Classify speed using peak rotation rate captured so far
-                    const speed = peakRate >= fastThreshold ? 'fast' : 'slow';
+                if (Math.max(absDeltaBeta, absDeltaGamma) >= triggerAngle) {
+                    const direction = absDeltaBeta >= absDeltaGamma
+                        ? (deltaBeta  < 0 ? 'up'    : 'down')
+                        : (deltaGamma < 0 ? 'left'  : 'right');
+                    const speed   = peakRate >= fastThreshold ? 'fast' : 'slow';
                     const slotKey = direction + '-' + speed;
-
-                    triggerReveal(slotKey);
+                    triggerReveal(slotKey, speed);
                 }
             }
         }
 
-        function triggerReveal(slotKey) {
-            const drawing = flipDrawings[slotKey];
+        function triggerReveal(slotKey, speed) {
             stopWatching();
 
-            if (!drawing) {
-                // No drawing for this slot — re-arm silently so performer can try again
-                setStatus('No drawing for that direction/speed — try again', 'waiting');
-                setTimeout(() => beginFaceDownWatch(), 1500);
-                return;
+            if (practiceMode) {
+                // In practice mode: show which slot fired, highlight it, then re-arm
+                const fired = !!flipDrawings[slotKey];
+                const statusMode = fired
+                    ? (speed === 'fast' ? 'fired-fast' : 'fired-slow')
+                    : 'fired-none';
+                const label = slotKey.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                setStatus(
+                    fired
+                        ? `⚡ Fired: ${label}`
+                        : `✗ No drawing for: ${label}`,
+                    statusMode
+                );
+
+                // Flash the matching row
+                const matchEl = document.querySelector(`.flip-item[data-flip="${slotKey}"]`);
+                if (matchEl) {
+                    matchEl.classList.add('just-fired');
+                    setTimeout(() => matchEl.classList.remove('just-fired'), 600);
+                }
+
+                // Re-arm after short delay so phone can return to face-down
+                setTimeout(() => {
+                    if (flipPage.classList.contains('active')) beginFaceDownWatch();
+                }, REARM_DELAY_MS);
+
+            } else {
+                // Normal mode: close menu, load drawing
+                const drawing = flipDrawings[slotKey];
+                if (!drawing) {
+                    // No drawing — re-arm silently
+                    setTimeout(() => {
+                        if (flipPage.classList.contains('active')) beginFaceDownWatch();
+                    }, 800);
+                    return;
+                }
+                flipPage.classList.remove('active');
+                setStatus('Place phone face-down to arm', 'idle');
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    strokes = []; redoStack = []; updateButtons();
+                };
+                img.src = drawing;
             }
-
-            // Close menu and show drawing
-            flipPage.classList.remove('active');
-            setStatus('Open menu, place phone face-down to arm', 'idle');
-
-            const img = new Image();
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                strokes = []; redoStack = []; updateButtons();
-            };
-            img.src = drawing;
         }
 
         // ── FLIP MODAL ───────────────────────────────────────────────
@@ -686,12 +659,9 @@
         document.querySelectorAll('.flip-save-btn').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
-                // Pause watching while modal is open to avoid accidental triggers
-                stopWatching();
-
+                stopWatching(); // pause while modal open
                 currentFlipSlot = btn.dataset.flip;
                 const item = btn.closest('.flip-item');
-
                 document.getElementById('flipModalTitle').textContent    = item.querySelector('.flip-label').textContent;
                 document.getElementById('flipModalEmoji').textContent    = item.querySelector('.flip-emoji').textContent;
                 document.getElementById('flipModalSlotName').textContent = item.querySelector('.flip-label').textContent;
@@ -703,13 +673,12 @@
                     const img  = new Image();
                     img.onload = () => {
                         const s = Math.min(200 / canvas.width, 140 / canvas.height);
-                        pCtx.drawImage(img, (200 - canvas.width*s)/2, (140 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
+                        pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
                     };
                     img.src = flipDrawings[currentFlipSlot];
                 } else {
                     preview.innerHTML = '<span class="drawing-preview-empty">No drawing saved</span>';
                 }
-
                 flipModal.classList.add('active');
             });
         });
@@ -719,17 +688,16 @@
             flipDrawings[currentFlipSlot] = canvas.toDataURL('image/png');
             saveFlipDrawings();
             updateFlipSlotIndicators();
-
             const preview = document.getElementById('flipDrawingPreview');
             preview.innerHTML = `<canvas id="flipPreviewCanvas" width="200" height="140"></canvas>`;
             const pCtx = document.getElementById('flipPreviewCanvas').getContext('2d');
             const img  = new Image();
             img.onload = () => {
                 const s = Math.min(200 / canvas.width, 140 / canvas.height);
-                pCtx.drawImage(img, (200 - canvas.width*s)/2, (140 - canvas.height*s)/2, canvas.width*s, canvas.height*s);
+                pCtx.drawImage(img, (200-canvas.width*s)/2, (140-canvas.height*s)/2, canvas.width*s, canvas.height*s);
             };
             img.src = flipDrawings[currentFlipSlot];
-            alert(`Saved!`);
+            alert('Saved!');
         });
 
         document.getElementById('flipClearDrawingBtn').addEventListener('click', () => {
@@ -741,15 +709,10 @@
                 '<span class="drawing-preview-empty">No drawing saved</span>';
         });
 
-        // When modal closes, resume watching
         function closeFlipModal() {
             flipModal.classList.remove('active');
-            // Resume face-down watch if flip page still open
-            if (flipPage.classList.contains('active')) {
-                beginFaceDownWatch();
-            }
+            if (flipPage.classList.contains('active')) beginFaceDownWatch();
         }
-
         document.getElementById('flipModalClose').addEventListener('click', closeFlipModal);
         flipModal.addEventListener('click', e => { if (e.target === flipModal) closeFlipModal(); });
     </script>
