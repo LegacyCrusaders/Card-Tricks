@@ -5,109 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Samsung Notes</title>
     <style>
-        * {
-            margin: 0; padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body {
             font-family: 'Samsung One', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden;
-            background: #000;
+            overflow: hidden; background: #000;
         }
 
-        #mainApp {
-            display: flex;
-            width: 100vw; height: 100vh;
-            background: #1a1a1a;
-            flex-direction: column;
-        }
+        #mainApp { display:flex; width:100vw; height:100vh; background:#1a1a1a; flex-direction:column; }
 
         /* TOP BAR */
         .top-bar {
-            background: #2a2a2a;
-            padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid #3a3a3a;
-            height: 56px;
+            background:#2a2a2a; padding:12px 16px;
+            display:flex; align-items:center; justify-content:space-between;
+            border-bottom:1px solid #3a3a3a; height:56px; position:relative;
         }
-        .top-bar-left { display: flex; align-items: center; gap: 12px; }
+        .top-bar-left  { display:flex; align-items:center; gap:12px; }
         .top-bar-center {
-            display: flex; align-items: center; gap: 20px;
-            position: absolute; left: 50%; transform: translateX(-50%);
+            display:flex; align-items:center; gap:20px;
+            position:absolute; left:50%; transform:translateX(-50%);
         }
-        .top-bar-right { display: flex; align-items: center; gap: 8px; }
+        .top-bar-right { display:flex; align-items:center; gap:8px; }
         .menu-btn, .top-icon-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: transparent; border: none;
-            cursor: pointer; transition: background 0.2s;
+            width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+            border-radius:50%; background:transparent; border:none; cursor:pointer;
         }
-        .menu-btn:active, .top-icon-btn:active { background: #3a3a3a; }
+        .menu-btn:active, .top-icon-btn:active { background:#3a3a3a; }
         .action-btn {
-            width: 40px; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            background: transparent; border: none; border-radius: 50%;
-            cursor: pointer; transition: background 0.2s;
+            width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+            background:transparent; border:none; border-radius:50%; cursor:pointer;
         }
-        .action-btn:active { background: #3a3a3a; }
-        .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .action-btn:active   { background:#3a3a3a; }
+        .action-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
         /* CANVAS */
-        .canvas-container {
-            flex: 1; position: relative;
-            background: #1a1a1a; overflow: hidden;
-        }
-        #drawingCanvas {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; cursor: crosshair;
-        }
+        .canvas-container { flex:1; position:relative; background:#1a1a1a; overflow:hidden; }
+        #drawingCanvas { position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; }
         #textInput {
-            position: absolute;
-            background: transparent;
-            border: 1px dashed rgba(255,255,255,0.4);
-            color: #fff;
-            font-size: 48px;
-            font-family: Arial, sans-serif;
-            outline: none;
-            padding: 2px 6px;
-            min-width: 60px;
-            z-index: 500;
-            caret-color: #fff;
-            display: none;
+            position:absolute; background:transparent;
+            border:1px dashed rgba(255,255,255,0.4);
+            color:#fff; font-size:48px; font-family:Arial,sans-serif;
+            outline:none; padding:2px 6px; min-width:60px;
+            z-index:500; caret-color:#fff; display:none;
         }
 
         /* BOTTOM TOOLBAR */
         .bottom-toolbar {
-            background: #2a2a2a; padding: 12px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            border-top: 1px solid #3a3a3a; height: 64px;
+            background:#2a2a2a; padding:12px 16px;
+            display:flex; align-items:center; justify-content:space-between;
+            border-top:1px solid #3a3a3a; height:64px;
         }
-        .tool-group { display: flex; align-items: center; gap: 16px; }
+        .tool-group { display:flex; align-items:center; gap:16px; }
         .tool-btn {
-            display: flex; flex-direction: column; align-items: center;
-            background: transparent; border: none; cursor: pointer;
-            padding: 4px 8px; border-radius: 8px; transition: background 0.2s;
+            display:flex; flex-direction:column; align-items:center;
+            background:transparent; border:none; cursor:pointer;
+            padding:4px 8px; border-radius:8px; user-select:none;
         }
-        .tool-btn:active { background: #3a3a3a; }
-        .tool-btn.active { background: #3a3a3a; }
-        .tool-btn svg { width: 24px; height: 24px; margin-bottom: 2px; }
-        .tool-label { font-size: 11px; color: #b0b0b0; }
-        .tool-btn.active .tool-label { color: #fff; }
+        .tool-btn:active { background:#3a3a3a; }
+        .tool-btn.active { background:#3a3a3a; }
+        .tool-btn svg    { width:24px; height:24px; margin-bottom:2px; }
+        .tool-label      { font-size:11px; color:#b0b0b0; }
+        .tool-btn.active .tool-label { color:#fff; }
         .mic-btn {
-            width: 48px; height: 48px;
-            display: flex; align-items: center; justify-content: center;
-            background: #fff; border: none; border-radius: 50%;
-            cursor: pointer; transition: background 0.2s;
+            width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+            background:#fff; border:none; border-radius:50%; cursor:pointer;
         }
-        .mic-btn:active { background: #e0e0e0; }
+        .mic-btn:active { background:#e0e0e0; }
+
+        /* ── HOLD POPUP ── */
+        .hold-popup {
+            position:fixed; bottom:74px;
+            background:#2a2a2a; border:1px solid #3a3a3a;
+            border-radius:14px; padding:14px 16px;
+            z-index:3000; display:none;
+            box-shadow:0 4px 24px rgba(0,0,0,0.6);
+            min-width:220px;
+        }
+        .hold-popup.active { display:block; }
+        .popup-title { font-size:12px; color:#888; margin-bottom:10px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; }
+
+        /* Size row */
+        .size-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+        .size-slider { flex:1; accent-color:#5e35b1; height:4px; }
+        .size-preview {
+            width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        }
+        .size-dot { background:#fff; border-radius:50%; }
+
+        /* Color swatches */
+        .color-label { font-size:12px; color:#888; margin-bottom:8px; font-weight:500; letter-spacing:.04em; text-transform:uppercase; }
+        .color-row { display:flex; gap:8px; flex-wrap:wrap; }
+        .swatch {
+            width:28px; height:28px; border-radius:50%; cursor:pointer;
+            border:2px solid transparent; transition:border-color .15s, transform .15s;
+            flex-shrink:0;
+        }
+        .swatch:active  { transform:scale(0.9); }
+        .swatch.selected { border-color:#fff; }
+
+        /* GALLERY PANEL */
+        #galleryPanel {
+            position:fixed; inset:0; background:#1a1a1a; z-index:2000;
+            display:none; flex-direction:column;
+        }
+        #galleryPanel.active { display:flex; }
+        .gallery-header {
+            background:#2a2a2a; padding:12px 16px;
+            display:flex; align-items:center; gap:12px;
+            border-bottom:1px solid #3a3a3a; height:56px; flex-shrink:0;
+        }
+        .gallery-back {
+            width:40px; height:40px; display:flex; align-items:center;
+            justify-content:center; border-radius:50%; background:transparent; border:none; cursor:pointer;
+        }
+        .gallery-back:active { background:#3a3a3a; }
+        .gallery-title { font-size:18px; font-weight:500; color:#fff; flex:1; }
+        .gallery-grid {
+            display:grid; grid-template-columns:repeat(2,1fr);
+            gap:2px; padding:2px; overflow-y:auto; flex:1; background:#111;
+        }
+        .gallery-thumb {
+            position:relative; aspect-ratio:1;
+            background:#2a2a2a; cursor:pointer; overflow:hidden;
+        }
+        .gallery-thumb:active { opacity:0.7; }
+        .gallery-thumb img { width:100%; height:100%; object-fit:cover; }
+        .gallery-thumb.empty { display:flex; align-items:center; justify-content:center; cursor:default; }
+        .gallery-thumb.empty span { color:#444; font-size:28px; }
+        .gallery-num { position:absolute; bottom:4px; right:6px; font-size:10px; color:rgba(255,255,255,0.4); }
     </style>
 </head>
 <body>
 
 <div id="mainApp">
-
-    <!-- TOP BAR -->
     <div class="top-bar">
         <div class="top-bar-left">
             <button class="menu-btn">
@@ -120,59 +149,50 @@
         </div>
         <div class="top-bar-center">
             <button class="action-btn" id="undoBtn" disabled>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/>
-                </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff"/></svg>
             </button>
             <button class="action-btn" id="redoBtn" disabled>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/>
-                </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="#fff"/></svg>
             </button>
             <button class="action-btn" id="clearBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/>
-                </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="#fff"/></svg>
             </button>
         </div>
         <div class="top-bar-right">
-            <button class="top-icon-btn" id="flipMenuBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/>
-                </svg>
+            <button class="top-icon-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="#fff"/></svg>
             </button>
         </div>
     </div>
 
-    <!-- CANVAS -->
     <div class="canvas-container">
         <canvas id="drawingCanvas"></canvas>
         <input type="text" id="textInput" placeholder="Type here...">
     </div>
 
-    <!-- BOTTOM TOOLBAR -->
     <div class="bottom-toolbar">
         <div class="tool-group">
             <button class="tool-btn active" id="penBtn">
-                <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/>
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="#fff"/></svg>
                 <span class="tool-label">Pen</span>
             </button>
             <button class="tool-btn" id="eraserBtn">
-                <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/>
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none"><path d="M16.24 3.56l4.95 4.94c.78.79.78 2.05 0 2.84L12 20.53a4.008 4.008 0 01-5.66 0L2.81 17c-.78-.79-.78-2.05 0-2.84l10.6-10.6c.79-.78 2.05-.78 2.83 0zM4.22 15.58l3.54 3.53c.78.79 2.04.79 2.83 0l3.53-3.53-4.95-4.95-4.95 4.95z" fill="#b0b0b0"/></svg>
                 <span class="tool-label">Eraser</span>
             </button>
             <button class="tool-btn" id="textBtn">
-                <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/>
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none"><path d="M5 4v3h5.5v12h3V7H19V4z" fill="#b0b0b0"/></svg>
                 <span class="tool-label">Text</span>
             </button>
+            <button class="tool-btn" id="saveBtn">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z" fill="#b0b0b0"/></svg>
+                <span class="tool-label">Save</span>
+            </button>
+            <button class="tool-btn" id="openBtn">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z" fill="#b0b0b0"/></svg>
+                <span class="tool-label">Open</span>
+            </button>
         </div>
-        <!-- Dummy mic — no functionality -->
         <button class="mic-btn">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" fill="#000"/>
@@ -182,22 +202,61 @@
     </div>
 </div>
 
+<!-- PEN POPUP -->
+<div class="hold-popup" id="penPopup">
+    <div class="popup-title">Brush Size</div>
+    <div class="size-row">
+        <input type="range" class="size-slider" id="penSizeSlider" min="1" max="30" value="2">
+        <div class="size-preview"><div class="size-dot" id="penSizeDot"></div></div>
+    </div>
+    <div class="color-label">Color</div>
+    <div class="color-row" id="penColorRow"></div>
+</div>
+
+<!-- ERASER POPUP -->
+<div class="hold-popup" id="eraserPopup">
+    <div class="popup-title">Eraser Size</div>
+    <div class="size-row">
+        <input type="range" class="size-slider" id="eraserSizeSlider" min="5" max="60" value="20">
+        <div class="size-preview"><div class="size-dot" id="eraserSizeDot"></div></div>
+    </div>
+</div>
+
+<!-- GALLERY PANEL -->
+<div id="galleryPanel">
+    <div class="gallery-header">
+        <button class="gallery-back" id="galleryBackBtn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="#fff"/></svg>
+        </button>
+        <span class="gallery-title">Recent</span>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+</div>
+
 <script>
-    const canvas = document.getElementById('drawingCanvas');
-    const ctx    = canvas.getContext('2d');
+    // ============================================================
+    // CANVAS
+    // ============================================================
+    const canvas    = document.getElementById('drawingCanvas');
+    const ctx       = canvas.getContext('2d');
     const textInput = document.getElementById('textInput');
 
-    let isDrawing    = false;
-    let currentTool  = 'pen';
-    let strokes      = [];
+    let isDrawing     = false;
+    let currentTool   = 'pen';
+    let strokes       = [];
     let currentStroke = [];
-    let redoStack    = [];
+    let redoStack     = [];
+
+    // Pen & eraser state
+    let penSize    = 2;
+    let penColor   = '#ffffff';
+    let eraserSize = 20;
 
     function initCanvas() {
         canvas.width  = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
-        ctx.lineCap   = 'round';
-        ctx.lineJoin  = 'round';
+        ctx.lineCap  = 'round';
+        ctx.lineJoin = 'round';
     }
 
     function getPosition(e) {
@@ -210,7 +269,7 @@
         if (currentTool === 'text') return;
         isDrawing = true;
         const pos = getPosition(e);
-        currentStroke = [{x: pos.x, y: pos.y, tool: currentTool}];
+        currentStroke = [{ x:pos.x, y:pos.y, tool:currentTool, color:penColor, size:currentTool==='pen'?penSize:eraserSize }];
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
     }
@@ -219,9 +278,9 @@
         if (!isDrawing) return;
         e.preventDefault();
         const pos = getPosition(e);
-        currentStroke.push({x: pos.x, y: pos.y, tool: currentTool});
-        ctx.strokeStyle = currentTool === 'pen' ? '#fff' : '#1a1a1a';
-        ctx.lineWidth   = currentTool === 'pen' ? 2 : 20;
+        currentStroke.push({ x:pos.x, y:pos.y, tool:currentTool, color:penColor, size:currentTool==='pen'?penSize:eraserSize });
+        ctx.strokeStyle = currentTool === 'pen' ? penColor : '#1a1a1a';
+        ctx.lineWidth   = currentTool === 'pen' ? penSize  : eraserSize;
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
     }
@@ -236,36 +295,35 @@
     canvas.addEventListener('mousemove',  draw);
     canvas.addEventListener('mouseup',    stopDrawing);
     canvas.addEventListener('mouseout',   stopDrawing);
-    canvas.addEventListener('touchstart', startDrawing);
-    canvas.addEventListener('touchmove',  draw, {passive: false});
+    canvas.addEventListener('touchstart', startDrawing, { passive:true });
+    canvas.addEventListener('touchmove',  draw,         { passive:false });
     canvas.addEventListener('touchend',   stopDrawing);
 
-    // Tool buttons
-    document.getElementById('penBtn').addEventListener('click', () => {
-        currentTool = 'pen';
-        document.getElementById('penBtn').classList.add('active');
-        document.getElementById('eraserBtn').classList.remove('active');
-        document.getElementById('textBtn').classList.remove('active');
-        canvas.style.cursor = 'crosshair';
-        commitTextInput();
-    });
-    document.getElementById('eraserBtn').addEventListener('click', () => {
-        currentTool = 'eraser';
-        document.getElementById('eraserBtn').classList.add('active');
-        document.getElementById('penBtn').classList.remove('active');
-        document.getElementById('textBtn').classList.remove('active');
-        canvas.style.cursor = 'pointer';
-        commitTextInput();
-    });
-    document.getElementById('textBtn').addEventListener('click', () => {
-        currentTool = 'text';
-        document.getElementById('textBtn').classList.add('active');
-        document.getElementById('penBtn').classList.remove('active');
-        document.getElementById('eraserBtn').classList.remove('active');
-        canvas.style.cursor = 'text';
+    // ============================================================
+    // TOOL BUTTONS
+    // ============================================================
+    function setTool(tool) {
+        currentTool = tool;
+        document.getElementById('penBtn').classList.toggle('active',    tool==='pen');
+        document.getElementById('eraserBtn').classList.toggle('active', tool==='eraser');
+        document.getElementById('textBtn').classList.toggle('active',   tool==='text');
+        canvas.style.cursor = tool==='pen' ? 'crosshair' : tool==='text' ? 'text' : 'pointer';
+        if (tool !== 'text') commitTextInput();
+    }
+
+    let toolJustSwitched = false;
+
+    document.getElementById('penBtn').addEventListener('click',    () => setTool('pen'));
+    document.getElementById('eraserBtn').addEventListener('click', () => setTool('eraser'));
+    document.getElementById('textBtn').addEventListener('click',   () => {
+        setTool('text');
+        toolJustSwitched = true;
+        setTimeout(() => toolJustSwitched = false, 300);
     });
 
-    // Text tool
+    // ============================================================
+    // TEXT TOOL
+    // ============================================================
     canvas.addEventListener('click', (e) => {
         if (currentTool !== 'text') return;
         commitTextInput();
@@ -278,6 +336,7 @@
     });
     canvas.addEventListener('touchend', (e) => {
         if (currentTool !== 'text') return;
+        if (toolJustSwitched) return;
         e.preventDefault();
         commitTextInput();
         const rect  = canvas.getBoundingClientRect();
@@ -287,10 +346,10 @@
         textInput.style.display = 'block';
         textInput.value = '';
         textInput.focus();
-    }, {passive: false});
+    }, { passive:false });
 
     textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') commitTextInput(); });
-    textInput.addEventListener('blur',    () => setTimeout(commitTextInput, 100));
+    textInput.addEventListener('blur',    ()  => setTimeout(commitTextInput, 100));
 
     function commitTextInput() {
         const text = textInput.value.trim();
@@ -298,12 +357,10 @@
             const x = parseInt(textInput.style.left) + 6;
             const y = parseInt(textInput.style.top)  + 48;
             ctx.save();
-            ctx.font          = '48px Arial';
-            ctx.fillStyle     = '#fff';
-            ctx.textBaseline  = 'alphabetic';
+            ctx.font = '48px Arial'; ctx.fillStyle = penColor; ctx.textBaseline = 'alphabetic';
             ctx.fillText(text, x, y);
             ctx.restore();
-            strokes.push([{x, y, tool: 'text', text}]);
+            strokes.push([{ x, y, tool:'text', text, color:penColor }]);
             redoStack = [];
             updateButtons();
         }
@@ -311,7 +368,9 @@
         textInput.value = '';
     }
 
-    // Undo / Redo / Clear
+    // ============================================================
+    // UNDO / REDO / CLEAR
+    // ============================================================
     document.getElementById('undoBtn').addEventListener('click', () => {
         if (strokes.length) { redoStack.push(strokes.pop()); redrawCanvas(); updateButtons(); }
     });
@@ -330,13 +389,15 @@
             if (!stroke.length) return;
             if (stroke[0].tool === 'text') {
                 ctx.save();
-                ctx.font = '48px Arial'; ctx.fillStyle = '#fff'; ctx.textBaseline = 'alphabetic';
+                ctx.font = '48px Arial';
+                ctx.fillStyle = stroke[0].color || '#fff';
+                ctx.textBaseline = 'alphabetic';
                 ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y);
                 ctx.restore();
             } else {
                 ctx.beginPath(); ctx.moveTo(stroke[0].x, stroke[0].y);
-                ctx.strokeStyle = stroke[0].tool === 'pen' ? '#fff' : '#1a1a1a';
-                ctx.lineWidth   = stroke[0].tool === 'pen' ? 2 : 20;
+                ctx.strokeStyle = stroke[0].tool === 'pen' ? (stroke[0].color || '#fff') : '#1a1a1a';
+                ctx.lineWidth   = stroke[0].size || (stroke[0].tool === 'pen' ? 2 : 20);
                 for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
                 ctx.stroke();
             }
@@ -354,7 +415,192 @@
         strokes = saved; redrawCanvas();
     });
 
+    // ============================================================
+    // HOLD-TO-CONFIGURE POPUPS
+    // ============================================================
+    const PEN_COLORS = [
+        '#ffffff','#ff3b3b','#ff9500','#ffd700',
+        '#4cd964','#5ac8fa','#5e35b1','#ff69b4',
+        '#a0522d','#888888'
+    ];
+
+    // Build color swatches
+    const penColorRow = document.getElementById('penColorRow');
+    PEN_COLORS.forEach(c => {
+        const sw = document.createElement('div');
+        sw.className = 'swatch' + (c === penColor ? ' selected' : '');
+        sw.style.background = c;
+        sw.addEventListener('click', (e) => {
+            e.stopPropagation();
+            penColor = c;
+            penColorRow.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+            sw.classList.add('selected');
+        });
+        penColorRow.appendChild(sw);
+    });
+
+    // Size dot preview helpers
+    function updatePenDot(size) {
+        const dot = document.getElementById('penSizeDot');
+        const px  = Math.min(Math.max(size, 2), 30);
+        dot.style.width  = px + 'px';
+        dot.style.height = px + 'px';
+    }
+    function updateEraserDot(size) {
+        const dot = document.getElementById('eraserSizeDot');
+        const px  = Math.min(Math.max(size / 2, 4), 30);
+        dot.style.width  = px + 'px';
+        dot.style.height = px + 'px';
+        dot.style.background = '#555';
+        dot.style.border = '1px dashed #888';
+    }
+    updatePenDot(penSize);
+    updateEraserDot(eraserSize);
+
+    // Slider listeners
+    document.getElementById('penSizeSlider').addEventListener('input', e => {
+        penSize = +e.target.value;
+        updatePenDot(penSize);
+    });
+    document.getElementById('eraserSizeSlider').addEventListener('input', e => {
+        eraserSize = +e.target.value;
+        updateEraserDot(eraserSize);
+    });
+
+    // Hold logic — works for both mouse (desktop) and touch (phone)
+    let holdTimer   = null;
+    let holdTarget  = null;
+    const HOLD_MS   = 400;
+
+    function positionPopup(popup, btn) {
+        const br  = btn.getBoundingClientRect();
+        const pw  = popup.offsetWidth || 240;
+        let left  = br.left + br.width / 2 - pw / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+        popup.style.left = left + 'px';
+    }
+
+    function openPopup(id, btn) {
+        closeAllPopups();
+        const popup = document.getElementById(id);
+        popup.classList.add('active');
+        positionPopup(popup, btn);
+    }
+
+    function closeAllPopups() {
+        document.getElementById('penPopup').classList.remove('active');
+        document.getElementById('eraserPopup').classList.remove('active');
+    }
+
+    function attachHold(btnId, popupId) {
+        const btn = document.getElementById(btnId);
+
+        // Touch
+        btn.addEventListener('touchstart', (e) => {
+            holdTarget = btnId;
+            holdTimer  = setTimeout(() => {
+                openPopup(popupId, btn);
+                setTool(btnId === 'penBtn' ? 'pen' : 'eraser');
+            }, HOLD_MS);
+        }, { passive:true });
+
+        btn.addEventListener('touchend', () => {
+            clearTimeout(holdTimer); holdTimer = null;
+        });
+        btn.addEventListener('touchmove', () => {
+            clearTimeout(holdTimer); holdTimer = null;
+        }, { passive:true });
+
+        // Mouse (desktop testing)
+        btn.addEventListener('mousedown', () => {
+            holdTimer = setTimeout(() => {
+                openPopup(popupId, btn);
+                setTool(btnId === 'penBtn' ? 'pen' : 'eraser');
+            }, HOLD_MS);
+        });
+        btn.addEventListener('mouseup',   () => { clearTimeout(holdTimer); holdTimer = null; });
+        btn.addEventListener('mouseleave',() => { clearTimeout(holdTimer); holdTimer = null; });
+    }
+
+    attachHold('penBtn',    'penPopup');
+    attachHold('eraserBtn', 'eraserPopup');
+
+    // Tap anywhere else closes popups
+    document.addEventListener('touchstart', (e) => {
+        const pp = document.getElementById('penPopup');
+        const ep = document.getElementById('eraserPopup');
+        if (!pp.contains(e.target) && !ep.contains(e.target)) closeAllPopups();
+    }, { passive:true });
+    document.addEventListener('mousedown', (e) => {
+        const pp = document.getElementById('penPopup');
+        const ep = document.getElementById('eraserPopup');
+        if (!pp.contains(e.target) && !ep.contains(e.target)) closeAllPopups();
+    });
+
+    // ============================================================
+    // GALLERY
+    // ============================================================
+    const MAX_SAVES = 8;
+    function getSaved() { try { return JSON.parse(localStorage.getItem('shellSaved')||'[]'); } catch(e) { return []; } }
+    function putSaved(arr) { localStorage.setItem('shellSaved', JSON.stringify(arr)); }
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        let saved = getSaved();
+        saved.unshift(canvas.toDataURL('image/png'));
+        if (saved.length > MAX_SAVES) saved = saved.slice(0, MAX_SAVES);
+        putSaved(saved);
+        const lbl = document.getElementById('saveBtn').querySelector('.tool-label');
+        lbl.textContent = 'Saved!';
+        setTimeout(() => lbl.textContent = 'Save', 1000);
+    });
+
+    document.getElementById('openBtn').addEventListener('click', () => {
+        buildGalleryGrid();
+        document.getElementById('galleryPanel').classList.add('active');
+    });
+
+    document.getElementById('galleryBackBtn').addEventListener('click', () => {
+        document.getElementById('galleryPanel').classList.remove('active');
+    });
+
+    function buildGalleryGrid() {
+        const grid  = document.getElementById('galleryGrid');
+        const saved = getSaved();
+        grid.innerHTML = '';
+        for (let i = 0; i < MAX_SAVES; i++) {
+            const cell = document.createElement('div');
+            if (saved[i]) {
+                cell.className = 'gallery-thumb';
+                cell.innerHTML = `<img src="${saved[i]}"><span class="gallery-num">${i+1}</span>`;
+                const url = saved[i];
+                cell.addEventListener('click', () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.clearRect(0,0,canvas.width,canvas.height);
+                        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+                        strokes = []; redoStack = []; updateButtons();
+                    };
+                    img.src = url;
+                    document.getElementById('galleryPanel').classList.remove('active');
+                });
+            } else {
+                cell.className = 'gallery-thumb empty';
+                cell.innerHTML = '<span>+</span>';
+            }
+            grid.appendChild(cell);
+        }
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
     window.addEventListener('load', initCanvas);
+
+    document.addEventListener('touchstart', function enterFS() {
+        const el = document.documentElement;
+        if      (el.requestFullscreen)       el.requestFullscreen().catch(()=>{});
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }, { once:true });
 </script>
 </body>
 </html>
