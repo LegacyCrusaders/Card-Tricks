@@ -28,7 +28,7 @@
         .tool-btn.active .tool-label { color:#fff; }
         .mic-btn { width:48px; height:48px; display:flex; align-items:center; justify-content:center; background:#fff; border:none; border-radius:50%; cursor:pointer; flex-shrink:0; }
         .mic-btn:active { background:#e0e0e0; }
-        #textInput { position:absolute; background:transparent; border:1px dashed rgba(255,255,255,.4); color:#fff; font-size:24px; font-family:Arial,sans-serif; outline:none; padding:2px 6px; min-width:60px; z-index:500; caret-color:#fff; display:none; }
+        #textInput { position:absolute; background:transparent; border:1px dashed rgba(255,255,255,.4); color:#fff; font-size:48px; font-family:Arial,sans-serif; outline:none; padding:2px 6px; min-width:60px; z-index:500; caret-color:#fff; display:none; }
 
         /* ── FLIP PAGE ── */
         #flipPage { position:fixed; inset:0; background:#1a1a1a; z-index:2000; display:none; flex-direction:column; }
@@ -345,7 +345,7 @@ function commitText(){
     const txt=textInp.value.trim();
     if(txt&&textInp.style.display!=='none'){
         const x=parseInt(textInp.style.left)+6,y=parseInt(textInp.style.top)+24;
-        ctx.save();ctx.font='24px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(txt,x,y);ctx.restore();
+        ctx.save();ctx.font='48px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(txt,x,y);ctx.restore();
         strokes.push([{x,y,tool:'text',text:txt}]);redoStack=[];updateBtns();
     }
     textInp.style.display='none';textInp.value='';
@@ -357,7 +357,7 @@ function redraw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     strokes.forEach(s=>{
         if(!s.length)return;
-        if(s[0].tool==='text'){ctx.save();ctx.font='24px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(s[0].text,s[0].x,s[0].y);ctx.restore();}
+        if(s[0].tool==='text'){ctx.save();ctx.font='48px Arial';ctx.fillStyle='#fff';ctx.textBaseline='alphabetic';ctx.fillText(s[0].text,s[0].x,s[0].y);ctx.restore();}
         else{ctx.beginPath();ctx.moveTo(s[0].x,s[0].y);ctx.strokeStyle=s[0].tool==='pen'?'#fff':'#1a1a1a';ctx.lineWidth=s[0].tool==='pen'?2:20;for(let i=1;i<s.length;i++)ctx.lineTo(s[i].x,s[i].y);ctx.stroke();}
     });
 }
