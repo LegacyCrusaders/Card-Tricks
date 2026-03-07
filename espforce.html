@@ -6,6 +6,9 @@
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="screen-orientation" content="portrait">
+<meta name="x5-orientation" content="portrait">
+<meta name="full-screen" content="yes">
 
 <!DOCTYPE html>
 <html lang="en">
@@ -27,49 +30,15 @@
             background: #000;
         }
 
-        #startScreen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
-            cursor: pointer;
-        }
-        #startScreen.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .app-icon {
-            width: 120px; height: 120px;
-            background: white; border-radius: 28px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .app-icon svg { width: 70px; height: 70px; }
-        .app-title { color: white; font-size: 32px; font-weight: 600; margin-bottom: 10px; }
-        .app-version { color: rgba(255,255,255,0.8); font-size: 16px; }
-        .tap-to-start {
-            color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 40px;
-            animation: fadeInOut 2s infinite;
-        }
-        @keyframes fadeInOut {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
+
 
         #mainApp {
-            display: none;
+            display: flex;
             width: 100vw; height: 100vh;
             background: #1a1a1a;
             flex-direction: column;
         }
-        #mainApp.active { display: flex; }
+
 
         .top-bar {
             background: #2a2a2a;
@@ -149,7 +118,7 @@
             background: transparent;
             border: 1px dashed rgba(255,255,255,0.4);
             color: #fff;
-            font-size: 24px;
+            font-size: 48px;
             font-family: Arial, sans-serif;
             outline: none;
             padding: 2px 6px;
@@ -290,20 +259,7 @@
 </head>
 <body>
 
-    <!-- START SCREEN -->
-    <div id="startScreen">
-        <div class="app-icon">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" stroke="#667eea" stroke-width="2" fill="none"/>
-                <path d="M7 7h10M7 11h10M7 15h7" stroke="#667eea" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-        </div>
-        <div class="app-title">Samsung Notes</div>
-        <div class="app-version">Version 2.0</div>
-        <div class="tap-to-start">Tap to Start</div>
-    </div>
 
-    <!-- MAIN APP -->
     <div id="mainApp">
         <div class="top-bar">
             <div class="top-bar-left">
@@ -1033,7 +989,6 @@
         // ============================================================
         // DOM REFERENCES
         // ============================================================
-        const startScreen   = document.getElementById('startScreen');
         const mainApp       = document.getElementById('mainApp');
         const settingsPage  = document.getElementById('settingsPage');
         const settingsModal = document.getElementById('settingsModal');
@@ -1255,17 +1210,12 @@
         }
 
         // ============================================================
-        // START SCREEN → MAIN APP TRANSITION
+        // INIT ON LOAD
         // ============================================================
-        startScreen.addEventListener('click', () => {
-            startScreen.classList.add('fade-out');
-            setTimeout(() => {
-                startScreen.style.display = 'none';
-                mainApp.classList.add('active');
-                initCanvas();
-                initializeCodeWordDisplays();
-                enterFullscreen();
-            }, 500);
+        window.addEventListener('load', () => {
+            initCanvas();
+            initializeCodeWordDisplays();
+            enterFullscreen();
         });
 
         // ============================================================
@@ -1505,13 +1455,18 @@
         }
 
         // ============================================================
-        // FULLSCREEN
+        // FULLSCREEN + ORIENTATION LOCK
         // ============================================================
         function enterFullscreen() {
             const el = document.documentElement;
             if      (el.requestFullscreen)        el.requestFullscreen().catch(()=>{});
             else if (el.webkitRequestFullscreen)  el.webkitRequestFullscreen();
             else if (el.msRequestFullscreen)      el.msRequestFullscreen();
+
+            // Lock orientation to portrait when running as installed PWA
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait').catch(() => {});
+            }
         }
 
         // ============================================================
@@ -1650,9 +1605,9 @@
             const text = textInput.value.trim();
             if (text && textInput.style.display !== 'none') {
                 const x = parseInt(textInput.style.left) + 6;
-                const y = parseInt(textInput.style.top) + 24;
+                const y = parseInt(textInput.style.top) + 48;
                 ctx.save();
-                ctx.font = '24px Arial';
+                ctx.font = '48px Arial';
                 ctx.fillStyle = '#fff';
                 ctx.textBaseline = 'alphabetic';
                 ctx.fillText(text, x, y);
@@ -1683,7 +1638,7 @@
                 if (!stroke.length) return;
                 if (stroke[0].tool === 'text') {
                     ctx.save();
-                    ctx.font = '24px Arial';
+                    ctx.font = '48px Arial';
                     ctx.fillStyle = '#fff';
                     ctx.textBaseline = 'alphabetic';
                     ctx.fillText(stroke[0].text, stroke[0].x, stroke[0].y);
