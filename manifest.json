@@ -1,7 +1,7 @@
 {
-  "name": "Notes.p",
-  "short_name": "Notesp",
-  "start_url": "iforceesp.html",
+  "name": "Notfs.p",
+  "short_name": "Notfsp",
+  "start_url": "comboespforce.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
