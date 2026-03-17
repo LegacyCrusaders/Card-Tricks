@@ -37,10 +37,57 @@
         .container {
             text-align: center;
             background: white;
-            padding: 40px;
+            padding: 24px 40px 20px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            position: relative;
         }
+
+        /* Decorative edge markers — doubles as zone guides */
+        .container::before,
+        .container::after {
+            content: '';
+            position: absolute;
+            background: #ddd;
+        }
+
+        /* Vertical dividers — 2 marks on top and bottom edges (3 col splits) */
+        .container::before {
+            display: none; /* handled by .mark elements instead */
+        }
+        .container::after {
+            display: none;
+        }
+
+        .mark {
+            position: absolute;
+            color: #999;
+            font-size: 13px;
+            line-height: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* Top edge col dividers at exactly 33.3% and 66.6% */
+        .mark-t1 { top: 4px; left: 33.3%; transform: translateX(-50%); }
+        .mark-t2 { top: 4px; left: 66.6%; transform: translateX(-50%); }
+
+        /* Bottom edge col dividers */
+        .mark-b1 { bottom: 4px; left: 33.3%; transform: translateX(-50%); }
+        .mark-b2 { bottom: 4px; left: 66.6%; transform: translateX(-50%); }
+
+        /* Left edge row dividers at exactly 20%, 40%, 60%, 80% of full screen height
+           mapped onto the container height */
+        .mark-l1 { left: 4px; top: 20%; transform: translateY(-50%); }
+        .mark-l2 { left: 4px; top: 40%; transform: translateY(-50%); }
+        .mark-l3 { left: 4px; top: 60%; transform: translateY(-50%); }
+        .mark-l4 { left: 4px; top: 80%; transform: translateY(-50%); }
+
+        /* Right edge row dividers */
+        .mark-r1 { right: 4px; top: 20%; transform: translateY(-50%); }
+        .mark-r2 { right: 4px; top: 40%; transform: translateY(-50%); }
+        .mark-r3 { right: 4px; top: 60%; transform: translateY(-50%); }
+        .mark-r4 { right: 4px; top: 80%; transform: translateY(-50%); }
 
         /* ── TITLE ── */
         #title {
@@ -49,7 +96,6 @@
             font-weight: bold;
             color: #333;
             cursor: pointer;
-            margin-bottom: 20px;
         }
 
         /* ── CARD ── */
@@ -133,7 +179,7 @@
         /* ── CONTROLS ── */
         .controls {
             display: flex; gap: 15px;
-            margin-top: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -159,13 +205,21 @@
         #chooseBtn { background: #ff9800; }
         #chooseBtn:hover { background: #e68900; }
 
-        #dimBtn {
-            position: relative;
-            width: 120px; height: 36px;
+        /* ── TITLE ROW ── */
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        #dimBtnL, #dimBtnR {
+            width: 44px; height: 36px;
             background: transparent;
             border: none;
             cursor: default;
             outline: none;
+            flex-shrink: 0;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -317,7 +371,30 @@
 <!-- Scene -->
 <div id="scene">
     <div class="container">
-        <div id="title">Virtual Deck</div>
+        <div class="title-row">
+            <button id="dimBtnL"></button>
+            <div id="title">Virtual Deck</div>
+            <button id="dimBtnR"></button>
+        </div>
+
+        <!-- Decorative edge marks (also serve as zone guides) -->
+        <span class="mark mark-t1">♦</span>
+        <span class="mark mark-t2">♦</span>
+        <span class="mark mark-b1">♦</span>
+        <span class="mark mark-b2">♦</span>
+        <span class="mark mark-l1">♦</span>
+        <span class="mark mark-l2">♦</span>
+        <span class="mark mark-l3">♦</span>
+        <span class="mark mark-l4">♦</span>
+        <span class="mark mark-r1">♦</span>
+        <span class="mark mark-r2">♦</span>
+        <span class="mark mark-r3">♦</span>
+        <span class="mark mark-r4">♦</span>
+
+        <div class="controls">
+            <button class="btn" id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
+            <button class="btn" id="chooseBtn" onclick="openModal()">Choose</button>
+        </div>
 
         <div class="card-wrap">
             <div class="card" id="card">
@@ -339,11 +416,7 @@
             </div>
         </div>
 
-        <div class="controls">
-            <button class="btn" id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
-            <button class="btn" id="chooseBtn" onclick="openModal()">Choose</button>
-        </div>
-        <button id="dimBtn" onclick="activateSleep()"></button>
+
     </div>
 </div>
 
@@ -469,7 +542,7 @@
     });
 
     // ── SLEEP ────────────────────────────────────────────────
-    const SLEEP_DELAY = 60000; // 60 seconds
+    const SLEEP_DELAY = 30000; // 30 seconds
     let sleepTimer = null;
 
     function resetSleepTimer() {
@@ -533,7 +606,7 @@
     function onPointerDown(e) {
         const t = e.touches ? e.touches[0] : e;
         touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
-        if (!isSleeping && e.target.id !== 'dimBtn') resetSleepTimer();
+        if (!isSleeping && e.target.id !== 'dimBtnL' && e.target.id !== 'dimBtnR') resetSleepTimer();
     }
 
     function onPointerUp(e) {
@@ -596,7 +669,23 @@
     document.addEventListener('mousedown',  onPointerDown);
     document.addEventListener('mouseup',    onPointerUp);
 
-    // ── TITLE: triple tap = practice mode ────────────────────
+    // ── DIM BUTTON DOUBLE-TAP ─────────────────────────────────
+    let dimTapTimer = null;
+    let dimTapCount = 0;
+
+    ['dimBtnL', 'dimBtnR'].forEach(id => {
+        document.getElementById(id).addEventListener('click', function(e) {
+            e.stopPropagation();
+            dimTapCount++;
+            if (dimTapCount === 1) {
+                dimTapTimer = setTimeout(() => { dimTapCount = 0; }, 400);
+            } else if (dimTapCount >= 2) {
+                clearTimeout(dimTapTimer);
+                dimTapCount = 0;
+                activateSleep();
+            }
+        });
+    });
     let titleTaps = 0, titleTimer = null;
 
     document.getElementById('title').addEventListener('click', function(e) {
@@ -643,6 +732,30 @@
     // ── INIT ──────────────────────────────────────────────────
     shuffleCard();
     resetSleepTimer();
+
+    // Position vertical marks to match full-screen row grid lines exactly
+    function positionMarks() {
+        const container = document.querySelector('.container');
+        const rect = container.getBoundingClientRect();
+        const screenH = window.innerHeight;
+        // Row dividers at 20%, 40%, 60%, 80% of screen height
+        const rowPcts = [0.2, 0.4, 0.6, 0.8];
+        const sides = ['l', 'r'];
+        rowPcts.forEach((pct, i) => {
+            const screenY = screenH * pct;
+            // Convert to % within container
+            const containerPct = ((screenY - rect.top) / rect.height) * 100;
+            sides.forEach(side => {
+                const el = document.querySelector(`.mark-${side}${i + 1}`);
+                if (el) {
+                    el.style.top = containerPct + '%';
+                }
+            });
+        });
+    }
+
+    positionMarks();
+    window.addEventListener('resize', positionMarks);
 </script>
 </body>
 </html>
