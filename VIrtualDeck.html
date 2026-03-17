@@ -2,18 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Virtual Deck</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
     <style>
-        body {
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --red: #c41e3a;
+            --dark: #0d0d0d;
+            --dim-opacity: 0.82;
+        }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
             font-family: Arial, sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ── SCENE ── */
+        #scene {
+            position: fixed; inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            z-index: 1;
         }
 
         .container {
@@ -24,28 +42,29 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-            margin-top: 0;
-            cursor: pointer;
-            user-select: none;
+        /* ── TITLE ── */
+        #title {
+            font-family: Arial, sans-serif;
             font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            margin-bottom: 20px;
         }
 
-        .card-container {
+        /* ── CARD ── */
+        .card-wrap {
+            perspective: 1200px;
             margin: 20px 0;
-            perspective: 1000px;
         }
 
         .card {
-            width: 260px;
-            height: 364px;
+            width: min(260px, 60vw);
+            height: min(364px, 84vw);
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.3s;
+            transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
-            margin: 0 auto;
         }
 
         .card.flipped {
@@ -53,681 +72,577 @@
         }
 
         .card-face, .card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+            position: absolute; inset: 0;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 72px;
-            font-weight: bold;
             border: 3px solid #333;
         }
 
-        .card-face {
-            background: white;
-            transform: rotateY(180deg);
-            flex-direction: column;
-        }
-
+        /* BACK */
         .card-back {
             background: #c41e3a;
-            background-image: 
+            background-image:
                 repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(139,0,0,.3) 10px, rgba(139,0,0,.3) 20px),
                 repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(139,0,0,.3) 10px, rgba(139,0,0,.3) 20px);
             border: 3px solid #8b0000;
+            overflow: hidden;
         }
 
+        .card-back-logo { display: none; }
+
+        /* FACE */
+        .card-face {
+            background: white;
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .card-face.red { color: #c41e3a; }
+        .card-face.black { color: #000; }
+
         .card-value {
-            font-size: 72px;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(72px, 20vw, 108px);
+            line-height: 1;
+            font-weight: 700;
         }
 
         .card-suit {
-            font-size: 64px;
+            font-size: clamp(60px, 18vw, 90px);
+            line-height: 1;
         }
 
-        .red {
-            color: #c41e3a;
+        /* Corner pips */
+        .pip-tl, .pip-br {
+            position: absolute;
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            display: flex; flex-direction: column; align-items: center;
+            line-height: 1.1;
         }
+        .pip-tl { top: 10px; left: 12px; }
+        .pip-br { bottom: 10px; right: 12px; transform: rotate(180deg); }
+        .pip-suit { font-size: 20px; }
 
-        .black {
-            color: #000;
-        }
-
+        /* ── CONTROLS ── */
         .controls {
-            display: flex;
-            gap: 15px;
+            display: flex; gap: 15px;
             margin-top: 30px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
-        button {
+        .btn {
             padding: 12px 24px;
             font-size: 16px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            background: #4CAF50;
             color: white;
             font-weight: bold;
+            font-family: Arial, sans-serif;
             transition: all 0.3s;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        button:hover {
-            background: #45a049;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); }
+
+        #shuffleBtn { background: #2196F3; }
+        #shuffleBtn:hover { background: #0b7dda; }
+        #chooseBtn { background: #ff9800; }
+        #chooseBtn:hover { background: #e68900; }
+
+        #dimBtn {
+            position: relative;
+            width: 120px; height: 36px;
+            background: transparent;
+            border: none;
+            cursor: default;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        button:active {
-            transform: translateY(0);
+        /* ── SLEEP OVERLAY ── */
+        #sleep {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.0);
+            z-index: 100;
+            pointer-events: none;
+            transition: background 0.6s ease;
         }
 
-        #shuffleBtn {
-            background: #2196F3;
+        #sleep.dimming {
+            background: rgba(0,0,0,var(--dim-opacity));
+            pointer-events: all;
         }
 
-        #shuffleBtn:hover {
-            background: #0b7dda;
+
+
+        /* ── FEEDBACK PULSE ── */
+        #pulse {
+            position: fixed;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(196,30,58,0.25);
+            border: 1px solid rgba(196,30,58,0.6);
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+            z-index: 102;
+            transition: none;
         }
 
-        #chooseBtn {
-            background: #ff9800;
+        #pulse.pop {
+            animation: pop 0.4s cubic-bezier(0.23,1,0.32,1) forwards;
         }
 
-        #chooseBtn:hover {
-            background: #e68900;
+        @keyframes pop {
+            0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
         }
+
+        /* ── MODAL ── */
+        .modal-bg {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            align-items: center; justify-content: center;
+        }
+        .modal-bg.open { display: flex; }
 
         .modal {
+            background: var(--cream);
+            border-radius: 16px;
+            padding: 32px;
+            width: min(340px, 90vw);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            color: #222;
+            margin-bottom: 20px;
+        }
+
+        .modal select {
+            width: 100%; padding: 10px 14px;
+            font-family: 'EB Garamond', serif;
+            font-size: 17px;
+            border: 1.5px solid #ccc;
+            border-radius: 8px;
+            background: white;
+            margin-bottom: 12px;
+            color: #222;
+        }
+
+        .modal-btns { display: flex; gap: 10px; margin-top: 8px; }
+
+        .modal-btns button {
+            flex: 1; padding: 11px;
+            font-family: 'Playfair Display', serif;
+            font-size: 14px; letter-spacing: 0.08em;
+            border: none; border-radius: 8px; cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-confirm { background: var(--felt); color: var(--gold); }
+        .btn-confirm:hover { background: #243324; }
+        .btn-cancel { background: #e8e0d0; color: #555; }
+        .btn-cancel:hover { background: #ddd5c5; }
+
+        /* ── PRACTICE MODE ── */
+        #practice-overlay {
+            position: fixed; inset: 0;
             display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-
-        .modal-content h2 {
-            margin-top: 0;
-            color: #333;
-        }
-
-        .card-selector {
-            margin: 20px 0;
-        }
-
-        select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .modal-buttons button {
-            flex: 1;
-        }
-
-        .cancel-btn {
-            background: #f44336;
-        }
-
-        .cancel-btn:hover {
-            background: #da190b;
-        }
-
-        .secret-indicator {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            background: rgba(255, 215, 0, 0.3);
-            border-radius: 5px;
-            font-size: 12px;
-            display: none;
-        }
-
-        .practice-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             pointer-events: none;
-            display: none;
-            z-index: 10;
+            z-index: 50;
         }
 
-        .practice-overlay.active {
-            display: block;
-        }
+        #practice-overlay.active { display: block; }
 
-        .value-grid {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        .pgrid {
+            position: absolute; inset: 0;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
-            gap: 2px;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(5, 1fr);
         }
 
-        .grid-cell {
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
+        .pcell {
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-family: Arial, sans-serif;
+            font-size: clamp(12px, 3vw, 18px);
             font-weight: bold;
-            text-shadow: 0 0 3px black;
-            background: rgba(0, 0, 0, 0.2);
+            color: rgba(255,255,255,0.6);
         }
 
-        .grid-cell.center {
-            background: rgba(0, 255, 0, 0.2);
-            border: 2px solid rgba(0, 255, 0, 0.5);
+        .suit-labels {
+            position: absolute; inset: 0;
+            pointer-events: none;
         }
 
-        .direction-overlay {
+        .suit-label {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 150px;
-            height: 150px;
+            font-size: clamp(18px, 5vw, 28px);
+            color: rgba(196,30,58,0.7);
         }
 
-        .direction-label {
-            position: absolute;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 5px black;
-        }
-
-        .direction-label.up {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .direction-label.down {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .direction-label.left {
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .direction-label.right {
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .hint {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-        }
+        .suit-label.up    { top: 12px;    left: 50%; transform: translateX(-50%); }
+        .suit-label.down  { bottom: 12px; left: 50%; transform: translateX(-50%); }
+        .suit-label.left  { left: 12px;   top: 50%;  transform: translateY(-50%); }
+        .suit-label.right { right: 12px;  top: 50%;  transform: translateY(-50%); }
     </style>
 </head>
 <body>
-    
+
+<!-- Practice overlay (full screen grid) -->
+<div id="practice-overlay">
+    <div class="pgrid" id="pgrid"></div>
+    <div class="suit-labels">
+        <span class="suit-label up">♣ up</span>
+        <span class="suit-label down">♠ down</span>
+        <span class="suit-label left">♦ left</span>
+        <span class="suit-label right">♥ right</span>
+    </div>
+</div>
+
+<!-- Scene -->
+<div id="scene">
     <div class="container">
-        <h1 onclick="handleTitleClick()">Virtual Deck</h1>
-        
-        <div class="card-container">
-            <div class="card" id="card" onclick="handleCardClick(event)">
+        <div id="title">Virtual Deck</div>
+
+        <div class="card-wrap">
+            <div class="card" id="card">
                 <div class="card-back">
-                    <div class="practice-overlay" id="practiceOverlay">
-                        <div class="value-grid">
-                            <div class="grid-cell">A</div>
-                            <div class="grid-cell">2</div>
-                            <div class="grid-cell">3</div>
-                            <div class="grid-cell">4</div>
-                            <div class="grid-cell">5</div>
-                            <div class="grid-cell">6</div>
-                            <div class="grid-cell">7</div>
-                            <div class="grid-cell">8</div>
-                            <div class="grid-cell">9</div>
-                            <div class="grid-cell">10</div>
-                            <div class="grid-cell">J</div>
-                            <div class="grid-cell">Q</div>
-                            <div class="grid-cell">K</div>
-                            <div class="grid-cell center">FLIP<br/><small>↑♣ →♥<br/>↓♠ ←♦</small></div>
-                            <div class="grid-cell">🃏</div>
-                        </div>
-                    </div>
+                    <div class="card-back-logo"></div>
                 </div>
                 <div class="card-face" id="cardFace">
+                    <div class="pip-tl">
+                        <span id="pipTLVal"></span>
+                        <span class="pip-suit" id="pipTLSuit"></span>
+                    </div>
                     <span class="card-value" id="cardValue">A</span>
                     <span class="card-suit" id="cardSuit">♠</span>
+                    <div class="pip-br">
+                        <span id="pipBRVal"></span>
+                        <span class="pip-suit" id="pipBRSuit"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="controls">
-            <button id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
-            <button id="chooseBtn" onclick="openChooseModal()">Choose Card</button>
+            <button class="btn" id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
+            <button class="btn" id="chooseBtn" onclick="openModal()">Choose</button>
         </div>
-
+        <button id="dimBtn" onclick="activateSleep()"></button>
     </div>
+</div>
 
-    <div id="chooseModal" class="modal">
-        <div class="modal-content">
-            <h2>Choose a Card</h2>
-            <div class="card-selector">
-                <select id="valueSelect">
-                    <option value="A">Ace</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="J">Jack</option>
-                    <option value="Q">Queen</option>
-                    <option value="K">King</option>
-                    <option value="🃏">Joker</option>
-                </select>
-                
-                <select id="suitSelect">
-                    <option value="♠">Spades ♠</option>
-                    <option value="♥">Hearts ♥</option>
-                    <option value="♦">Diamonds ♦</option>
-                    <option value="♣">Clubs ♣</option>
-                </select>
-            </div>
-            <div class="modal-buttons">
-                <button class="cancel-btn" onclick="closeChooseModal()">Cancel</button>
-                <button onclick="setChosenCard()">Set Card</button>
-            </div>
+<!-- Sleep overlay (full screen gesture catcher) -->
+<div id="sleep"></div>
+
+<div id="pulse"></div>
+
+<!-- Choose modal -->
+<div class="modal-bg" id="modal">
+    <div class="modal">
+        <h2>Choose a Card</h2>
+        <select id="valSel">
+            <option value="A">Ace</option>
+            <option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option>
+            <option value="8">8</option><option value="9">9</option>
+            <option value="10">10</option>
+            <option value="J">Jack</option>
+            <option value="Q">Queen</option>
+            <option value="K">King</option>
+            <option value="🃏">Joker</option>
+        </select>
+        <select id="suitSel">
+            <option value="♠">Spades ♠</option>
+            <option value="♥">Hearts ♥</option>
+            <option value="♦">Diamonds ♦</option>
+            <option value="♣">Clubs ♣</option>
+        </select>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+            <button class="btn-confirm" onclick="confirmModal()">Set Card</button>
         </div>
     </div>
+</div>
 
-    <script>
-        // Card definitions
-        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-        const suits = ['♠', '♥', '♦', '♣'];
-        
-        let currentCard = { value: 'A', suit: '♠' };
-        let isFaceUp = false;
-        let secretNextCard = null;
+<script>
+    const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const suits  = ['♠','♥','♦','♣'];
 
-        // Initialize random card
-        function getRandomCard() {
-            const value = values[Math.floor(Math.random() * values.length)];
-            const suit = suits[Math.floor(Math.random() * suits.length)];
-            return { value, suit };
+    // 3 cols × 5 rows = 15 zones mapped to values + Joker
+    // Row-major: A 2 3 / 4 5 6 / 7 8 9 / 10 J Q / K Joker —
+    // Last cell (14) = Joker, cell 13 = K, padded
+    const valueGrid = [
+        'A',  '2',  '3',
+        '4',  '5',  '6',
+        '7',  '8',  '9',
+        '10', 'J',  'Q',
+        'K',  null, '🃏'   // null = unused corner, falls back to random
+    ];
+
+    let currentCard = { value: 'A', suit: '♠' };
+    let isFaceUp    = false;
+    let isSleeping  = false;
+
+    // ── DISPLAY ──────────────────────────────────────────────
+    function updateDisplay() {
+        const face   = document.getElementById('cardFace');
+        const val    = document.getElementById('cardValue');
+        const suit   = document.getElementById('cardSuit');
+        const tlv    = document.getElementById('pipTLVal');
+        const tls    = document.getElementById('pipTLSuit');
+        const brv    = document.getElementById('pipBRVal');
+        const brs    = document.getElementById('pipBRSuit');
+
+        if (currentCard.value === '🃏') {
+            val.textContent  = '🃏';
+            suit.textContent = '';
+            tlv.textContent  = '🃏'; tls.textContent = '';
+            brv.textContent  = '🃏'; brs.textContent = '';
+            face.className   = 'card-face black';
+        } else {
+            val.textContent  = currentCard.value;
+            suit.textContent = currentCard.suit;
+            tlv.textContent  = currentCard.value;
+            tls.textContent  = currentCard.suit;
+            brv.textContent  = currentCard.value;
+            brs.textContent  = currentCard.suit;
+            const isRed = currentCard.suit === '♥' || currentCard.suit === '♦';
+            face.className   = 'card-face ' + (isRed ? 'red' : 'black');
         }
+    }
 
-        function updateCardDisplay() {
-            const cardValue = document.getElementById('cardValue');
-            const cardSuit = document.getElementById('cardSuit');
-            const cardFace = document.getElementById('cardFace');
-            
-            if (currentCard.value === '🃏') {
-                cardValue.textContent = '🃏';
-                cardSuit.textContent = '';
-                cardFace.className = 'card-face';
-            } else {
-                cardValue.textContent = currentCard.value;
-                cardSuit.textContent = currentCard.suit;
-                
-                // Set color based on suit
-                if (currentCard.suit === '♥' || currentCard.suit === '♦') {
-                    cardFace.className = 'card-face red';
+    function setCard(value, suit) {
+        currentCard = { value, suit };
+        updateDisplay();
+        if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    // ── FLIP ─────────────────────────────────────────────────
+    function flipCard() {
+        document.getElementById('card').classList.toggle('flipped');
+        isFaceUp = !isFaceUp;
+    }
+
+    // ── SHUFFLE ──────────────────────────────────────────────
+    function shuffleCard() {
+        const v = values[Math.floor(Math.random() * values.length)];
+        const s = suits[Math.floor(Math.random() * suits.length)];
+        currentCard = { value: v, suit: s };
+        updateDisplay();
+    }
+
+    // ── MODAL ────────────────────────────────────────────────
+    function openModal()  { document.getElementById('modal').classList.add('open'); }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+    function confirmModal() {
+        const v = document.getElementById('valSel').value;
+        const s = document.getElementById('suitSel').value;
+        currentCard = v === '🃏' ? { value: '🃏', suit: '' } : { value: v, suit: s };
+        updateDisplay();
+        closeModal();
+    }
+
+    document.getElementById('valSel').addEventListener('change', function() {
+        document.getElementById('suitSel').disabled = this.value === '🃏';
+    });
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ── SLEEP ────────────────────────────────────────────────
+    const SLEEP_DELAY = 60000; // 60 seconds
+    let sleepTimer = null;
+
+    function resetSleepTimer() {
+        clearTimeout(sleepTimer);
+        sleepTimer = setTimeout(activateSleep, SLEEP_DELAY);
+    }
+
+    function activateSleep() {
+        isSleeping = true;
+        document.getElementById('sleep').classList.add('dimming');
+    }
+
+    function wakeUp() {
+        isSleeping = false;
+        document.getElementById('sleep').classList.remove('dimming');
+        resetSleepTimer();
+    }
+
+    // ── SUIT FROM DRAG ANGLE ──────────────────────────────────
+    function suitFromAngle(dx, dy) {
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (angle >= -45 && angle < 45)   return '♥'; // right
+        if (angle >= 45  && angle < 135)  return '♠'; // down
+        if (angle >= -135 && angle < -45) return '♣'; // up
+        return '♦';                                    // left
+    }
+
+    // ── VALUE FROM SCREEN POSITION ────────────────────────────
+    // Full-screen 3×5 grid
+    function valueFromPos(x, y) {
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        const col = Math.min(2, Math.floor((x / W) * 3));    // 0-2
+        const row = Math.min(4, Math.floor((y / H) * 5));    // 0-4
+        const idx = row * 3 + col;
+        const v   = valueGrid[idx];
+        if (!v) {
+            // Fallback: random value
+            return values[Math.floor(Math.random() * values.length)];
+        }
+        return v;
+    }
+
+    // ── SHOW PULSE ────────────────────────────────────────────
+    function showPulse(x, y) {
+        const p = document.getElementById('pulse');
+        p.style.left = x + 'px';
+        p.style.top  = y + 'px';
+        p.classList.remove('pop');
+        void p.offsetWidth; // reflow
+        p.classList.add('pop');
+    }
+
+    // ── FULL-SCREEN GESTURE ───────────────────────────────────
+    // Works both in sleep mode (sets card) and on face-down card (sets card)
+    // On face-up card tap → flip
+
+    let touchStart = null;
+    const MIN_DRAG = 25; // px
+
+    function onPointerDown(e) {
+        const t = e.touches ? e.touches[0] : e;
+        touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+        if (!isSleeping && e.target.id !== 'dimBtn') resetSleepTimer();
+    }
+
+    function onPointerUp(e) {
+        if (!touchStart) return;
+        const t = e.changedTouches ? e.changedTouches[0] : e;
+        const dx = t.clientX - touchStart.x;
+        const dy = t.clientY - touchStart.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const sx = touchStart.x;
+        const sy = touchStart.y;
+
+        if (isSleeping) {
+            // Any interaction wakes it up
+            // But if there's a drag, secretly set the card first
+            if (dist >= MIN_DRAG) {
+                const value = valueFromPos(sx, sy);
+                if (value === '🃏') {
+                    setCard('🃏', '');
                 } else {
-                    cardFace.className = 'card-face black';
+                    const suit = suitFromAngle(dx, dy);
+                    setCard(value, suit);
                 }
+                showPulse(sx, sy);
             }
+            wakeUp();
+            touchStart = null;
+            return;
         }
 
-        function flipCard() {
-            const card = document.getElementById('card');
-            card.classList.toggle('flipped');
-            isFaceUp = !isFaceUp;
-        }
-
-        function shuffleCard() {
-            // Check if there's a secret card set
-            if (secretNextCard) {
-                currentCard = { ...secretNextCard };
-                secretNextCard = null;
-            } else {
-                currentCard = getRandomCard();
+        // ── AWAKE MODE ──
+        if (dist >= MIN_DRAG) {
+            // Any drag anywhere → secret cue, never flip
+            if (!isFaceUp) {
+                const value = valueFromPos(sx, sy);
+                if (value === '🃏') {
+                    setCard('🃏', '');
+                } else {
+                    const suit = suitFromAngle(dx, dy);
+                    setCard(value, suit);
+                }
+                showPulse(sx, sy);
             }
-            
-            updateCardDisplay();
-            
-            // Don't flip the card - just update the card that will be shown
-            // If face up, user sees the new card immediately
-            // If face down, new card is hidden until they flip it
-        }
-
-        function openChooseModal() {
-            document.getElementById('chooseModal').style.display = 'block';
-            
-            // Update suit select visibility
-            const valueSelect = document.getElementById('valueSelect');
-            if (valueSelect.value === '🃏') {
-                document.getElementById('suitSelect').disabled = true;
-            }
-        }
-
-        function closeChooseModal() {
-            document.getElementById('chooseModal').style.display = 'none';
-        }
-
-        function setChosenCard() {
-            const value = document.getElementById('valueSelect').value;
-            const suit = document.getElementById('suitSelect').value;
-            
-            if (value === '🃏') {
-                currentCard = { value: '🃏', suit: '' };
-            } else {
-                currentCard = { value, suit };
-            }
-            
-            updateCardDisplay();
-            
-            // Don't flip the card - just update the card that will be shown
-            // If face up, user sees the new card immediately
-            // If face down, new card is hidden until they flip it
-            
-            closeChooseModal();
-        }
-
-        // Handle joker selection
-        document.getElementById('valueSelect').addEventListener('change', function() {
-            const suitSelect = document.getElementById('suitSelect');
-            if (this.value === '🃏') {
-                suitSelect.disabled = true;
-            } else {
-                suitSelect.disabled = false;
-            }
-        });
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('chooseModal');
-            if (event.target === modal) {
-                closeChooseModal();
-            }
-        }
-
-        // SECRET CONTROL MECHANISM
-        // Click and drag on the card back to secretly set the next card
-        // Grid: 4 columns (suits) x 13 rows (values)
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let isDragging = false;
-        let dragStartTime = 0;
-
-        function handleCardClick(event) {
-            // Normal flip behavior
-            if (!isDragging) {
+        } else {
+            // Short tap → only flip if released on the card
+            const cardEl = document.getElementById('card');
+            const cardRect = cardEl.getBoundingClientRect();
+            const releasedOnCard = t.clientX >= cardRect.left && t.clientX <= cardRect.right &&
+                                   t.clientY >= cardRect.top  && t.clientY <= cardRect.bottom;
+            if (releasedOnCard) {
                 flipCard();
             }
         }
 
-        // Touch/Mouse start
-        document.getElementById('card').addEventListener('mousedown', handleDragStart);
-        document.getElementById('card').addEventListener('touchstart', handleDragStart);
+        touchStart = null;
+    }
 
-        function handleDragStart(e) {
-            if (isFaceUp) return; // Only works on face down card
-            
-            const touch = e.touches ? e.touches[0] : e;
-            const rect = e.currentTarget.getBoundingClientRect();
-            
-            touchStartX = touch.clientX - rect.left;
-            touchStartY = touch.clientY - rect.top;
-            dragStartTime = Date.now();
-            isDragging = false;
+    // Attach full-screen listeners
+    document.addEventListener('touchstart', onPointerDown, { passive: true });
+    document.addEventListener('touchend',   onPointerUp,   { passive: false });
+    document.addEventListener('mousedown',  onPointerDown);
+    document.addEventListener('mouseup',    onPointerUp);
+
+    // ── TITLE: triple tap = practice mode ────────────────────
+    let titleTaps = 0, titleTimer = null;
+
+    document.getElementById('title').addEventListener('click', function(e) {
+        e.stopPropagation();
+        titleTaps++;
+        if (titleTaps === 1) {
+            titleTimer = setTimeout(() => { titleTaps = 0; }, 600);
         }
-
-        // Touch/Mouse end
-        document.getElementById('card').addEventListener('mouseup', handleDragEnd);
-        document.getElementById('card').addEventListener('touchend', handleDragEnd);
-
-        function handleDragEnd(e) {
-            if (isFaceUp) return;
-            
-            const touch = e.changedTouches ? e.changedTouches[0] : e;
-            const rect = e.currentTarget.getBoundingClientRect();
-            
-            const touchEndX = touch.clientX - rect.left;
-            const touchEndY = touch.clientY - rect.top;
-            
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-            const duration = Date.now() - dragStartTime;
-            
-            // Determine grid position from start position (3x5 grid)
-            const cardWidth = rect.width;
-            const cardHeight = rect.height;
-            const col = Math.floor((touchStartX / cardWidth) * 3); // 0, 1, 2
-            const row = Math.floor((touchStartY / cardHeight) * 5); // 0, 1, 2, 3, 4
-            
-            // Grid layout: 
-            // [A] [2] [3]
-            // [4] [5] [6]
-            // [7] [8] [9]
-            // [10][J] [Q]
-            // [K][FLIP][🃏]
-            
-            const gridMap = [
-                ['A', '2', '3'],
-                ['4', '5', '6'],
-                ['7', '8', '9'],
-                ['10', 'J', 'Q'],
-                ['K', 'FLIP', '🃏']
-            ];
-            
-            const gridValue = gridMap[row][col];
-            
-            // Center cell (row 4, col 1) is the flip zone - only flip if minimal drag
-            if (row === 4 && col === 1) {
-                if (distance < 30) {
-                    // Just flip
-                    setTimeout(() => {
-                        isDragging = false;
-                    }, 50);
-                } else {
-                    // Dragged from center - determine suit from direction (CHaSeD)
-                    isDragging = true;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-                    let suit;
-                    if (angle >= -45 && angle < 45) {
-                        suit = '♥'; // Right = Hearts
-                    } else if (angle >= 45 && angle < 135) {
-                        suit = '♠'; // Down = Spades
-                    } else if (angle >= -135 && angle < -45) {
-                        suit = '♣'; // Up = Clubs
-                    } else {
-                        suit = '♦'; // Left = Diamonds
-                    }
-                    
-                    // Get a random value since center was clicked
-                    const randomValue = values[Math.floor(Math.random() * values.length)];
-                    
-                    secretNextCard = { value: randomValue, suit };
-                    
-                    // Auto-shuffle to reveal the card
-                    setTimeout(() => {
-                        shuffleCard();
-                        // Flip the card after shuffle to look like a normal click
-                        setTimeout(() => {
-                            flipCard();
-                        }, 150);
-                    }, 100);
-                    
-                    if (navigator.vibrate) {
-                        navigator.vibrate(50);
-                    }
-                    
-                    setTimeout(() => {
-                        isDragging = false;
-                    }, 100);
-                }
-                return;
-            }
-            
-            // If dragged more than 30 pixels and held for more than 200ms, it's a secret gesture
-            if (distance > 30 && duration > 200 && gridValue !== 'FLIP') {
-                isDragging = true;
-                e.preventDefault();
-                e.stopPropagation();
-                
-                let value = gridValue;
-                let suit = null;
-                
-                // Joker doesn't need a suit
-                if (value === '🃏') {
-                    secretNextCard = { value: '🃏', suit: '' };
-                } else {
-                    // Determine suit from drag direction (CHaSeD)
-                    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-                    if (angle >= -45 && angle < 45) {
-                        suit = '♥'; // Right = Hearts
-                    } else if (angle >= 45 && angle < 135) {
-                        suit = '♠'; // Down = Spades
-                    } else if (angle >= -135 && angle < -45) {
-                        suit = '♣'; // Up = Clubs
-                    } else {
-                        suit = '♦'; // Left = Diamonds
-                    }
-                    
-                    secretNextCard = { value, suit };
-                }
-                
-                // Auto-shuffle to reveal the card
-                setTimeout(() => {
-                    shuffleCard();
-                    // Flip the card after shuffle to look like a normal click
-                    setTimeout(() => {
-                        flipCard();
-                    }, 150);
-                }, 100);
-                
-                // Vibrate if supported (subtle feedback)
-                if (navigator.vibrate) {
-                    navigator.vibrate(50);
-                }
-                
-                setTimeout(() => {
-                    isDragging = false;
-                }, 100);
-            } else {
-                // Normal tap - wait a moment to ensure it's not a drag
-                setTimeout(() => {
-                    isDragging = false;
-                }, 50);
-            }
+        if (titleTaps >= 3) {
+            clearTimeout(titleTimer);
+            titleTaps = 0;
+            togglePractice();
         }
+    });
 
-        // Initialize
-        currentCard = getRandomCard();
-        updateCardDisplay();
+    let practiceOn = false;
+    function togglePractice() {
+        practiceOn = !practiceOn;
+        document.getElementById('practice-overlay').classList.toggle('active', practiceOn);
+    }
 
-        // PRACTICE MODE TOGGLE
-        let practiceMode = false;
-        let titleClickCount = 0;
-        let titleClickTimer = null;
+    // Build practice grid labels
+    const pgrid = document.getElementById('pgrid');
+    valueGrid.forEach(v => {
+        const cell = document.createElement('div');
+        cell.className = 'pcell';
+        cell.textContent = v || '';
+        pgrid.appendChild(cell);
+    });
 
-        function handleTitleClick() {
-            titleClickCount++;
-            
-            if (titleClickCount === 1) {
-                titleClickTimer = setTimeout(() => {
-                    // Reset if not triple-clicked in time
-                    titleClickCount = 0;
-                }, 500);
-            } else if (titleClickCount === 3) {
-                clearTimeout(titleClickTimer);
-                titleClickCount = 0;
-                togglePracticeMode();
+    // ── WAKE LOCK ─────────────────────────────────────────────
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                await navigator.wakeLock.request('screen');
             }
-        }
+        } catch(e) {}
+    }
+    requestWakeLock();
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') requestWakeLock();
+    });
 
-        function togglePracticeMode() {
-            practiceMode = !practiceMode;
-            const overlay = document.getElementById('practiceOverlay');
-            if (practiceMode) {
-                overlay.classList.add('active');
-            } else {
-                overlay.classList.remove('active');
-            }
-        }
-
-        // WAKE LOCK - Keep screen awake
-        let wakeLock = null;
-
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock activated');
-                    
-                    wakeLock.addEventListener('release', () => {
-                        console.log('Wake Lock released');
-                    });
-                }
-            } catch (err) {
-                console.log('Wake Lock error:', err);
-            }
-        }
-
-        // Request wake lock on page load
-        requestWakeLock();
-
-        // Re-request wake lock when page becomes visible again
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
-        });
-    </script>
+    // ── INIT ──────────────────────────────────────────────────
+    shuffleCard();
+    resetSleepTimer();
+</script>
 </body>
 </html>
