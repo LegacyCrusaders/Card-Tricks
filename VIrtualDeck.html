@@ -223,7 +223,62 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ── SLEEP OVERLAY ── */
+        /* ── DICE ── */
+        .dice-col {
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            gap: 44px;
+            top: 50%;
+            transform: translateY(-50%);
+            align-items: center;
+            z-index: 2;
+        }
+
+        .dice-col.left  { left: 12px; }
+        .dice-col.right { right: 12px; }
+
+        .die {
+            width: 64px; height: 64px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+            cursor: pointer;
+            position: relative;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            transition: box-shadow 0.15s;
+        }
+
+        .die:active {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        /* pip grid: 3x3 inside the die face */
+        .pip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 46px; height: 46px;
+            pointer-events: none;
+            transition: opacity 0.06s;
+        }
+
+        .pip-grid.flash { opacity: 0.15; }
+
+        .pip {
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .pip::after {
+            content: '';
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            display: none;
+        }
+
+        .pip.on::after { display: block; }
         #sleep {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.0);
@@ -370,6 +425,18 @@
 
 <!-- Scene -->
 <div id="scene">
+
+<!-- Dice left -->
+<div class="dice-col left">
+    <div class="die" id="die0" onclick="rollDie(0)"><div class="pip-grid" id="pipgrid0"></div></div>
+    <div class="die" id="die1" onclick="rollDie(1)"><div class="pip-grid" id="pipgrid1"></div></div>
+</div>
+
+<!-- Dice right -->
+<div class="dice-col right">
+    <div class="die" id="die2" onclick="rollDie(2)"><div class="pip-grid" id="pipgrid2"></div></div>
+    <div class="die" id="die3" onclick="rollDie(3)"><div class="pip-grid" id="pipgrid3"></div></div>
+</div>
     <div class="container">
         <div class="title-row">
             <button id="dimBtnL"></button>
@@ -606,11 +673,12 @@
     function onPointerDown(e) {
         const t = e.touches ? e.touches[0] : e;
         touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
-        if (!isSleeping && e.target.id !== 'dimBtnL' && e.target.id !== 'dimBtnR') resetSleepTimer();
+        if (!isSleeping && e.target.id !== 'dimBtnL' && e.target.id !== 'dimBtnR' && !e.target.closest('.die')) resetSleepTimer();
     }
 
     function onPointerUp(e) {
         if (!touchStart) return;
+        if (e.target.closest && e.target.closest('.die')) { touchStart = null; return; }
         const t = e.changedTouches ? e.changedTouches[0] : e;
         const dx = t.clientX - touchStart.x;
         const dy = t.clientY - touchStart.y;
@@ -729,7 +797,71 @@
         if (document.visibilityState === 'visible') requestWakeLock();
     });
 
-    // ── INIT ──────────────────────────────────────────────────
+    // ── DICE ─────────────────────────────────────────────────
+    // Pip grid positions: 9 cells (3x3), indexed 0-8
+    // Layout:  0 1 2
+    //          3 4 5
+    //          6 7 8
+    const pipLayouts = {
+        1: [4],
+        2: [0, 8],
+        3: [0, 4, 8],
+        4: [0, 2, 6, 8],
+        5: [0, 2, 4, 6, 8],
+        6: [0, 2, 3, 5, 6, 8]
+    };
+
+    const diceValues = [1, 1, 1, 1];
+    const rollingFlags = [false, false, false, false];
+
+    function renderDie(index, value) {
+        const grid = document.getElementById('pipgrid' + index);
+        grid.innerHTML = '';
+        const layout = pipLayouts[value];
+        for (let i = 0; i < 9; i++) {
+            const pip = document.createElement('div');
+            pip.className = 'pip' + (layout.includes(i) ? ' on' : '');
+            grid.appendChild(pip);
+        }
+    }
+
+    function rollDie(index) {
+        if (rollingFlags[index]) return;
+        rollingFlags[index] = true;
+        if (navigator.vibrate) navigator.vibrate(30);
+
+        const finalValue = Math.floor(Math.random() * 6) + 1;
+        const totalSteps = 10;
+        // Steps get progressively slower: start fast, end slow
+        const intervals = [40,45,50,55,65,75,85,100,120,150];
+        let step = 0;
+
+        function tick() {
+            const grid = document.getElementById('pipgrid' + index);
+            const isLast = step === totalSteps - 1;
+            const showValue = isLast ? finalValue : (Math.floor(Math.random() * 6) + 1);
+
+            // Flash off then on to make change visible
+            grid.classList.add('flash');
+            setTimeout(() => {
+                grid.classList.remove('flash');
+                renderDie(index, showValue);
+            }, 30);
+
+            step++;
+            if (step < totalSteps) {
+                setTimeout(tick, intervals[step]);
+            } else {
+                diceValues[index] = finalValue;
+                rollingFlags[index] = false;
+            }
+        }
+
+        tick();
+    }
+
+    // Init dice at 1
+    for (let i = 0; i < 4; i++) renderDie(i, 1);
     shuffleCard();
     resetSleepTimer();
 
