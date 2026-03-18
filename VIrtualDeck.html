@@ -204,6 +204,8 @@
         #shuffleBtn:hover { background: #0b7dda; }
         #chooseBtn { background: #ff9800; }
         #chooseBtn:hover { background: #e68900; }
+        #fsBtn { background: #555; font-size: 18px; padding: 10px 16px; }
+        #fsBtn:hover { background: #444; }
 
         /* ── TITLE ROW ── */
         .title-row {
@@ -228,9 +230,9 @@
             position: fixed;
             display: flex;
             flex-direction: column;
-            gap: 44px;
-            top: 50%;
-            transform: translateY(-50%);
+            justify-content: space-between;
+            top: 8%;
+            bottom: 8%;
             align-items: center;
             z-index: 2;
         }
@@ -239,9 +241,9 @@
         .dice-col.right { right: 12px; }
 
         .die {
-            width: 64px; height: 64px;
+            width: 50px; height: 50px;
             background: white;
-            border-radius: 12px;
+            border-radius: 10px;
             box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
             cursor: pointer;
             position: relative;
@@ -259,7 +261,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            width: 46px; height: 46px;
+            width: 36px; height: 36px;
             pointer-events: none;
             transition: opacity 0.06s;
         }
@@ -272,7 +274,7 @@
 
         .pip::after {
             content: '';
-            width: 9px; height: 9px;
+            width: 7px; height: 7px;
             border-radius: 50%;
             background: #1a1a1a;
             display: none;
@@ -460,6 +462,7 @@
 
         <div class="controls">
             <button class="btn" id="shuffleBtn" onclick="shuffleCard()">Shuffle</button>
+            <button class="btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
             <button class="btn" id="chooseBtn" onclick="openModal()">Choose</button>
         </div>
 
@@ -737,7 +740,30 @@
     document.addEventListener('mousedown',  onPointerDown);
     document.addEventListener('mouseup',    onPointerUp);
 
-    // ── DIM BUTTON DOUBLE-TAP ─────────────────────────────────
+    // ── FULLSCREEN ────────────────────────────────────────────
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+            document.exitFullscreen().catch(() => {});
+        }
+    }
+
+    // Update button icon based on state
+    document.addEventListener('fullscreenchange', () => {
+        document.getElementById('fsBtn').textContent = document.fullscreenElement ? '✕' : '⛶';
+    });
+
+    // Auto-request fullscreen on first tap (needed for mobile)
+    function tryAutoFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+        document.removeEventListener('touchstart', tryAutoFullscreen);
+        document.removeEventListener('mousedown', tryAutoFullscreen);
+    }
+    document.addEventListener('touchstart', tryAutoFullscreen, { once: true });
+    document.addEventListener('mousedown', tryAutoFullscreen, { once: true });
     let dimTapTimer = null;
     let dimTapCount = 0;
 
