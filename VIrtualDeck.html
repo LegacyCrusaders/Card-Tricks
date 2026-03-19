@@ -111,6 +111,7 @@
             transform-style: preserve-3d;
             transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .card.flipped {
@@ -123,6 +124,7 @@
             -webkit-backface-visibility: hidden;
             border-radius: 10px;
             border: 3px solid #333;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* BACK */
@@ -721,12 +723,12 @@
                 showPulse(sx, sy);
             }
         } else {
-            // Short tap → only flip if released on the card
+            // Short tap → only flip if tap started AND ended on the card
             const cardEl = document.getElementById('card');
             const cardRect = cardEl.getBoundingClientRect();
-            const releasedOnCard = t.clientX >= cardRect.left && t.clientX <= cardRect.right &&
-                                   t.clientY >= cardRect.top  && t.clientY <= cardRect.bottom;
-            if (releasedOnCard) {
+            const startOnCard = sx >= cardRect.left && sx <= cardRect.right &&
+                                sy >= cardRect.top  && sy <= cardRect.bottom;
+            if (startOnCard) {
                 flipCard();
             }
         }
