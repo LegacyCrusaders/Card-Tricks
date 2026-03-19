@@ -668,14 +668,38 @@
         p.classList.add('pop');
     }
 
-    // ── FULL-SCREEN GESTURE ───────────────────────────────────
-    // Works both in sleep mode (sets card) and on face-down card (sets card)
-    // On face-up card tap → flip
+    // ── CARD TAP → FLIP ───────────────────────────────────────
+    // Direct listener on the card — completely independent of cue system
+    let cardTouchMoved = false;
 
+    document.getElementById('card').addEventListener('touchstart', function(e) {
+        cardTouchMoved = false;
+    }, { passive: true });
+
+    document.getElementById('card').addEventListener('touchmove', function(e) {
+        cardTouchMoved = true;
+    }, { passive: true });
+
+    document.getElementById('card').addEventListener('touchend', function(e) {
+        if (!cardTouchMoved && !isSleeping) {
+            e.preventDefault();
+            flipCard();
+        }
+        cardTouchMoved = false;
+    }, { passive: false });
+
+    // Mouse click fallback for desktop
+    document.getElementById('card').addEventListener('click', function(e) {
+        if (!isSleeping) flipCard();
+    });
+
+    // ── FULL-SCREEN GESTURE (cue system only, no flip) ────────
     let touchStart = null;
     const MIN_DRAG = 25; // px
 
     function onPointerDown(e) {
+        // Ignore touches on the card — handled above
+        if (e.target.closest && e.target.closest('#card')) return;
         const t = e.touches ? e.touches[0] : e;
         touchStart = { x: t.clientX, y: t.clientY, time: Date.now() };
         if (!isSleeping && e.target.id !== 'dimBtnL' && e.target.id !== 'dimBtnR' && !e.target.closest('.die')) resetSleepTimer();
@@ -684,6 +708,7 @@
     function onPointerUp(e) {
         if (!touchStart) return;
         if (e.target.closest && e.target.closest('.die')) { touchStart = null; return; }
+        if (e.target.closest && e.target.closest('#card')) { touchStart = null; return; }
         const t = e.changedTouches ? e.changedTouches[0] : e;
         const dx = t.clientX - touchStart.x;
         const dy = t.clientY - touchStart.y;
@@ -692,8 +717,6 @@
         const sy = touchStart.y;
 
         if (isSleeping) {
-            // Any interaction wakes it up
-            // But if there's a drag, secretly set the card first
             if (dist >= MIN_DRAG) {
                 const value = valueFromPos(sx, sy);
                 if (value === '🃏') {
@@ -709,28 +732,16 @@
             return;
         }
 
-        // ── AWAKE MODE ──
-        if (dist >= MIN_DRAG) {
-            // Any drag anywhere → secret cue, never flip
-            if (!isFaceUp) {
-                const value = valueFromPos(sx, sy);
-                if (value === '🃏') {
-                    setCard('🃏', '');
-                } else {
-                    const suit = suitFromAngle(dx, dy);
-                    setCard(value, suit);
-                }
-                showPulse(sx, sy);
+        // ── AWAKE MODE — cue only, no flip ──
+        if (dist >= MIN_DRAG && !isFaceUp) {
+            const value = valueFromPos(sx, sy);
+            if (value === '🃏') {
+                setCard('🃏', '');
+            } else {
+                const suit = suitFromAngle(dx, dy);
+                setCard(value, suit);
             }
-        } else {
-            // Short tap → only flip if tap started AND ended on the card
-            const cardEl = document.getElementById('card');
-            const cardRect = cardEl.getBoundingClientRect();
-            const startOnCard = sx >= cardRect.left && sx <= cardRect.right &&
-                                sy >= cardRect.top  && sy <= cardRect.bottom;
-            if (startOnCard) {
-                flipCard();
-            }
+            showPulse(sx, sy);
         }
 
         touchStart = null;
