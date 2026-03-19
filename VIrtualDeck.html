@@ -37,10 +37,13 @@
         .container {
             text-align: center;
             background: white;
-            padding: 24px 40px 20px;
+            padding: 24px 32px 24px;
             border-radius: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             position: relative;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         /* Decorative edge markers — doubles as zone guides */
@@ -101,7 +104,7 @@
         /* ── CARD ── */
         .card-wrap {
             perspective: 1200px;
-            margin: 20px 0;
+            margin: 16px 0 0;
         }
 
         .card {
@@ -576,7 +579,6 @@
     function setCard(value, suit) {
         currentCard = { value, suit };
         updateDisplay();
-        if (navigator.vibrate) navigator.vibrate(40);
     }
 
     // ── FLIP ─────────────────────────────────────────────────
