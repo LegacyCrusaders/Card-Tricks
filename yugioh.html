@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YuGiOh Card Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Palatino+Linotype&family=Matrix+II+Small+Caps+Regular&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1206;
+    background-image: radial-gradient(ellipse at 30% 20%, #2a1a06 0%, transparent 60%),
+                      radial-gradient(ellipse at 70% 80%, #06121a 0%, transparent 60%);
+    color: #e8d5a3;
+    font-family: Georgia, 'Times New Roman', serif;
+    min-height: 100vh;
+    padding: 30px 20px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    color: #c9a227;
+    text-align: center;
+    letter-spacing: 3px;
+    margin-bottom: 30px;
+    text-shadow: 0 0 30px rgba(201,162,39,0.5);
+  }
+
+  .controls {
+    max-width: 860px;
+    margin: 0 auto 30px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    background: #0d0a04;
+    border: 1px solid #5a3a0a;
+    color: #e8d5a3;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: #c9a227; }
+  input[type="text"]::placeholder { color: #5a4a2a; }
+
+  .btn {
+    background: linear-gradient(135deg, #c9a227 0%, #7a5a10 100%);
+    color: #0a0804;
+    border: none;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-download {
+    background: linear-gradient(135deg, #2a6a2a 0%, #1a3a1a 100%);
+    color: #8aea8a;
+  }
+
+  #status {
+    text-align: center;
+    font-style: italic;
+    color: #8a7a5a;
+    margin-bottom: 16px;
+    min-height: 1.4em;
+  }
+  #status.error { color: #c0392b; }
+
+  /* ── CARD WRAPPER (centers & scales for preview) ── */
+  .card-outer {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  /* ── THE ACTUAL CARD (matches real YGO proportions 421x614) ── */
+  .ygo-card {
+    width: 421px;
+    height: 614px;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 0 2px #8a6a20;
+    font-family: Georgia, 'Times New Roman', serif;
+    flex-shrink: 0;
+  }
+
+  /* Card type backgrounds */
+  .ygo-card.normal    { background: linear-gradient(160deg, #d4a95c 0%, #b8882e 30%, #c9a040 60%, #a06820 100%); }
+  .ygo-card.effect    { background: linear-gradient(160deg, #c8733a 0%, #a04820 30%, #b85a28 60%, #883010 100%); }
+  .ygo-card.fusion    { background: linear-gradient(160deg, #7a5aaa 0%, #5a3a8a 30%, #6a4a9a 60%, #4a2a7a 100%); }
+  .ygo-card.ritual    { background: linear-gradient(160deg, #4a6aaa 0%, #2a4a8a 30%, #3a5a9a 60%, #1a3a7a 100%); }
+  .ygo-card.synchro   { background: linear-gradient(160deg, #d8d8d8 0%, #a8a8a8 30%, #c8c8c8 60%, #888888 100%); }
+  .ygo-card.xyz       { background: linear-gradient(160deg, #2a2a2a 0%, #0a0a0a 30%, #1a1a1a 60%, #050505 100%); }
+  .ygo-card.link      { background: linear-gradient(160deg, #1a3a5a 0%, #0a1a3a 30%, #152a4a 60%, #081525 100%); }
+  .ygo-card.spell     { background: linear-gradient(160deg, #1a5a4a 0%, #0a3a2a 30%, #154a3a 60%, #082520 100%); }
+  .ygo-card.trap      { background: linear-gradient(160deg, #7a2a4a 0%, #5a0a2a 30%, #6a1a3a 60%, #400818 100%); }
+
+  /* Card border/frame overlay */
+  .ygo-card::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .ygo-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.15) 100%);
+    pointer-events: none;
+    z-index: 9;
+  }
+
+  /* ── CARD SECTIONS ── */
+
+  .card-header {
+    position: absolute;
+    top: 14px; left: 14px; right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    z-index: 5;
+  }
+
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: #0a0804;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+    line-height: 1.1;
+    max-width: 270px;
+    letter-spacing: 0.5px;
+  }
+  .ygo-card.xyz .card-name,
+  .ygo-card.link .card-name { color: #f0e8d0; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
+  .card-attribute {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #0a0804;
+    background: rgba(255,255,255,0.25);
+    border-radius: 3px;
+    padding: 2px 5px;
+    white-space: nowrap;
+  }
+  .ygo-card.xyz .card-attribute,
+  .ygo-card.link .card-attribute { color: #f0e8d0; background: rgba(0,0,0,0.3); }
+
+  .card-image-area {
+    position: absolute;
+    top: 42px; left: 18px; right: 18px;
+    height: 195px;
+    background: rgba(0,0,0,0.25);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 5;
+  }
+
+  .card-image-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .card-image-placeholder {
+    color: rgba(255,255,255,0.25);
+    font-size: 11px;
+    font-style: italic;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .card-level-row {
+    position: absolute;
+    top: 242px; left: 18px; right: 18px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    z-index: 5;
+  }
+
+  .star {
+    color: #f0c020;
+    font-size: 16px;
+    text-shadow: 0 0 4px rgba(240,192,0,0.6);
+    line-height: 1;
+  }
+  .ygo-card.xyz .star { color: #c0a0e0; }
+
+  .card-type-line {
+    position: absolute;
+    top: 262px; left: 18px; right: 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #0a0804;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    padding: 2px 6px;
+    z-index: 5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ygo-card.xyz .card-type-line,
+  .ygo-card.link .card-type-line { color: #f0e8d0; }
+
+  .card-text-area {
+    position: absolute;
+    top: 284px; left: 16px; right: 16px;
+    bottom: 56px;
+    background: rgba(255,248,220,0.9);
+    border-radius: 3px;
+    padding: 7px 8px;
+    z-index: 5;
+    overflow: hidden;
+  }
+
+  .card-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 9.5px;
+    color: #1a1008;
+    line-height: 1.45;
+    overflow: hidden;
+    max-height: 100%;
+  }
+
+  .card-stats {
+    position: absolute;
+    bottom: 28px; left: 18px; right: 18px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    z-index: 5;
+  }
+
+  .stat {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0a0804;
+  }
+  .stat span { font-weight: 400; font-size: 10px; margin-right: 2px; }
+  .ygo-card.xyz .stat,
+  .ygo-card.link .stat { color: #f0e8d0; }
+
+  .card-id {
+    position: absolute;
+    bottom: 12px; left: 18px; right: 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    color: rgba(10,8,4,0.5);
+    text-align: right;
+    z-index: 5;
+  }
+  .ygo-card.xyz .card-id,
+  .ygo-card.link .card-id { color: rgba(240,232,208,0.4); }
+
+  .download-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+</style>
+</head>
+<body>
+
+<h1>⬡ YuGiOh Card Generator ⬡</h1>
+
+<div class="controls">
+  <input type="text" id="cardInput" placeholder="Card name or passcode (e.g. Dark Magician or 89631139)" />
+  <button class="btn" id="lookupBtn" onclick="lookupCard()">LOOK UP</button>
+</div>
+
+<div id="status"></div>
+
+<div class="card-outer" id="cardOuter" style="display:none;">
+  <div class="ygo-card normal" id="yugiohCard">
+    <div class="card-header">
+      <div class="card-name" id="cName">—</div>
+      <div class="card-attribute" id="cAttr">—</div>
+    </div>
+    <div class="card-image-area" id="cImgArea">
+      <div class="card-image-placeholder">Card art loads here<br>(low-res is fine — text is vector)</div>
+    </div>
+    <div class="card-level-row" id="cLevelRow"></div>
+    <div class="card-type-line" id="cTypeLine">[ ? / Effect ]</div>
+    <div class="card-text-area">
+      <div class="card-text" id="cDesc">—</div>
+    </div>
+    <div class="card-stats" id="cStats"></div>
+    <div class="card-id" id="cId"></div>
+  </div>
+</div>
+
+<div class="download-row" id="downloadRow" style="display:none;">
+  <button class="btn btn-download" onclick="downloadCard(1)">⬇ Download 1× (421px)</button>
+  <button class="btn btn-download" onclick="downloadCard(2)">⬇ Download 2× (842px)</button>
+  <button class="btn btn-download" onclick="downloadCard(4)">⬇ Download 4× (1684px)</button>
+</div>
+
+<!-- html2canvas for screenshot -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+
+  document.getElementById('cardInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupCard();
+  });
+
+  function getCardClass(card) {
+    const t = (card.type || '').toLowerCase();
+    const f = (card.frameType || '').toLowerCase();
+    if (f === 'spell' || t.includes('spell')) return 'spell';
+    if (f === 'trap' || t.includes('trap')) return 'trap';
+    if (f === 'fusion' || t.includes('fusion')) return 'fusion';
+    if (f === 'ritual' || t.includes('ritual')) return 'ritual';
+    if (f === 'synchro' || t.includes('synchro')) return 'synchro';
+    if (f === 'xyz' || t.includes('xyz')) return 'xyz';
+    if (f === 'link' || t.includes('link')) return 'link';
+    if (t.includes('effect')) return 'effect';
+    return 'normal';
+  }
+
+  async function lookupCard() {
+    const input = document.getElementById('cardInput').value.trim();
+    if (!input) return;
+
+    const btn = document.getElementById('lookupBtn');
+    const status = document.getElementById('status');
+    const outer = document.getElementById('cardOuter');
+    const dlRow = document.getElementById('downloadRow');
+
+    btn.disabled = true;
+    outer.style.display = 'none';
+    dlRow.style.display = 'none';
+    status.className = '';
+    status.textContent = 'Searching the card database…';
+
+    try {
+      const isNumeric = /^\d+$/.test(input);
+      const url = isNumeric
+        ? `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(input)}`
+        : `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(input)}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.error || !data.data?.length) {
+        status.className = 'error';
+        status.textContent = 'Card not found. Try the exact name or the card\'s passcode number.';
+        return;
+      }
+
+      const card = data.data[0];
+      renderCard(card);
+      status.textContent = '';
+      outer.style.display = 'flex';
+      dlRow.style.display = 'flex';
+
+    } catch(err) {
+      status.className = 'error';
+      status.textContent = 'Network error — save this file and open it locally in your browser.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderCard(card) {
+    const el = document.getElementById('yugiohCard');
+
+    // Card type class
+    const cls = getCardClass(card);
+    el.className = 'ygo-card ' + cls;
+
+    // Name
+    document.getElementById('cName').textContent = card.name;
+
+    // Attribute
+    const attr = card.attribute || card.race || '';
+    document.getElementById('cAttr').textContent = attr;
+
+    // Image
+    const imgArea = document.getElementById('cImgArea');
+    const imgUrl = card.card_images?.[0]?.image_url_small || card.card_images?.[0]?.image_url;
+    if (imgUrl) {
+      imgArea.innerHTML = `<img src="${imgUrl}" alt="Card art" crossorigin="anonymous" />`;
+    } else {
+      imgArea.innerHTML = `<div class="card-image-placeholder">No image available</div>`;
+    }
+
+    // Level / Rank stars
+    const levelRow = document.getElementById('cLevelRow');
+    const lvl = card.level ?? card.linkval ?? 0;
+    if (lvl && cls !== 'spell' && cls !== 'trap') {
+      const star = cls === 'xyz' ? '✦' : '★';
+      levelRow.innerHTML = Array(lvl).fill(`<span class="star">${star}</span>`).join('');
+    } else {
+      levelRow.innerHTML = '';
+    }
+
+    // Type line
+    let typeLine = '[';
+    if (card.race) typeLine += ' ' + card.race;
+    const extras = [];
+    const t = card.type || '';
+    if (t.includes('Fusion')) extras.push('Fusion');
+    if (t.includes('Ritual')) extras.push('Ritual');
+    if (t.includes('Synchro')) extras.push('Synchro');
+    if (t.includes('XYZ') || t.includes('Xyz')) extras.push('Xyz');
+    if (t.includes('Link')) extras.push('Link');
+    if (t.includes('Pendulum')) extras.push('Pendulum');
+    if (t.includes('Effect')) extras.push('Effect');
+    if (t.includes('Normal') && !extras.length) extras.push('Normal');
+    if (extras.length) typeLine += ' / ' + extras.join(' / ');
+    typeLine += ' ]';
+    document.getElementById('cTypeLine').textContent = typeLine;
+
+    // Description / effect text
+    document.getElementById('cDesc').textContent = card.desc || '';
+
+    // Stats
+    const statsEl = document.getElementById('cStats');
+    if (card.atk !== undefined) {
+      statsEl.innerHTML = `
+        <div class="stat"><span>ATK/</span>${card.atk === -1 ? '?' : card.atk}</div>
+        <div class="stat"><span>DEF/</span>${card.def === -1 ? '?' : (card.def ?? '—')}</div>
+      `;
+    } else {
+      statsEl.innerHTML = '';
+    }
+
+    // ID
+    document.getElementById('cId').textContent = card.id || '';
+  }
+
+  async function downloadCard(scale) {
+    const card = document.getElementById('yugiohCard');
+    const canvas = await html2canvas(card, {
+      scale: scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false
+    });
+    const link = document.createElement('a');
+    link.download = `yugioh_card_${scale}x.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+</script>
+</body>
+</html>
