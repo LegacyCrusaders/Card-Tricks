@@ -2,36 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YuGiOh Card Generator</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Palatino+Linotype&family=Matrix+II+Small+Caps+Regular&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #1a1206;
-    background-image: radial-gradient(ellipse at 30% 20%, #2a1a06 0%, transparent 60%),
-                      radial-gradient(ellipse at 70% 80%, #06121a 0%, transparent 60%);
+    background: #111;
     color: #e8d5a3;
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: Georgia, serif;
     min-height: 100vh;
-    padding: 30px 20px;
+    padding: 24px 16px;
   }
 
   h1 {
     font-family: 'Cinzel', serif;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     color: #c9a227;
     text-align: center;
     letter-spacing: 3px;
-    margin-bottom: 30px;
-    text-shadow: 0 0 30px rgba(201,162,39,0.5);
+    margin-bottom: 24px;
   }
 
   .controls {
-    max-width: 860px;
-    margin: 0 auto 30px;
+    max-width: 900px;
+    margin: 0 auto 20px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -40,7 +36,7 @@
   input[type="text"] {
     flex: 1;
     min-width: 200px;
-    background: #0d0a04;
+    background: #1a1a1a;
     border: 1px solid #5a3a0a;
     color: #e8d5a3;
     font-family: Georgia, serif;
@@ -48,248 +44,275 @@
     padding: 10px 14px;
     border-radius: 3px;
     outline: none;
-    transition: border-color 0.2s;
   }
-  input[type="text"]:focus { border-color: #c9a227; }
-  input[type="text"]::placeholder { color: #5a4a2a; }
+  input:focus { border-color: #c9a227; }
+  input::placeholder { color: #5a4a2a; }
 
   .btn {
-    background: linear-gradient(135deg, #c9a227 0%, #7a5a10 100%);
+    background: linear-gradient(135deg, #c9a227, #7a5a10);
     color: #0a0804;
     border: none;
     font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     padding: 10px 20px;
     border-radius: 3px;
     cursor: pointer;
     letter-spacing: 1px;
-    transition: opacity 0.2s, transform 0.1s;
     white-space: nowrap;
   }
-  .btn:hover { opacity: 0.88; transform: translateY(-1px); }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-  .btn-download {
-    background: linear-gradient(135deg, #2a6a2a 0%, #1a3a1a 100%);
-    color: #8aea8a;
-  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-dl { background: linear-gradient(135deg, #2a6a2a, #1a3a1a); color: #8aea8a; }
 
   #status {
     text-align: center;
     font-style: italic;
     color: #8a7a5a;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     min-height: 1.4em;
   }
   #status.error { color: #c0392b; }
 
-  /* ── CARD WRAPPER (centers & scales for preview) ── */
   .card-outer {
-    display: flex;
+    display: none;
     justify-content: center;
     margin-bottom: 20px;
   }
+  .card-outer.visible { display: flex; }
 
-  /* ── THE ACTUAL CARD (matches real YGO proportions 421x614) ── */
+  /* Card is rendered at 1.6x the real YGO size (421x614) for readability */
   .ygo-card {
-    width: 421px;
-    height: 614px;
+    width: 674px;
+    height: 982px;
     position: relative;
-    border-radius: 12px;
+    border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 0 2px #8a6a20;
-    font-family: Georgia, 'Times New Roman', serif;
+    box-shadow: 0 8px 50px rgba(0,0,0,0.9), 0 0 0 3px #8a6a20;
     flex-shrink: 0;
+    font-family: Georgia, serif;
   }
 
-  /* Card type backgrounds */
-  .ygo-card.normal    { background: linear-gradient(160deg, #d4a95c 0%, #b8882e 30%, #c9a040 60%, #a06820 100%); }
-  .ygo-card.effect    { background: linear-gradient(160deg, #c8733a 0%, #a04820 30%, #b85a28 60%, #883010 100%); }
-  .ygo-card.fusion    { background: linear-gradient(160deg, #7a5aaa 0%, #5a3a8a 30%, #6a4a9a 60%, #4a2a7a 100%); }
-  .ygo-card.ritual    { background: linear-gradient(160deg, #4a6aaa 0%, #2a4a8a 30%, #3a5a9a 60%, #1a3a7a 100%); }
-  .ygo-card.synchro   { background: linear-gradient(160deg, #d8d8d8 0%, #a8a8a8 30%, #c8c8c8 60%, #888888 100%); }
-  .ygo-card.xyz       { background: linear-gradient(160deg, #2a2a2a 0%, #0a0a0a 30%, #1a1a1a 60%, #050505 100%); }
-  .ygo-card.link      { background: linear-gradient(160deg, #1a3a5a 0%, #0a1a3a 30%, #152a4a 60%, #081525 100%); }
-  .ygo-card.spell     { background: linear-gradient(160deg, #1a5a4a 0%, #0a3a2a 30%, #154a3a 60%, #082520 100%); }
-  .ygo-card.trap      { background: linear-gradient(160deg, #7a2a4a 0%, #5a0a2a 30%, #6a1a3a 60%, #400818 100%); }
+  /* Frame colours */
+  .fr-normal   { background: linear-gradient(160deg,#d4a95c,#a06820); }
+  .fr-effect   { background: linear-gradient(160deg,#c8733a,#883010); }
+  .fr-fusion   { background: linear-gradient(160deg,#7a5aaa,#4a2a7a); }
+  .fr-ritual   { background: linear-gradient(160deg,#4a6aaa,#1a3a7a); }
+  .fr-synchro  { background: linear-gradient(160deg,#d8d8d8,#888); }
+  .fr-xyz      { background: linear-gradient(160deg,#2a2a2a,#050505); }
+  .fr-link     { background: linear-gradient(160deg,#1a3a5a,#081525); }
+  .fr-spell    { background: linear-gradient(160deg,#1a5a4a,#082520); }
+  .fr-trap     { background: linear-gradient(160deg,#7a2a4a,#400818); }
+  .fr-pendulum { background: linear-gradient(160deg,#3a7a3a 0%,#2a5aaa 50%,#7a5aaa 100%); }
 
-  /* Card border/frame overlay */
-  .ygo-card::before {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 2px solid rgba(255,255,255,0.25);
-    border-radius: 8px;
-    pointer-events: none;
-    z-index: 10;
-  }
+  /* Sheen overlay */
   .ygo-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(160deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.15) 100%);
-    pointer-events: none;
-    z-index: 9;
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(160deg,rgba(255,255,255,.1) 0%,transparent 55%,rgba(0,0,0,.2) 100%);
+    pointer-events:none;
+    z-index:20;
+    border-radius:18px;
   }
 
-  /* ── CARD SECTIONS ── */
-
-  .card-header {
-    position: absolute;
-    top: 14px; left: 14px; right: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    z-index: 5;
+  .inner-border {
+    position:absolute;
+    inset:10px;
+    border:2px solid rgba(255,255,255,.3);
+    border-radius:10px;
+    pointer-events:none;
+    z-index:21;
   }
 
-  .card-name {
-    font-family: 'Cinzel', serif;
-    font-size: 15px;
-    font-weight: 900;
-    color: #0a0804;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.3);
-    line-height: 1.1;
-    max-width: 270px;
-    letter-spacing: 0.5px;
-  }
-  .ygo-card.xyz .card-name,
-  .ygo-card.link .card-name { color: #f0e8d0; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-
-  .card-attribute {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    font-weight: 700;
-    color: #0a0804;
-    background: rgba(255,255,255,0.25);
-    border-radius: 3px;
-    padding: 2px 5px;
-    white-space: nowrap;
-  }
-  .ygo-card.xyz .card-attribute,
-  .ygo-card.link .card-attribute { color: #f0e8d0; background: rgba(0,0,0,0.3); }
-
-  .card-image-area {
-    position: absolute;
-    top: 42px; left: 18px; right: 18px;
-    height: 195px;
-    background: rgba(0,0,0,0.25);
-    border: 2px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    z-index: 5;
+  /* Header */
+  .c-header {
+    position:absolute;
+    top:20px; left:22px; right:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    z-index:5;
   }
 
-  .card-image-area img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .c-name {
+    font-family:'Cinzel',serif;
+    font-size:22px;
+    font-weight:900;
+    color:#0a0804;
+    line-height:1.15;
+    max-width:440px;
+    letter-spacing:.5px;
+    text-shadow:0 1px 2px rgba(255,255,255,.35);
   }
+  .fr-xyz .c-name,.fr-link .c-name { color:#f0e8d0; text-shadow:0 1px 3px rgba(0,0,0,.7); }
 
-  .card-image-placeholder {
-    color: rgba(255,255,255,0.25);
-    font-size: 11px;
-    font-style: italic;
-    text-align: center;
-    padding: 10px;
+  .c-attr {
+    font-family:'Cinzel',serif;
+    font-size:14px;
+    font-weight:700;
+    color:#0a0804;
+    background:rgba(255,255,255,.28);
+    border-radius:4px;
+    padding:3px 8px;
+    white-space:nowrap;
+    align-self:center;
   }
+  .fr-xyz .c-attr,.fr-link .c-attr { color:#f0e8d0; background:rgba(0,0,0,.35); }
 
-  .card-level-row {
-    position: absolute;
-    top: 242px; left: 18px; right: 18px;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    z-index: 5;
+  /* Art box */
+  .c-art {
+    position:absolute;
+    top:60px; left:26px; right:26px;
+    height:330px;
+    background:rgba(0,0,0,.25);
+    border:2px solid rgba(255,255,255,.25);
+    border-radius:4px;
+    overflow:hidden;
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .c-art img { width:100%; height:100%; object-fit:cover; }
+  .c-art-placeholder { color:rgba(255,255,255,.3); font-size:13px; font-style:italic; }
+
+  /* Pendulum scale badges */
+  .pend-scale-left,.pend-scale-right {
+    position:absolute;
+    width:44px; height:44px;
+    background:rgba(0,0,0,.55);
+    border:2px solid rgba(255,255,255,.4);
+    border-radius:50%;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    font-family:'Cinzel',serif;
+    font-size:20px;
+    font-weight:700;
+    color:#f0e8d0;
+    z-index:6;
+  }
+  .pend-scale-left  { left:26px; }
+  .pend-scale-right { right:26px; }
+
+  /* Level/Rank row */
+  .c-level {
+    position:absolute;
+    left:26px; right:26px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    z-index:5;
   }
 
   .star {
-    color: #f0c020;
-    font-size: 16px;
-    text-shadow: 0 0 4px rgba(240,192,0,0.6);
-    line-height: 1;
+    color:#f0c020;
+    font-size:24px;
+    line-height:1;
+    text-shadow:0 0 5px rgba(240,192,0,.7);
   }
-  .ygo-card.xyz .star { color: #c0a0e0; }
+  .fr-xyz .star { color:#c8a8f8; }
 
-  .card-type-line {
-    position: absolute;
-    top: 262px; left: 18px; right: 18px;
-    font-family: 'Cinzel', serif;
-    font-size: 9.5px;
-    font-weight: 600;
-    color: #0a0804;
-    background: rgba(255,255,255,0.15);
-    border-radius: 2px;
-    padding: 2px 6px;
-    z-index: 5;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* Type line */
+  .c-type {
+    position:absolute;
+    left:26px; right:26px;
+    font-family:'Cinzel',serif;
+    font-size:14px;
+    font-weight:600;
+    color:#0a0804;
+    background:rgba(255,255,255,.18);
+    border-radius:3px;
+    padding:3px 8px;
+    z-index:5;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
-  .ygo-card.xyz .card-type-line,
-  .ygo-card.link .card-type-line { color: #f0e8d0; }
+  .fr-xyz .c-type,.fr-link .c-type,.fr-spell .c-type,.fr-trap .c-type { color:#f0e8d0; }
 
-  .card-text-area {
-    position: absolute;
-    top: 284px; left: 16px; right: 16px;
-    bottom: 56px;
-    background: rgba(255,248,220,0.9);
-    border-radius: 3px;
-    padding: 7px 8px;
-    z-index: 5;
-    overflow: hidden;
-  }
-
-  .card-text {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 9.5px;
-    color: #1a1008;
-    line-height: 1.45;
-    overflow: hidden;
-    max-height: 100%;
+  /* Pendulum effect text */
+  .c-pend-text {
+    display:none;
+    position:absolute;
+    left:26px; right:26px;
+    background:rgba(255,248,220,.9);
+    border-radius:3px;
+    padding:8px 10px;
+    z-index:5;
+    font-size:14px;
+    color:#1a1008;
+    line-height:1.55;
+    overflow:hidden;
   }
 
-  .card-stats {
-    position: absolute;
-    bottom: 28px; left: 18px; right: 18px;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 12px;
-    z-index: 5;
+  /* Main text area */
+  .c-text-area {
+    position:absolute;
+    left:26px; right:26px;
+    background:rgba(255,248,220,.92);
+    border-radius:3px;
+    padding:10px 12px;
+    z-index:5;
+    overflow:hidden;
+    bottom:84px;
   }
 
-  .stat {
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: #0a0804;
+  .c-text {
+    font-family:Georgia,serif;
+    font-size:15px;
+    color:#1a1008;
+    line-height:1.6;
   }
-  .stat span { font-weight: 400; font-size: 10px; margin-right: 2px; }
-  .ygo-card.xyz .stat,
-  .ygo-card.link .stat { color: #f0e8d0; }
 
-  .card-id {
-    position: absolute;
-    bottom: 12px; left: 18px; right: 18px;
-    font-family: 'Cinzel', serif;
-    font-size: 8px;
-    color: rgba(10,8,4,0.5);
-    text-align: right;
-    z-index: 5;
+  /* Stats row */
+  .c-stats {
+    position:absolute;
+    bottom:40px; left:26px; right:26px;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:20px;
+    z-index:5;
   }
-  .ygo-card.xyz .card-id,
-  .ygo-card.link .card-id { color: rgba(240,232,208,0.4); }
 
-  .download-row {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .stat-item {
+    font-family:'Cinzel',serif;
+    font-size:18px;
+    font-weight:700;
+    color:#0a0804;
+    display:flex;
+    align-items:baseline;
+    gap:3px;
   }
+  .stat-item .label {
+    font-size:13px;
+    font-weight:400;
+    opacity:.75;
+  }
+  .fr-xyz .stat-item,.fr-link .stat-item { color:#f0e8d0; }
+
+  /* Card ID */
+  .c-id {
+    position:absolute;
+    bottom:16px; right:26px;
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    color:rgba(10,8,4,.4);
+    z-index:5;
+  }
+  .fr-xyz .c-id,.fr-link .c-id { color:rgba(240,232,208,.35); }
+
+  /* Download row */
+  .dl-row {
+    display:none;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-top:6px;
+  }
+  .dl-row.visible { display:flex; }
 </style>
 </head>
 <body>
@@ -297,186 +320,240 @@
 <h1>⬡ YuGiOh Card Generator ⬡</h1>
 
 <div class="controls">
-  <input type="text" id="cardInput" placeholder="Card name or passcode (e.g. Dark Magician or 89631139)" />
+  <input type="text" id="cardInput" placeholder="Card name or passcode — press Enter or click Look Up" />
   <button class="btn" id="lookupBtn" onclick="lookupCard()">LOOK UP</button>
 </div>
 
 <div id="status"></div>
 
-<div class="card-outer" id="cardOuter" style="display:none;">
-  <div class="ygo-card normal" id="yugiohCard">
-    <div class="card-header">
-      <div class="card-name" id="cName">—</div>
-      <div class="card-attribute" id="cAttr">—</div>
+<div class="card-outer" id="cardOuter">
+  <div class="ygo-card fr-normal" id="yugiohCard">
+    <div class="inner-border"></div>
+
+    <div class="c-header">
+      <div class="c-name" id="cName">Card Name</div>
+      <div class="c-attr" id="cAttr"></div>
     </div>
-    <div class="card-image-area" id="cImgArea">
-      <div class="card-image-placeholder">Card art loads here<br>(low-res is fine — text is vector)</div>
+
+    <div class="c-art" id="cArt">
+      <div class="c-art-placeholder">Card art appears here</div>
     </div>
-    <div class="card-level-row" id="cLevelRow"></div>
-    <div class="card-type-line" id="cTypeLine">[ ? / Effect ]</div>
-    <div class="card-text-area">
-      <div class="card-text" id="cDesc">—</div>
+
+    <div class="pend-scale-left"  id="pScaleL"></div>
+    <div class="pend-scale-right" id="pScaleR"></div>
+
+    <div class="c-level" id="cLevel"></div>
+    <div class="c-type"  id="cType">[ ? ]</div>
+
+    <div class="c-pend-text" id="cPendText"></div>
+
+    <div class="c-text-area" id="cTextArea">
+      <div class="c-text" id="cDesc">—</div>
     </div>
-    <div class="card-stats" id="cStats"></div>
-    <div class="card-id" id="cId"></div>
+
+    <div class="c-stats" id="cStats"></div>
+    <div class="c-id"   id="cId"></div>
   </div>
 </div>
 
-<div class="download-row" id="downloadRow" style="display:none;">
-  <button class="btn btn-download" onclick="downloadCard(1)">⬇ Download 1× (421px)</button>
-  <button class="btn btn-download" onclick="downloadCard(2)">⬇ Download 2× (842px)</button>
-  <button class="btn btn-download" onclick="downloadCard(4)">⬇ Download 4× (1684px)</button>
+<div class="dl-row" id="dlRow">
+  <button class="btn btn-dl" onclick="downloadCard(1)">⬇ Download 1× (674px)</button>
+  <button class="btn btn-dl" onclick="downloadCard(2)">⬇ Download 2× (1348px)</button>
+  <button class="btn btn-dl" onclick="downloadCard(3)">⬇ Download 3× (2022px)</button>
 </div>
 
-<!-- html2canvas for screenshot -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 
-  document.getElementById('cardInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') lookupCard();
-  });
+document.getElementById('cardInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookupCard();
+});
 
-  function getCardClass(card) {
-    const t = (card.type || '').toLowerCase();
-    const f = (card.frameType || '').toLowerCase();
-    if (f === 'spell' || t.includes('spell')) return 'spell';
-    if (f === 'trap' || t.includes('trap')) return 'trap';
-    if (f === 'fusion' || t.includes('fusion')) return 'fusion';
-    if (f === 'ritual' || t.includes('ritual')) return 'ritual';
-    if (f === 'synchro' || t.includes('synchro')) return 'synchro';
-    if (f === 'xyz' || t.includes('xyz')) return 'xyz';
-    if (f === 'link' || t.includes('link')) return 'link';
-    if (t.includes('effect')) return 'effect';
-    return 'normal';
-  }
+function frameClass(card) {
+  const t = (card.type || '').toLowerCase();
+  const f = (card.frameType || '').toLowerCase();
+  if (f.includes('pendulum')) return 'pendulum';
+  if (f === 'spell' || t.includes('spell card')) return 'spell';
+  if (f === 'trap'  || t.includes('trap card'))  return 'trap';
+  if (f.includes('fusion')  || t.includes('fusion'))  return 'fusion';
+  if (f.includes('ritual')  || t.includes('ritual'))  return 'ritual';
+  if (f.includes('synchro') || t.includes('synchro')) return 'synchro';
+  if (f.includes('xyz')     || t.includes('xyz'))     return 'xyz';
+  if (f.includes('link')    || t.includes('link'))    return 'link';
+  if (t.includes('effect')) return 'effect';
+  return 'normal';
+}
 
-  async function lookupCard() {
-    const input = document.getElementById('cardInput').value.trim();
-    if (!input) return;
+async function lookupCard() {
+  const input = document.getElementById('cardInput').value.trim();
+  if (!input) return;
 
-    const btn = document.getElementById('lookupBtn');
-    const status = document.getElementById('status');
-    const outer = document.getElementById('cardOuter');
-    const dlRow = document.getElementById('downloadRow');
+  const btn    = document.getElementById('lookupBtn');
+  const status = document.getElementById('status');
+  const outer  = document.getElementById('cardOuter');
+  const dlRow  = document.getElementById('dlRow');
 
-    btn.disabled = true;
-    outer.style.display = 'none';
-    dlRow.style.display = 'none';
-    status.className = '';
-    status.textContent = 'Searching the card database…';
+  btn.disabled = true;
+  outer.classList.remove('visible');
+  dlRow.classList.remove('visible');
+  status.className = '';
+  status.textContent = 'Searching the card database…';
 
-    try {
-      const isNumeric = /^\d+$/.test(input);
-      const url = isNumeric
-        ? `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(input)}`
-        : `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(input)}`;
+  try {
+    const isNum = /^\d+$/.test(input);
+    const url = isNum
+      ? `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(input)}`
+      : `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(input)}`;
 
-      const res = await fetch(url);
-      const data = await res.json();
+    const res  = await fetch(url);
+    const data = await res.json();
 
-      if (data.error || !data.data?.length) {
-        status.className = 'error';
-        status.textContent = 'Card not found. Try the exact name or the card\'s passcode number.';
-        return;
-      }
-
-      const card = data.data[0];
-      renderCard(card);
-      status.textContent = '';
-      outer.style.display = 'flex';
-      dlRow.style.display = 'flex';
-
-    } catch(err) {
+    if (data.error || !data.data?.length) {
       status.className = 'error';
-      status.textContent = 'Network error — save this file and open it locally in your browser.';
-    } finally {
-      btn.disabled = false;
+      status.textContent = 'Card not found. Try the exact name or passcode number.';
+      return;
     }
+
+    renderCard(data.data[0]);
+    status.textContent = '';
+    outer.classList.add('visible');
+    dlRow.classList.add('visible');
+
+  } catch(err) {
+    status.className = 'error';
+    status.textContent = 'Network error — save this file and open it locally in your browser.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderCard(card) {
+  const el     = document.getElementById('yugiohCard');
+  const fr     = frameClass(card);
+  const isPend = fr === 'pendulum';
+  const t      = card.type || '';
+
+  // Frame
+  el.className = `ygo-card fr-${fr}`;
+
+  // Name
+  document.getElementById('cName').textContent = card.name;
+
+  // Attribute / card category badge
+  const attr = card.attribute
+    ? card.attribute
+    : t.includes('Spell') ? 'SPELL'
+    : t.includes('Trap')  ? 'TRAP'
+    : '';
+  const attrEl = document.getElementById('cAttr');
+  attrEl.textContent    = attr;
+  attrEl.style.display  = attr ? '' : 'none';
+
+  // Art image — use full-size image
+  const artEl  = document.getElementById('cArt');
+  const imgUrl = card.card_images?.[0]?.image_url || card.card_images?.[0]?.image_url_small;
+  artEl.style.height = isPend ? '380px' : '330px';
+  artEl.innerHTML = imgUrl
+    ? `<img src="${imgUrl}" crossorigin="anonymous" alt="Card art" />`
+    : `<div class="c-art-placeholder">No art available</div>`;
+
+  // Pendulum scale badges
+  const pL = document.getElementById('pScaleL');
+  const pR = document.getElementById('pScaleR');
+  const scaleTop = isPend ? (60 + 380 + 6) + 'px' : '0';
+  if (isPend && card.scale !== undefined) {
+    pL.textContent = card.scale;
+    pR.textContent = card.scale;
+    pL.style.display = pR.style.display = 'flex';
+    pL.style.top = pR.style.top = scaleTop;
+  } else {
+    pL.style.display = pR.style.display = 'none';
   }
 
-  function renderCard(card) {
-    const el = document.getElementById('yugiohCard');
+  // Level / Rank / Link
+  const levelEl = document.getElementById('cLevel');
+  const lvl = card.level  ?? 0;
+  const lnk = card.linkval ?? 0;
 
-    // Card type class
-    const cls = getCardClass(card);
-    el.className = 'ygo-card ' + cls;
+  // Position level row below art
+  const artBottom = 60 + parseInt(artEl.style.height);
+  levelEl.style.top = (artBottom + (isPend ? 54 : 6)) + 'px';
 
-    // Name
-    document.getElementById('cName').textContent = card.name;
-
-    // Attribute
-    const attr = card.attribute || card.race || '';
-    document.getElementById('cAttr').textContent = attr;
-
-    // Image
-    const imgArea = document.getElementById('cImgArea');
-    const imgUrl = card.card_images?.[0]?.image_url_small || card.card_images?.[0]?.image_url;
-    if (imgUrl) {
-      imgArea.innerHTML = `<img src="${imgUrl}" alt="Card art" crossorigin="anonymous" />`;
-    } else {
-      imgArea.innerHTML = `<div class="card-image-placeholder">No image available</div>`;
-    }
-
-    // Level / Rank stars
-    const levelRow = document.getElementById('cLevelRow');
-    const lvl = card.level ?? card.linkval ?? 0;
-    if (lvl && cls !== 'spell' && cls !== 'trap') {
-      const star = cls === 'xyz' ? '✦' : '★';
-      levelRow.innerHTML = Array(lvl).fill(`<span class="star">${star}</span>`).join('');
-    } else {
-      levelRow.innerHTML = '';
-    }
-
-    // Type line
-    let typeLine = '[';
-    if (card.race) typeLine += ' ' + card.race;
-    const extras = [];
-    const t = card.type || '';
-    if (t.includes('Fusion')) extras.push('Fusion');
-    if (t.includes('Ritual')) extras.push('Ritual');
-    if (t.includes('Synchro')) extras.push('Synchro');
-    if (t.includes('XYZ') || t.includes('Xyz')) extras.push('Xyz');
-    if (t.includes('Link')) extras.push('Link');
-    if (t.includes('Pendulum')) extras.push('Pendulum');
-    if (t.includes('Effect')) extras.push('Effect');
-    if (t.includes('Normal') && !extras.length) extras.push('Normal');
-    if (extras.length) typeLine += ' / ' + extras.join(' / ');
-    typeLine += ' ]';
-    document.getElementById('cTypeLine').textContent = typeLine;
-
-    // Description / effect text
-    document.getElementById('cDesc').textContent = card.desc || '';
-
-    // Stats
-    const statsEl = document.getElementById('cStats');
-    if (card.atk !== undefined) {
-      statsEl.innerHTML = `
-        <div class="stat"><span>ATK/</span>${card.atk === -1 ? '?' : card.atk}</div>
-        <div class="stat"><span>DEF/</span>${card.def === -1 ? '?' : (card.def ?? '—')}</div>
-      `;
-    } else {
-      statsEl.innerHTML = '';
-    }
-
-    // ID
-    document.getElementById('cId').textContent = card.id || '';
+  if (lnk) {
+    levelEl.innerHTML = `<span style="font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:#f0e8d0;">LINK-${lnk}</span>`;
+  } else if (lvl && fr !== 'spell' && fr !== 'trap') {
+    const starChar = fr === 'xyz' ? '✦' : '★';
+    levelEl.innerHTML = Array(lvl).fill(`<span class="star">${starChar}</span>`).join('');
+  } else {
+    levelEl.innerHTML = '';
   }
 
-  async function downloadCard(scale) {
-    const card = document.getElementById('yugiohCard');
-    const canvas = await html2canvas(card, {
-      scale: scale,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      logging: false
-    });
-    const link = document.createElement('a');
-    link.download = `yugioh_card_${scale}x.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+  // Type line — just below level
+  const typeEl = document.getElementById('cType');
+  const typeParts = [];
+  if (card.race) typeParts.push(card.race);
+  ['Fusion','Ritual','Synchro','Xyz','Link','Pendulum','Flip','Toon','Spirit','Union','Gemini','Tuner','Effect','Normal']
+    .forEach(k => { if (t.includes(k)) typeParts.push(k); });
+  if (t.includes('Spell Card')) typeParts.push('Spell Card');
+  if (t.includes('Trap Card'))  typeParts.push('Trap Card');
+  typeEl.textContent = '[ ' + typeParts.join(' / ') + ' ]';
+  const typeLevelHeight = (lvl || lnk) ? 32 : 0;
+  typeEl.style.top = (artBottom + (isPend ? 54 : 6) + typeLevelHeight) + 'px';
+
+  // Pendulum text box
+  const pendEl = document.getElementById('cPendText');
+  const typeBottom = artBottom + (isPend ? 54 : 6) + typeLevelHeight + 28;
+  if (isPend && card.pend_desc) {
+    pendEl.style.display = 'block';
+    pendEl.style.top     = typeBottom + 'px';
+    pendEl.style.height  = '120px';
+    pendEl.textContent   = card.pend_desc;
+  } else {
+    pendEl.style.display = 'none';
   }
 
+  // Main text area
+  const textAreaEl = document.getElementById('cTextArea');
+  const textTop = isPend && card.pend_desc ? typeBottom + 126 : typeBottom;
+  textAreaEl.style.top = textTop + 'px';
+
+  // For pendulums, desc contains monster effect; for others the full card text
+  document.getElementById('cDesc').textContent = card.desc || '';
+
+  // Stats (ATK / DEF / LINK)
+  const statsEl = document.getElementById('cStats');
+  const parts = [];
+  if (card.atk !== undefined) {
+    parts.push({ label:'ATK/', val: card.atk === -1 ? '?' : card.atk });
+  }
+  if (card.def !== undefined && !lnk) {
+    parts.push({ label:'DEF/', val: card.def === -1 ? '?' : card.def });
+  }
+  if (lnk) {
+    parts.push({ label:'LINK-', val: lnk });
+  }
+  statsEl.innerHTML = parts.map(s =>
+    `<div class="stat-item"><span class="label">${s.label}</span>${s.val}</div>`
+  ).join('');
+
+  // Passcode
+  document.getElementById('cId').textContent = card.id || '';
+}
+
+async function downloadCard(scale) {
+  const card = document.getElementById('yugiohCard');
+  const canvas = await html2canvas(card, {
+    scale,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: null,
+    logging: false
+  });
+  const a = document.createElement('a');
+  a.download = `yugioh_card_${scale}x.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
 </script>
 </body>
 </html>
