@@ -137,7 +137,7 @@
 
   .c-name {
     font-family:'Cinzel',serif;
-    font-size:28px;
+    font-size:32px;
     font-weight:900;
     color:#0a0804;
     line-height:1.15;
@@ -241,7 +241,7 @@
     border-radius:3px;
     padding:10px 12px;
     z-index:5;
-    font-size:17px;
+    font-size:22px;
     color:#1a1008;
     line-height:1.55;
     overflow:hidden;
@@ -261,7 +261,7 @@
 
   .c-text {
     font-family:Georgia,serif;
-    font-size:19px;
+    font-size:26px;
     color:#1a1008;
     line-height:1.6;
   }
@@ -384,6 +384,17 @@ function frameClass(card) {
   return 'normal';
 }
 
+function fitText(textId, boxId, maxPx, minPx) {
+  const textEl = document.getElementById(textId);
+  const boxEl  = document.getElementById(boxId);
+  let size = maxPx;
+  textEl.style.fontSize = size + 'px';
+  while (textEl.scrollHeight > boxEl.clientHeight && size > minPx) {
+    size -= 0.5;
+    textEl.style.fontSize = size + 'px';
+  }
+}
+
 async function lookupCard() {
   const input = document.getElementById('cardInput').value.trim();
   if (!input) return;
@@ -453,9 +464,7 @@ function renderCard(card) {
   const artEl  = document.getElementById('cArt');
   const imgUrl = `https://images.ygoprodeck.com/images/cards/${card.id}.jpg`;
   artEl.style.height = isPend ? '380px' : '330px';
-  artEl.innerHTML = imgUrl
-    ? `<img src="${imgUrl}" crossorigin="anonymous" alt="Card art" />`
-    : `<div class="c-art-placeholder">No art available</div>`;
+  artEl.innerHTML = `<img src="${imgUrl}" alt="Card art" onerror="this.style.display='none';this.parentElement.innerHTML+='<div class=\\'c-art-placeholder\\'>Art unavailable</div>';" />`;
 
   // Pendulum scale badges
   const pL = document.getElementById('pScaleL');
@@ -519,6 +528,9 @@ function renderCard(card) {
 
   // For pendulums, desc contains monster effect; for others the full card text
   document.getElementById('cDesc').textContent = card.desc || '';
+
+  // Auto-shrink text to fit the box
+  requestAnimationFrame(() => fitText('cDesc', 'cTextArea', 26, 13));
 
   // Stats (ATK / DEF / LINK)
   const statsEl = document.getElementById('cStats');
