@@ -318,7 +318,7 @@
 <body>
 
 <h1>⬡ YuGiOh Card Generator ⬡</h1>
-<div style="text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;color:#5a4a2a;letter-spacing:2px;margin-top:-18px;margin-bottom:20px;">v0.6 — image top-anchored · square art box</div>
+<div style="text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;color:#5a4a2a;letter-spacing:2px;margin-top:-18px;margin-bottom:20px;">v0.7 — fixed download · blob image capture</div>
 
 <div class="controls">
   <input type="text" id="cardInput" placeholder="Card name or passcode — press Enter or click Look Up" />
@@ -358,9 +358,9 @@
 </div>
 
 <div class="dl-row" id="dlRow">
-  <button class="btn btn-dl" onclick="downloadCard(1)">⬇ Download 1× (674px)</button>
-  <button class="btn btn-dl" onclick="downloadCard(2)">⬇ Download 2× (1348px)</button>
-  <button class="btn btn-dl" onclick="downloadCard(3)">⬇ Download 3× (2022px)</button>
+  <button class="btn btn-dl" onclick="downloadCard(1)">⬇ Download Standard (674px)</button>
+  <button class="btn btn-dl" onclick="downloadCard(2)">⬇ Download HD (1348px)</button>
+  <button class="btn btn-dl" onclick="downloadCard(4)">⬇ Download Ultra (2696px)</button>
 </div>
 
 <div id="sliderRow" style="display:none;justify-content:center;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;">
@@ -583,13 +583,35 @@ function renderCard(card) {
 
 async function downloadCard(scale) {
   const card = document.getElementById('yugiohCard');
+
+  // Pre-load the card image as a data URL so html2canvas can access it
+  const img = card.querySelector('.c-art img');
+  if (img && img.src && !img.src.startsWith('data:')) {
+    try {
+      const resp = await fetch(img.src);
+      const blob = await resp.blob();
+      const dataUrl = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.readAsDataURL(blob);
+      });
+      img.src = dataUrl;
+      // Wait for it to repaint
+      await new Promise(res => setTimeout(res, 200));
+    } catch(e) {
+      console.warn('Could not preload image for download:', e);
+    }
+  }
+
   const canvas = await html2canvas(card, {
-    scale,
-    useCORS: true,
+    scale: scale,
+    useCORS: false,
     allowTaint: true,
     backgroundColor: null,
-    logging: false
+    logging: false,
+    imageTimeout: 0
   });
+
   const a = document.createElement('a');
   a.download = `yugioh_card_${scale}x.png`;
   a.href = canvas.toDataURL('image/png');
