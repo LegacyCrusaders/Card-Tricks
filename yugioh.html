@@ -318,6 +318,7 @@
 <body>
 
 <h1>⬡ YuGiOh Card Generator ⬡</h1>
+<div style="text-align:center;font-family:'Cinzel',serif;font-size:0.7rem;color:#5a4a2a;letter-spacing:2px;margin-top:-18px;margin-bottom:20px;">v0.5 — cropped art · font slider</div>
 
 <div class="controls">
   <input type="text" id="cardInput" placeholder="Card name or passcode — press Enter or click Look Up" />
@@ -362,6 +363,14 @@
   <button class="btn btn-dl" onclick="downloadCard(3)">⬇ Download 3× (2022px)</button>
 </div>
 
+<div id="sliderRow" style="display:none;justify-content:center;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap;">
+  <label style="font-family:'Cinzel',serif;font-size:0.75rem;color:#c9a227;letter-spacing:1px;">TEXT SIZE</label>
+  <input type="range" id="fontSlider" min="12" max="60" value="36" step="1"
+    style="width:220px;accent-color:#c9a227;cursor:pointer;"
+    oninput="applyFontSize(this.value)" />
+  <span id="fontSizeLabel" style="font-family:'Cinzel',serif;font-size:0.75rem;color:#e8d5a3;min-width:40px;">36px</span>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 
@@ -382,6 +391,18 @@ function frameClass(card) {
   if (f.includes('link')    || t.includes('link'))    return 'link';
   if (t.includes('effect')) return 'effect';
   return 'normal';
+}
+
+function applyFontSize(size) {
+  document.getElementById('fontSizeLabel').textContent = size + 'px';
+  const textEl = document.getElementById('cDesc');
+  textEl.style.fontSize = size + 'px';
+  // re-run shrink in case user moved slider above what fits
+  fitText('cDesc', 'cTextArea', parseInt(size), 12);
+  // sync slider display value back if shrink reduced it
+  const actual = parseInt(textEl.style.fontSize);
+  document.getElementById('fontSizeLabel').textContent = actual + 'px';
+  document.getElementById('fontSlider').value = actual;
 }
 
 function fitText(textId, boxId, maxPx, minPx) {
@@ -429,6 +450,7 @@ async function lookupCard() {
     status.textContent = '';
     outer.classList.add('visible');
     dlRow.classList.add('visible');
+    document.getElementById('sliderRow').style.display = 'flex';
 
   } catch(err) {
     status.className = 'error';
@@ -462,7 +484,7 @@ function renderCard(card) {
 
   // Art image — use direct ygoprodeck URL format by card ID
   const artEl  = document.getElementById('cArt');
-  const imgUrl = `https://images.ygoprodeck.com/images/cards/${card.id}.jpg`;
+  const imgUrl = `https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`;
   artEl.style.height = isPend ? '460px' : '622px';
   artEl.innerHTML = `<img src="${imgUrl}" alt="Card art" onerror="this.style.display='none';this.parentElement.innerHTML+='<div class=\\'c-art-placeholder\\'>Art unavailable</div>';" />`;
 
@@ -530,7 +552,14 @@ function renderCard(card) {
   document.getElementById('cDesc').textContent = card.desc || '';
 
   // Auto-shrink text to fit the box
-  requestAnimationFrame(() => fitText('cDesc', 'cTextArea', 36, 16));
+  requestAnimationFrame(() => {
+    document.getElementById('fontSlider').value = 36;
+    document.getElementById('fontSizeLabel').textContent = '36px';
+    fitText('cDesc', 'cTextArea', 36, 12);
+    const actual = parseInt(document.getElementById('cDesc').style.fontSize);
+    document.getElementById('fontSizeLabel').textContent = actual + 'px';
+    document.getElementById('fontSlider').value = actual;
+  });
 
   // Stats (ATK / DEF / LINK)
   const statsEl = document.getElementById('cStats');
