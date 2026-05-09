@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YuGiOh Card Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #111;
+    color: #e8d5a3;
+    font-family: Georgia, serif;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    color: #c9a227;
+    text-align: center;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+
+  .version {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    color: #5a4a2a;
+    letter-spacing: 2px;
+    margin-bottom: 22px;
+  }
+
+  .controls {
+    max-width: 700px;
+    margin: 0 auto 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    background: #1a1a1a;
+    border: 1px solid #5a3a0a;
+    color: #e8d5a3;
+    font-family: Georgia, serif;
+    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: #c9a227; }
+  input[type="text"]::placeholder { color: #5a4a2a; }
+
+  .btn {
+    background: linear-gradient(135deg, #c9a227, #7a5a10);
+    color: #0a0804;
+    border: none;
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-dl {
+    background: linear-gradient(135deg, #2a6a2a, #1a3a1a);
+    color: #8aea8a;
+  }
+
+  #status {
+    text-align: center;
+    font-style: italic;
+    color: #8a7a5a;
+    margin-bottom: 14px;
+    min-height: 1.5em;
+    font-size: 0.95rem;
+  }
+  #status.error { color: #c0392b; }
+
+  /* Card display area */
+  .card-outer {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .card-outer.visible { display: flex; }
+
+  #cardImg {
+    display: block;
+    /* cardmaker.net outputs at 333px wide naturally; we display larger */
+    width: 500px;
+    max-width: 95vw;
+    border-radius: 10px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+    image-rendering: auto;
+  }
+
+  /* Info panel below card */
+  .card-meta {
+    background: #1a1a1a;
+    border: 1px solid #3a2a0a;
+    border-radius: 6px;
+    padding: 12px 18px;
+    width: 500px;
+    max-width: 95vw;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+  .card-meta strong {
+    color: #c9a227;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  /* Download + controls row */
+  .action-row {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .action-row.visible { display: flex; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .slider-row label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    color: #c9a227;
+    letter-spacing: 1px;
+  }
+  input[type="range"] {
+    width: 200px;
+    accent-color: #c9a227;
+    cursor: pointer;
+  }
+  #sizeLabel {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    color: #e8d5a3;
+    min-width: 50px;
+  }
+
+  /* Note about pendulums */
+  .note {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #5a4a2a;
+    font-style: italic;
+    margin-top: -8px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>⬡ YuGiOh Card Generator ⬡</h1>
+<div class="version">v1.0 — cardmaker.net renderer · auto-fill from name or passcode</div>
+<p class="note">Note: Pendulum cards render as Effect monsters (cardmaker.net legacy doesn't support pendulums)</p>
+
+<div class="controls">
+  <input type="text" id="cardInput" placeholder="Card name or passcode (e.g. Dark Magician or 46986414)" />
+  <button class="btn" id="lookupBtn" onclick="lookupCard()">LOOK UP</button>
+</div>
+
+<div id="status"></div>
+
+<div class="card-outer" id="cardOuter">
+  <img id="cardImg" src="" alt="Generated card" />
+  <div class="card-meta" id="cardMeta"></div>
+</div>
+
+<div class="action-row" id="actionRow">
+  <div class="slider-row">
+    <label>DISPLAY SIZE</label>
+    <input type="range" id="sizeSlider" min="200" max="900" value="500" step="10"
+      oninput="resizeCard(this.value)" />
+    <span id="sizeLabel">500px</span>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-dl" onclick="downloadCard()">⬇ Download Card PNG</button>
+  </div>
+</div>
+
+<script>
+  document.getElementById('cardInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupCard();
+  });
+
+  // Map YGOPRODeck data → cardmaker.net createcard.php params
+  function mapCardType(card) {
+    const t = (card.type || '').toLowerCase();
+    const f = (card.frameType || '').toLowerCase();
+    if (f === 'spell' || t.includes('spell card')) return { cardtype: 'Spell', subtype: 'normal' };
+    if (f === 'trap'  || t.includes('trap card'))  return { cardtype: 'Trap',  subtype: 'normal' };
+    if (f.includes('fusion')  || t.includes('fusion'))  return { cardtype: 'Fusion',  subtype: 'effect' };
+    if (f.includes('ritual')  || t.includes('ritual'))  return { cardtype: 'Ritual',  subtype: 'effect' };
+    if (f.includes('synchro') || t.includes('synchro')) return { cardtype: 'Synchro', subtype: 'effect' };
+    if (f.includes('xyz')     || t.includes('xyz'))     return { cardtype: 'Xyz',     subtype: 'effect' };
+    // Pendulum → treat as effect monster
+    if (f.includes('pendulum')) return { cardtype: 'Monster', subtype: 'effect' };
+    // Subtypes
+    let subtype = 'normal';
+    if (t.includes('effect'))  subtype = 'effect';
+    if (t.includes('gemini'))  subtype = 'gemini';
+    if (t.includes('spirit'))  subtype = 'spirit';
+    if (t.includes('toon'))    subtype = 'toon';
+    if (t.includes('tuner'))   subtype = 'tuner';
+    if (t.includes('union'))   subtype = 'union';
+    return { cardtype: 'Monster', subtype };
+  }
+
+  function mapTrapMagicType(card) {
+    const d = (card.desc || '').toLowerCase();
+    const r = (card.race || '').toLowerCase();
+    if (r.includes('equip') || d.includes('equip spell')) return 'Equip';
+    if (r.includes('continuous')) return 'Continuous';
+    if (r.includes('counter'))    return 'Counter';
+    if (r.includes('quick'))      return 'Quick-Play';
+    if (r.includes('field'))      return 'Field';
+    if (r.includes('ritual'))     return 'Ritual';
+    return 'None';
+  }
+
+  let currentCardId = null;
+  let currentCardName = '';
+
+  async function lookupCard() {
+    const input = document.getElementById('cardInput').value.trim();
+    if (!input) return;
+
+    const btn    = document.getElementById('lookupBtn');
+    const status = document.getElementById('status');
+    const outer  = document.getElementById('cardOuter');
+    const actions = document.getElementById('actionRow');
+
+    btn.disabled = true;
+    outer.classList.remove('visible');
+    actions.classList.remove('visible');
+    status.className = '';
+    status.textContent = 'Looking up card data…';
+
+    try {
+      const isNum = /^\d+$/.test(input);
+      const apiUrl = isNum
+        ? `https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${encodeURIComponent(input)}`
+        : `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(input)}`;
+
+      const res  = await fetch(apiUrl);
+      const data = await res.json();
+
+      if (data.error || !data.data?.length) {
+        status.className = 'error';
+        status.textContent = 'Card not found. Try the exact name or passcode number.';
+        return;
+      }
+
+      const card = data.data[0];
+      currentCardId   = card.id;
+      currentCardName = card.name;
+
+      status.textContent = 'Rendering card…';
+      renderCard(card);
+
+    } catch(err) {
+      status.className = 'error';
+      status.textContent = 'Network error — open this file locally in your browser.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderCard(card) {
+    const { cardtype, subtype } = mapCardType(card);
+    const trapmagictype = mapTrapMagicType(card);
+
+    const artUrl = `https://images.ygoprodeck.com/images/cards_cropped/${card.id}.jpg`;
+
+    const params = new URLSearchParams({
+      name:            card.name,
+      cardtype,
+      subtype,
+      attribute:       card.attribute || '',
+      level:           String(card.level ?? card.linkval ?? 0),
+      trapmagictype,
+      picture:         artUrl,
+      carddescription: card.desc || '',
+      atk:             card.atk !== undefined ? String(card.atk === -1 ? '?' : card.atk) : '',
+      def:             card.def !== undefined ? String(card.def === -1 ? '?' : card.def) : '',
+      type:            card.race || '',
+      serial:          String(card.id),
+      rarity:          'Common',
+      set1:            '',
+      set2:            '',
+      creator:         '',
+      year:            '2024',
+      circulation:     ''
+    });
+
+    const cardUrl = `https://www.cardmaker.net/cardmakers/yugioh/createcard.php?${params.toString()}`;
+
+    const img = document.getElementById('cardImg');
+    const meta = document.getElementById('cardMeta');
+    const status = document.getElementById('status');
+    const outer  = document.getElementById('cardOuter');
+    const actions = document.getElementById('actionRow');
+
+    img.onload = () => {
+      status.textContent = '';
+      outer.classList.add('visible');
+      actions.classList.add('visible');
+    };
+    img.onerror = () => {
+      status.className = 'error';
+      status.textContent = 'Card image failed to load. cardmaker.net may be temporarily unavailable.';
+    };
+    img.src = cardUrl;
+
+    // Meta info panel
+    const lvl = card.level ?? card.linkval ?? null;
+    const metaParts = [
+      `<strong>NAME</strong> ${card.name}`,
+      `<strong>TYPE</strong> ${card.type || '—'}`,
+      card.attribute ? `<strong>ATTRIBUTE</strong> ${card.attribute}` : null,
+      card.race      ? `<strong>RACE</strong> ${card.race}` : null,
+      lvl            ? `<strong>${card.linkval ? 'LINK' : 'LEVEL'}</strong> ${lvl}` : null,
+      card.atk !== undefined ? `<strong>ATK</strong> ${card.atk === -1 ? '?' : card.atk}  <strong>DEF</strong> ${card.def === -1 ? '?' : (card.def ?? '—')}` : null,
+      `<strong>PASSCODE</strong> ${card.id}`,
+    ].filter(Boolean);
+    meta.innerHTML = metaParts.join('<br>');
+  }
+
+  function resizeCard(val) {
+    document.getElementById('cardImg').style.width = val + 'px';
+    document.getElementById('sizeLabel').textContent = val + 'px';
+  }
+
+  async function downloadCard() {
+    const img = document.getElementById('cardImg');
+    if (!img.src) return;
+
+    const status = document.getElementById('status');
+    status.textContent = 'Preparing download…';
+
+    try {
+      const resp = await fetch(img.src);
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const safeName = currentCardName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      a.download = `yugioh_${safeName}.png`;
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+      status.textContent = '';
+    } catch(e) {
+      status.className = 'error';
+      status.textContent = 'Download failed — try right-clicking the card image and saving it directly.';
+    }
+  }
+</script>
+</body>
+</html>
