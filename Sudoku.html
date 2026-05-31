@@ -25,15 +25,61 @@
   --tri-col:#30b8ff;   --tri-col-glow:rgba(48,184,255,0.22);
   --tri-box:#c0e040;   --tri-box-glow:rgba(192,224,64,0.22);
   --btn:#222;--btn-active:rgba(74,158,255,0.18);--btn-border:#333;
+  --checkpoint:#ff9f43;--checkpoint-bg:rgba(255,159,67,0.15);
 }
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;touch-action:manipulation}
-#app{display:flex;flex-direction:column;align-items:center;justify-content:space-between;height:100dvh;padding:6px 4px;gap:4px}
+
+/* ── PORTRAIT (default) ── */
+#app{
+  display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  height:100dvh;padding:6px 4px;gap:4px
+}
 #top-bar{display:flex;align-items:center;justify-content:space-between;width:min(calc(100vw - 8px),480px);flex-shrink:0}
 #title{font-size:11px;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase}
 #timer{font-size:12px;letter-spacing:.1em;color:var(--text-dim);font-variant-numeric:tabular-nums}
 #grid-wrap{flex-shrink:0;width:min(calc(100vw - 8px),calc(100dvh - 240px));aspect-ratio:1}
 #grid{display:grid;grid-template-columns:repeat(9,1fr);width:100%;height:100%;border:2px solid var(--border-strong)}
+#controls{display:flex;flex-direction:column;gap:4px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
+#numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
+#msg{font-size:10px;color:var(--text-dim);text-align:center;min-height:14px;flex-shrink:0}
+
+/* ── LANDSCAPE ── */
+@media (orientation:landscape){
+  #app{
+    flex-direction:row;align-items:stretch;justify-content:center;
+    height:100dvh;padding:4px;gap:6px
+  }
+  #grid-wrap{
+    flex-shrink:0;
+    height:calc(100dvh - 8px);
+    width:calc(100dvh - 8px);
+    aspect-ratio:1
+  }
+  #right-panel{
+    display:flex;flex-direction:column;justify-content:space-between;
+    flex-shrink:0;width:min(220px, calc(100vw - 100dvh - 12px));
+    gap:3px;overflow-y:auto;padding:2px 0
+  }
+  #top-bar{width:100%;flex-shrink:0}
+  #controls{width:100%}
+  #numpad{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    gap:3px;width:100%;flex-shrink:0
+  }
+  #msg{text-align:left}
+}
+
+/* portrait: no right-panel wrapper needed */
+@media (orientation:portrait){
+  #right-panel{display:contents}
+}
+
 .cell{border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:calc(min(calc(100vw - 8px),calc(100dvh - 240px)) / 9 * 0.5);font-weight:600;color:var(--text);transition:background .08s;-webkit-tap-highlight-color:transparent}
+@media (orientation:landscape){
+  .cell{font-size:calc((100dvh - 8px)/9*0.5)}
+}
 .cell:nth-child(3n+1){border-left:1.5px solid var(--border-strong)}
 .cell:nth-child(n+1):nth-child(-n+9){border-top:1.5px solid var(--border-strong)}
 .cell:nth-child(n+28):nth-child(-n+36){border-top:1.5px solid var(--border-strong)}
@@ -53,6 +99,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cell.hint-wing{box-shadow:inset 0 0 0 2px #ff6fa0;background:rgba(255,111,160,0.15)!important}
 .notes-g{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px}
 .notes-g span{display:flex;align-items:center;justify-content:center;font-size:calc(min(calc(100vw - 8px),calc(100dvh - 240px)) / 9 * 0.22);color:var(--note);font-weight:400;line-height:1}
+@media (orientation:landscape){
+  .notes-g span{font-size:calc((100dvh - 8px)/9*0.22)}
+}
 .notes-g span.pair-note-row{color:var(--pair-row);font-weight:700}
 .notes-g span.pair-note-col{color:var(--pair-col);font-weight:700}
 .notes-g span.pair-note-box{color:var(--pair-box);font-weight:700}
@@ -61,7 +110,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .notes-g span.tri-note-box{color:var(--tri-box);font-weight:700}
 .notes-g span.match-note{color:var(--match-note);font-weight:700}
 .notes-g span.hint-note{color:#9b6fff;font-weight:700}
-#controls{display:flex;flex-direction:column;gap:4px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
 .row-label{font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;text-align:center}
 .btn-row{display:flex;gap:3px;justify-content:center;flex-wrap:nowrap}
 .btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap;flex:1;text-align:center;transition:background .1s;-webkit-tap-highlight-color:transparent;min-width:0}
@@ -75,11 +123,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .btn.undo-style{border-color:#888;color:#aaa}
 .btn.check-style{border-color:#4caf7a;color:#4caf7a}
 .btn.check-style:active{background:rgba(76,175,122,0.15)}
-#numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
+.btn.checkpoint-style{border-color:var(--checkpoint);color:var(--checkpoint)}
+.btn.checkpoint-style:active{background:var(--checkpoint-bg)}
+.btn.checkpoint-style.has-checkpoint{background:var(--checkpoint-bg);font-weight:700}
+.btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);opacity:0.4;pointer-events:none}
+.btn.restore-style.has-checkpoint{opacity:1;pointer-events:auto}
 #numpad button{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:8px 0;cursor:pointer;font-size:16px;font-family:inherit;font-weight:600;transition:background .1s;-webkit-tap-highlight-color:transparent}
 #numpad button:active{transform:scale(.93);background:var(--accent-bg)}
 #numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
-#msg{font-size:10px;color:var(--text-dim);text-align:center;min-height:14px;flex-shrink:0}
 #modal,#splash{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
 #modal.open,#splash.open{display:flex}
 #modal-box{background:#1a1a1a;border:1px solid #444;border-radius:10px;padding:20px;text-align:center;width:min(280px,90vw);display:flex;flex-direction:column;gap:12px}
@@ -105,42 +156,56 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <div id="timer">0:00</div>
   </div>
   <div id="grid-wrap"><div id="grid"></div></div>
-  <div id="controls">
-    <div class="row-label">Input mode</div>
-    <div class="btn-row">
-      <button class="btn active" id="btn-digit" onclick="setMode('digit')">Digit</button>
-      <button class="btn" id="btn-notes" onclick="cycleNotes()">Notes</button>
-      <button class="btn" onclick="eraseCell()">Erase</button>
-      <button class="btn undo-style" onclick="undo()">Undo</button>
-      <button class="btn check-style" onclick="checkSolution()">Check</button>
-      <button class="btn" onclick="openModal()">New</button>
+
+  <!-- right-panel: in portrait = display:contents (flat), in landscape = flex column -->
+  <div id="right-panel">
+    <div id="controls">
+      <div class="row-label">Input mode</div>
+      <div class="btn-row">
+        <button class="btn active" id="btn-digit" onclick="setMode('digit')">Digit</button>
+        <button class="btn" id="btn-notes" onclick="cycleNotes()">Notes</button>
+        <button class="btn" onclick="eraseCell()">Erase</button>
+        <button class="btn undo-style" onclick="undo()">Undo</button>
+        <button class="btn check-style" onclick="checkSolution()">Check</button>
+        <button class="btn" onclick="openModal()">New</button>
+      </div>
+      <div class="row-label">Notes tools</div>
+      <div class="btn-row">
+        <button class="btn" onclick="autoNotes('all')">Auto All</button>
+        <button class="btn" onclick="autoNotes('peers')">Peers</button>
+        <button class="btn" onclick="clearAllNotes()">Clear Notes</button>
+      </div>
+      <div class="row-label">Auto-notes scope</div>
+      <div class="btn-row">
+        <button class="btn" onclick="autoNotes('row')">Row</button>
+        <button class="btn" onclick="autoNotes('col')">Col</button>
+        <button class="btn" onclick="autoNotes('box')">Box</button>
+      </div>
+      <div class="row-label">Proof by contradiction</div>
+      <div class="btn-row">
+        <button class="btn checkpoint-style" id="btn-checkpoint" onclick="setCheckpoint()">📍 Set Point</button>
+        <button class="btn restore-style" id="btn-restore" onclick="restoreCheckpoint()">↩ Restore</button>
+        <button class="btn undo-style" onclick="clearCheckpoint()" style="font-size:10px">✕ Clear</button>
+      </div>
+      <div class="row-label">Tag pairs &amp; triples</div>
+      <div class="btn-row">
+        <button class="btn tag-pair" onclick="tagSet(2)">Tag Pair</button>
+        <button class="btn tag-pair" onclick="untagSet(2)">Untag Pair</button>
+        <button class="btn tag-triple" onclick="tagSet(3)">Tag Triple</button>
+        <button class="btn tag-triple" onclick="untagSet(3)">Untag Triple</button>
+      </div>
+      <div class="row-label">Hint — highlight technique</div>
+      <div class="btn-row">
+        <button class="btn hint-style" onclick="hintFind('pairs')">Pairs</button>
+        <button class="btn hint-style" onclick="hintFind('triples')">Triples</button>
+        <button class="btn hint-style" onclick="hintFind('xwing')">X-Wing</button>
+        <button class="btn hint-style" onclick="hintFind('xywing')">XY-Wing</button>
+        <button class="btn hint-style" onclick="clearHints()">Clear</button>
+      </div>
     </div>
-    <div class="row-label">Auto-notes</div>
-    <div class="btn-row">
-      <button class="btn" onclick="autoNotes('all')">All</button>
-      <button class="btn" onclick="autoNotes('row')">Row</button>
-      <button class="btn" onclick="autoNotes('col')">Col</button>
-      <button class="btn" onclick="autoNotes('box')">Box</button>
-      <button class="btn" onclick="autoNotes('peers')">Peers</button>
-    </div>
-    <div class="row-label">Tag pairs &amp; triples</div>
-    <div class="btn-row">
-      <button class="btn tag-pair" onclick="tagSet(2)">Tag Pair</button>
-      <button class="btn tag-pair" onclick="untagSet(2)">Untag Pair</button>
-      <button class="btn tag-triple" onclick="tagSet(3)">Tag Triple</button>
-      <button class="btn tag-triple" onclick="untagSet(3)">Untag Triple</button>
-    </div>
-    <div class="row-label">Hint — highlight technique</div>
-    <div class="btn-row">
-      <button class="btn hint-style" onclick="hintFind('pairs')">Pairs</button>
-      <button class="btn hint-style" onclick="hintFind('triples')">Triples</button>
-      <button class="btn hint-style" onclick="hintFind('xwing')">X-Wing</button>
-      <button class="btn hint-style" onclick="hintFind('xywing')">XY-Wing</button>
-      <button class="btn hint-style" onclick="clearHints()">Clear</button>
-    </div>
+    <div id="numpad"></div>
+    <div id="msg"></div>
   </div>
-  <div id="numpad"></div>
-  <div id="msg"></div>
 </div>
 
 <div id="splash" class="open">
@@ -188,11 +253,14 @@ async function fetchPuzzle(diff){
 }
 
 let PUZZLE=[],mode='digit',selected=null,cells=[],notes=[],digits=[];
-let taggedSets=[]; // [{size,groupType,indices}]
+let taggedSets=[];
 let history=[],flashError=new Set();
 let timerSec=0,timerInterval=null,timerStarted=false;
 let hintPivots=new Set(),hintWings=new Set(),hintNotes=new Map();
 let notesAllMode=false;
+
+// Checkpoint state for proof-by-contradiction
+let checkpoint=null; // {digits, notes, taggedSets, timerSec}
 
 const grid=document.getElementById('grid');
 const numpad=document.getElementById('numpad');
@@ -200,7 +268,6 @@ const msg=document.getElementById('msg');
 const loadingOverlay=document.getElementById('loading-overlay');
 const splash=document.getElementById('splash');
 
-// Splash + fullscreen
 splash.addEventListener('click',async()=>{
   try{
     if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
@@ -236,14 +303,48 @@ function undo(){
   render();
 }
 
-// Notes cycling: digit -> notes -> notes-all -> digit
+// ── Checkpoint (proof-by-contradiction) ──────────────────
+function updateCheckpointUI(){
+  const has=checkpoint!==null;
+  document.getElementById('btn-checkpoint').classList.toggle('has-checkpoint',has);
+  document.getElementById('btn-restore').classList.toggle('has-checkpoint',has);
+}
+function setCheckpoint(){
+  checkpoint={
+    digits:[...digits],
+    notes:notes.map(s=>new Set(s)),
+    taggedSets:JSON.parse(JSON.stringify(taggedSets)),
+    timerSec
+  };
+  updateCheckpointUI();
+  showMsg('📍 Checkpoint set — play on; restore if contradiction found',3000);
+}
+function restoreCheckpoint(){
+  if(!checkpoint){showMsg('No checkpoint set');return}
+  clearFlash();
+  digits=[...checkpoint.digits];
+  notes=checkpoint.notes.map(s=>new Set(s));
+  taggedSets=JSON.parse(JSON.stringify(checkpoint.taggedSets));
+  timerSec=checkpoint.timerSec;
+  updateTimerDisplay();
+  // keep checkpoint alive so you can try the other branch
+  showMsg('↩ Restored to checkpoint — try the other candidate',3000);
+  render();
+}
+function clearCheckpoint(){
+  checkpoint=null;
+  updateCheckpointUI();
+  showMsg('Checkpoint cleared');
+}
+
+// ── Notes cycling ────────────────────────────────────────
 function cycleNotes(){
   if(mode==='digit') setMode('notes');
   else if(mode==='notes') setMode('notes-all');
   else setMode('digit');
 }
 function setMode(m){
-  mode=m; notesAllMode=m==='notes-all';
+  mode=m;notesAllMode=m==='notes-all';
   document.getElementById('btn-digit').classList.toggle('active',m==='digit');
   const nb=document.getElementById('btn-notes');
   nb.classList.toggle('active',m==='notes');
@@ -258,7 +359,7 @@ function pruneNoteFromPeers(i,n){peers(i).forEach(j=>{if(!isTagged(j))notes[j].d
 function isImpossible(i,n){return[...peers(i)].some(j=>digits[j]===n)}
 
 function inputNum(n){
-  clearFlash(); startTimerOnce();
+  clearFlash();startTimerOnce();
   if(notesAllMode){
     snapshot();
     let count=0;
@@ -267,7 +368,7 @@ function inputNum(n){
       if(!isImpossible(i,n)){notes[i].add(n);count++;}
     }
     showMsg('Marked '+n+' as candidate in '+count+' cells');
-    render(); return;
+    render();return;
   }
   if(selected===null||PUZZLE[selected]) return;
   if(mode==='digit'){
@@ -295,6 +396,15 @@ function eraseCell(){
   clearFlash();startTimerOnce();snapshot();
   digits[selected]=0;notes[selected].clear();render();
 }
+
+// ── Clear all notes ───────────────────────────────────────
+function clearAllNotes(){
+  clearFlash();startTimerOnce();snapshot();
+  for(let i=0;i<81;i++) notes[i].clear();
+  showMsg('All notes cleared');
+  render();
+}
+
 function selectCell(i){clearFlash();selected=i;render()}
 
 function autoNotes(scope){
@@ -314,7 +424,6 @@ function tagSet(size){
   if(selected===null){showMsg('Select a cell first');return}
   const n=notes[selected];
   const label=size===2?'pair':'triple';
-
   if(size===2){
     if(n.size!==2){showMsg('Cell needs exactly 2 notes for a pair');return}
     const[a,b]=[...n];
@@ -353,24 +462,15 @@ function untagSet(size){
   if(selected===null){showMsg('Select a cell first');return}
   const idx=taggedSets.findIndex(t=>t.size===size&&t.indices.includes(selected));
   if(idx===-1){showMsg('Cell is not part of a tagged '+(size===2?'pair':'triple'));return}
-  clearFlash();startTimerOnce();snapshot();
-  taggedSets.splice(idx,1);render();
+  clearFlash();startTimerOnce();snapshot();taggedSets.splice(idx,1);render();
 }
 
 function tagClass(i){
-  for(const t of taggedSets){
-    if(t.indices.includes(i)){
-      return 'tagged-'+(t.size===2?'pair':'tri')+'-'+t.groupType;
-    }
-  }
+  for(const t of taggedSets){if(t.indices.includes(i))return 'tagged-'+(t.size===2?'pair':'tri')+'-'+t.groupType}
   return '';
 }
 function noteTagClass(i){
-  for(const t of taggedSets){
-    if(t.indices.includes(i)){
-      return (t.size===2?'pair':'tri')+'-note-'+t.groupType;
-    }
-  }
+  for(const t of taggedSets){if(t.indices.includes(i))return (t.size===2?'pair':'tri')+'-note-'+t.groupType}
   return '';
 }
 
@@ -453,6 +553,7 @@ async function startNew(diff){
   notes=Array.from({length:81},()=>new Set());
   taggedSets=[];hintPivots=new Set();hintWings=new Set();hintNotes=new Map();
   history=[];selected=null;flashError.clear();
+  checkpoint=null;updateCheckpointUI();
   if(mode!=='digit')setMode('digit');
   buildGrid();startTimer();
   if(!msg.textContent) showMsg(diff.charAt(0).toUpperCase()+diff.slice(1)+' puzzle loaded');
