@@ -77,38 +77,35 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 @media (max-width:699px) and (orientation:landscape){
   html,body{overflow:hidden}
   #app{
-    display:flex;flex-direction:row;align-items:stretch;justify-content:center;
-    height:100dvh;padding:4px;gap:6px
+    display:flex;flex-direction:row;align-items:center;justify-content:center;
+    width:100vw;height:100dvh;padding:4px;gap:6px;overflow:hidden
   }
   #grid-wrap{
     flex-shrink:0;
-    height:100dvh;
-    width:100dvh;
-    max-width:55vw;
+    height:calc(100dvh - 8px);
+    width:calc(100dvh - 8px);
     aspect-ratio:1;
-    align-self:center
+    max-height:calc(100vw * 0.58)
   }
   #grid{display:grid;grid-template-columns:repeat(9,1fr);width:100%;height:100%;border:2px solid var(--border-strong)}
   #right-panel{
     display:flex;flex-direction:column;justify-content:flex-start;
-    flex:1;min-width:0;
-    gap:3px;overflow-y:auto;padding:2px 0;-webkit-overflow-scrolling:touch
+    flex:1;min-width:0;max-width:260px;
+    gap:2px;overflow-y:auto;padding:2px 0;-webkit-overflow-scrolling:touch
   }
   #top-bar{display:flex;align-items:center;justify-content:space-between;width:100%;flex-shrink:0}
-  #controls{display:flex;flex-direction:column;gap:3px;width:100%;flex-shrink:0}
-  #numpad{
-    display:grid;grid-template-columns:repeat(9,1fr);
-    gap:3px;width:100%;flex-shrink:0
-  }
-  #msg{font-size:10px;color:var(--text-dim);text-align:left;min-height:14px;flex-shrink:0}
-  .cell{font-size:calc(min(55vw, 100dvh)/9*0.5)}
-  .notes-g span{font-size:calc(min(55vw, 100dvh)/9*0.22)}
-  .btn{font-size:10px;padding:4px 5px}
-  .row-label{font-size:8px}
+  #controls{display:flex;flex-direction:column;gap:2px;width:100%;flex-shrink:0}
+  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:100%;flex-shrink:0}
+  #msg{font-size:10px;color:var(--text-dim);text-align:left;min-height:12px;flex-shrink:0}
+  .cell{font-size:calc(min(calc(100dvh - 8px), calc(100vw * 0.58))/9*0.5)}
+  .notes-g span{font-size:calc(min(calc(100dvh - 8px), calc(100vw * 0.58))/9*0.22)}
+  .btn{font-size:11px;padding:5px 4px}
+  .row-label{font-size:9px}
+  #numpad button{font-size:16px;padding:6px 0}
 }
 
-#title{font-size:11px;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase}
-#timer{font-size:12px;letter-spacing:.1em;color:var(--text-dim);font-variant-numeric:tabular-nums}
+#title{font-size:14px;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase;font-weight:700}
+#timer{font-size:14px;letter-spacing:.1em;color:var(--text-dim);font-variant-numeric:tabular-nums;font-weight:600}
 .cell{border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-weight:600;color:var(--text);transition:background .08s;-webkit-tap-highlight-color:transparent}
 .cell:nth-child(3n+1){border-left:1.5px solid var(--border-strong)}
 .cell:nth-child(n+1):nth-child(-n+9){border-top:1.5px solid var(--border-strong)}
@@ -137,9 +134,9 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .notes-g span.tri-note-box{color:var(--tri-box);font-weight:700}
 .notes-g span.match-note{color:var(--match-note);font-weight:700}
 .notes-g span.hint-note{color:#9b6fff;font-weight:700}
-.row-label{font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;text-align:center}
+.row-label{font-size:11px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;text-align:center;font-weight:600}
 .btn-row{display:flex;gap:3px;justify-content:center;flex-wrap:nowrap}
-.btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;font-family:inherit;white-space:nowrap;flex:1;text-align:center;transition:background .1s;-webkit-tap-highlight-color:transparent;min-width:0}
+.btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:7px 8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;white-space:nowrap;flex:1;text-align:center;transition:background .1s;-webkit-tap-highlight-color:transparent;min-width:0}
 .btn:active{transform:scale(.96)}
 .btn.active{background:var(--btn-active);border-color:var(--accent);color:var(--accent)}
 .btn.notes-all-active{background:rgba(74,158,255,0.25);border-color:var(--accent);color:var(--accent);font-weight:700}
@@ -155,7 +152,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .btn.checkpoint-style.has-checkpoint{background:var(--checkpoint-bg);font-weight:700}
 .btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);opacity:0.4;pointer-events:none}
 .btn.restore-style.has-checkpoint{opacity:1;pointer-events:auto}
-#numpad button{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:8px 0;cursor:pointer;font-size:16px;font-family:inherit;font-weight:600;transition:background .1s;-webkit-tap-highlight-color:transparent}
+#numpad button{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:10px 0;cursor:pointer;font-size:20px;font-family:inherit;font-weight:700;transition:background .1s;-webkit-tap-highlight-color:transparent}
 #numpad button:active{transform:scale(.93);background:var(--accent-bg)}
 #numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
 #modal,#splash{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
