@@ -234,42 +234,42 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     <div id="controls">
       <div class="row-label">Mode</div>
       <div class="btn-row">
-        <button class="btn active" id="btn-digit" data-tip="Place a digit" onclick="setMode('digit')">D</button>
-        <button class="btn" id="btn-notes" data-tip="Note mode / Notes-All (tap twice)" onclick="cycleNotes()">N</button>
-        <button class="btn" data-tip="Erase selected cell" onclick="eraseCell()">⌫</button>
-        <button class="btn undo-style" data-tip="Undo last action" onclick="undo()">↩</button>
-        <button class="btn check-style" data-tip="Check completed solution" onclick="checkSolution()">✓</button>
-        <button class="btn" data-tip="Start a new game" onclick="openModal()">＋</button>
+        <button class="btn active" id="btn-digit" onclick="tapBtn(this,()=>{setMode('digit')})"><span class="btn-short">D</span><span class="btn-long">Digit</span></button>
+        <button class="btn " id="btn-notes" onclick="tapBtn(this,()=>{cycleNotes()})"><span class="btn-short">N</span><span class="btn-long">Notes</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{eraseCell()})"><span class="btn-short">⌫</span><span class="btn-long">Erase</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>{undo()})"><span class="btn-short">↩</span><span class="btn-long">Undo</span></button>
+        <button class="btn check-style" onclick="tapBtn(this,()=>{checkSolution()})"><span class="btn-short">✓</span><span class="btn-long">Check</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{openModal()})"><span class="btn-short">＋</span><span class="btn-long">New</span></button>
       </div>
       <div class="row-label">Auto-notes</div>
       <div class="btn-row">
-        <button class="btn" data-tip="Fill valid notes in ALL empty cells" data-confirm="Fill notes for all empty cells?" onclick="handleConfirm(this,()=>autoNotes('all'))">A</button>
-        <button class="btn" data-tip="Fill notes for peers of selected cell" data-confirm="Fill notes for peers?" onclick="handleConfirm(this,()=>autoNotes('peers'))">P</button>
-        <button class="btn" data-tip="Fill notes in selected row" data-confirm="Fill notes for this row?" onclick="handleConfirm(this,()=>autoNotes('row'))">R</button>
-        <button class="btn" data-tip="Fill notes in selected col" data-confirm="Fill notes for this col?" onclick="handleConfirm(this,()=>autoNotes('col'))">C</button>
-        <button class="btn" data-tip="Fill notes in selected box" data-confirm="Fill notes for this box?" onclick="handleConfirm(this,()=>autoNotes('box'))">B</button>
-        <button class="btn undo-style" data-tip="Erase ALL notes from board" data-confirm="Clear ALL notes from board?" onclick="handleConfirm(this,()=>clearAllNotes())">✕N</button>
+        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('all')},true)"><span class="btn-short">A</span><span class="btn-long">All</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('peers')},true)"><span class="btn-short">P</span><span class="btn-long">Peers</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('row')},true)"><span class="btn-short">R</span><span class="btn-long">Row</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('col')},true)"><span class="btn-short">C</span><span class="btn-long">Col</span></button>
+        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('box')},true)"><span class="btn-short">B</span><span class="btn-long">Box</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>{clearAllNotes()},true)"><span class="btn-short">✕N</span><span class="btn-long">Clr Notes</span></button>
       </div>
       <div class="row-label">Contradiction</div>
       <div class="btn-row">
-        <button class="btn checkpoint-style" id="btn-checkpoint" data-tip="Set checkpoint to return to" onclick="setCheckpoint()">📍</button>
-        <button class="btn restore-style" id="btn-restore" data-tip="Restore board to checkpoint" onclick="openRestoreModal()">↩C</button>
-        <button class="btn undo-style" data-tip="Clear checkpoint" onclick="clearCheckpoint()">✕C</button>
+        <button class="btn checkpoint-style" id="btn-checkpoint" onclick="tapBtn(this,()=>{setCheckpoint()})"><span class="btn-short">📍</span><span class="btn-long">Set Pt</span></button>
+        <button class="btn restore-style" id="btn-restore" onclick="tapBtn(this,()=>{openRestoreModal()})"><span class="btn-short">↩C</span><span class="btn-long">Restore</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>{clearCheckpoint()})"><span class="btn-short">✕C</span><span class="btn-long">Clr Pt</span></button>
       </div>
       <div class="row-label">Tag</div>
       <div class="btn-row">
-        <button class="btn tag-pair" data-tip="Tag naked pair from selected cell" onclick="tagSet(2)">+P</button>
-        <button class="btn tag-pair" data-tip="Untag pair from selected cell" onclick="untagSet(2)">−P</button>
-        <button class="btn tag-triple" data-tip="Tag naked triple from selected cell" onclick="tagSet(3)">+T</button>
-        <button class="btn tag-triple" data-tip="Untag triple from selected cell" onclick="untagSet(3)">−T</button>
+        <button class="btn tag-pair" onclick="tapBtn(this,()=>{tagSet(2)})"><span class="btn-short">+P</span><span class="btn-long">Tag Pair</span></button>
+        <button class="btn tag-pair" onclick="tapBtn(this,()=>{untagSet(2)})"><span class="btn-short">−P</span><span class="btn-long">Untag Pair</span></button>
+        <button class="btn tag-triple" onclick="tapBtn(this,()=>{tagSet(3)})"><span class="btn-short">+T</span><span class="btn-long">Tag Triple</span></button>
+        <button class="btn tag-triple" onclick="tapBtn(this,()=>{untagSet(3)})"><span class="btn-short">−T</span><span class="btn-long">Untag Triple</span></button>
       </div>
       <div class="row-label">Hints</div>
       <div class="btn-row">
-        <button class="btn hint-style" data-tip="Find & highlight naked pairs" onclick="hintFind('pairs')">2s</button>
-        <button class="btn hint-style" data-tip="Find & highlight naked triples" onclick="hintFind('triples')">3s</button>
-        <button class="btn hint-style" data-tip="Find X-Wing pattern" onclick="hintFind('xwing')">XW</button>
-        <button class="btn hint-style" data-tip="Find XY-Wing pattern" onclick="hintFind('xywing')">XY</button>
-        <button class="btn hint-style" data-tip="Clear hint highlights" onclick="clearHints()">✕H</button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('pairs')})"><span class="btn-short">2s</span><span class="btn-long">Pairs</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('triples')})"><span class="btn-short">3s</span><span class="btn-long">Triples</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('xwing')})"><span class="btn-short">XW</span><span class="btn-long">X-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('xywing')})"><span class="btn-short">XY</span><span class="btn-long">XY-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>{clearHints()})"><span class="btn-short">✕H</span><span class="btn-long">Clr Hints</span></button>
       </div>
     </div>
     <div id="numpad"></div>
@@ -353,41 +353,47 @@ document.getElementById('splash').addEventListener('click',async()=>{
 // tapBtn: on mobile, first tap expands button to show full label.
 // If needsConfirm=true, expanded state requires a second tap to fire action.
 // On desktop (wide screen), always fires immediately.
-let expandedBtn=null;
+let expandedBtn=null,expandedAction=null,expandedConfirm=false,expandTimer=null;
+
+function collapseExpanded(){
+  if(expandedBtn){
+    expandedBtn.classList.remove('expanded','needs-confirm');
+    expandedBtn=null;expandedAction=null;expandedConfirm=false;
+  }
+  clearTimeout(expandTimer);expandTimer=null;
+}
+
 function tapBtn(btn,action,needsConfirm=false){
   const isDesktop=window.innerWidth>=700;
   if(isDesktop){action();return;}
-  if(expandedBtn&&expandedBtn!==btn){
-    expandedBtn.classList.remove('expanded','needs-confirm');
-    expandedBtn=null;
+
+  if(expandedBtn===btn){
+    // already expanded
+    if(needsConfirm){collapseExpanded();action();}
+    // non-confirm: already waiting on timer, ignore extra taps
+    return;
   }
-  if(!btn.classList.contains('expanded')){
-    btn.classList.add('expanded');
-    expandedBtn=btn;
-    if(needsConfirm){
-      btn.classList.add('needs-confirm');
-      showMsg('Tap again to confirm',1800);
-    } else {
-      // non-confirm: fire after short delay so user sees the label
-      setTimeout(()=>{
-        btn.classList.remove('expanded');
-        expandedBtn=null;
-        action();
-      },600);
-    }
-  } else if(needsConfirm){
-    btn.classList.remove('expanded','needs-confirm');
-    expandedBtn=null;
-    action();
+
+  collapseExpanded();
+  btn.classList.add('expanded');
+  expandedBtn=btn;expandedAction=action;expandedConfirm=needsConfirm;
+
+  if(needsConfirm){
+    btn.classList.add('needs-confirm');
+    showMsg('Tap again to confirm',2000);
+  } else {
+    expandTimer=setTimeout(()=>{
+      const a=expandedAction;
+      collapseExpanded();
+      a();
+    },900);
   }
 }
-// Tap anywhere else collapses expanded button
-document.addEventListener('touchstart',e=>{
-  if(expandedBtn&&!expandedBtn.contains(e.target)){
-    expandedBtn.classList.remove('expanded','needs-confirm');
-    expandedBtn=null;
-  }
-},{passive:true});
+
+// Click anywhere outside collapses (click fires after touch, avoids race)
+document.addEventListener('click',e=>{
+  if(expandedBtn&&!expandedBtn.contains(e.target)){collapseExpanded();}
+});
 
 function showMsg(t,ms=2500){
   msg.textContent=t;clearTimeout(showMsg._t);
