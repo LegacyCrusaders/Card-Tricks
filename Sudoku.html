@@ -7,8 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="sudokuG">
 <meta name="theme-color" content="#0f0f0f">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
 <title>sudokuG</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -18,120 +16,101 @@
   --accent:#4a9eff;--accent-bg:rgba(74,158,255,0.12);
   --peer:#1e1e1e;--user:#4a9eff;--error:#ff5a5a;
   --note:#888;--match-note:#ffd700;
-  --pair-row:#f0a030;  --pair-row-glow:rgba(240,160,48,0.22);
-  --pair-col:#30d0a0;  --pair-col-glow:rgba(48,208,160,0.22);
-  --pair-box:#d060f0;  --pair-box-glow:rgba(208,96,240,0.22);
-  --tri-row:#ff7a30;   --tri-row-glow:rgba(255,122,48,0.22);
-  --tri-col:#30b8ff;   --tri-col-glow:rgba(48,184,255,0.22);
-  --tri-box:#c0e040;   --tri-box-glow:rgba(192,224,64,0.22);
+  --pair-row:#f0a030;--pair-row-glow:rgba(240,160,48,0.22);
+  --pair-col:#30d0a0;--pair-col-glow:rgba(48,208,160,0.22);
+  --pair-box:#d060f0;--pair-box-glow:rgba(208,96,240,0.22);
+  --tri-row:#ff7a30;--tri-row-glow:rgba(255,122,48,0.22);
+  --tri-col:#30b8ff;--tri-col-glow:rgba(48,184,255,0.22);
+  --tri-box:#c0e040;--tri-box-glow:rgba(192,224,64,0.22);
   --btn:#222;--btn-active:rgba(74,158,255,0.18);--btn-border:#333;
   --checkpoint:#ff9f43;--checkpoint-bg:rgba(255,159,67,0.15);
 }
-html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Courier New',monospace;overflow:hidden;touch-action:manipulation}
 
-/* ══════════════════════════════════════════
-   SHARED: both desktop and mobile-landscape
-   put controls LEFT, grid RIGHT.
-   The #right-panel holds the grid in these modes.
-   ══════════════════════════════════════════ */
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:'Courier New',monospace;overflow:hidden;touch-action:manipulation}
 
-/* ── DESKTOP (≥ 700px) ── */
-@media (min-width:700px){
-  html,body{overflow:hidden}
-  #app{
-    display:flex;flex-direction:row;align-items:center;
-    width:100vw;height:100vh;padding:12px;gap:14px;overflow:hidden
-  }
-  /* Left: controls panel, fixed width, scrollable */
-  #right-panel{
-    display:flex;flex-direction:column;gap:7px;
-    width:300px;flex-shrink:0;
-    height:calc(100vh - 24px);
-    overflow-y:auto;overflow-x:hidden
-  }
-  /* Right: grid fills remaining space, square */
-  #grid-wrap{
-    flex:1;min-width:0;
-    /* square: smaller of remaining width or full height */
-    height:calc(100vh - 24px);
-    width:calc(100vh - 24px);
-    max-width:calc(100vw - 340px);
-    max-height:calc(100vw - 340px);
-    aspect-ratio:1;flex-shrink:0
-  }
-  #grid{display:grid;grid-template-columns:repeat(9,1fr);width:100%;height:100%;border:2px solid var(--border-strong)}
-  #top-bar{display:flex;align-items:center;justify-content:space-between;width:100%;flex-shrink:0;padding-bottom:2px}
-  #controls{display:flex;flex-direction:column;gap:6px;width:100%;flex-shrink:0}
-  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:100%;flex-shrink:0}
+/* ════════════════════════════════════════
+   LAYOUT — three modes
+   ════════════════════════════════════════ */
+
+/* DESKTOP ≥700px: panel left, grid right */
+@media(min-width:700px){
+  #app{display:flex;flex-direction:row;align-items:stretch;
+    width:100vw;height:100vh;padding:14px;gap:16px}
+  #panel{display:flex;flex-direction:column;gap:7px;
+    width:300px;flex-shrink:0;overflow-y:auto;overflow-x:hidden}
+  #grid-wrap{flex:1;align-self:center;
+    --gs:min(calc(100vh - 28px),calc(100vw - 344px));
+    width:var(--gs);height:var(--gs);flex-shrink:0}
+  .cell{font-size:calc(var(--gs)/9*0.52)}
+  .notes-g span{font-size:calc(var(--gs)/9*0.24)}
+  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;width:100%}
   #numpad button{font-size:20px;padding:10px 0}
-  #msg{font-size:12px;color:var(--text-dim);text-align:left;min-height:16px;flex-shrink:0}
-  .btn{font-size:13px;padding:8px 6px}
+  .btn{font-size:13px;padding:9px 6px}
   .row-label{font-size:11px}
-  /* cell font scales with grid size */
-  .cell{font-size:calc(min(calc(100vh - 24px), calc(100vw - 340px))/9*0.5)}
-  .notes-g span{font-size:calc(min(calc(100vh - 24px), calc(100vw - 340px))/9*0.22)}
+  #msg{font-size:12px;min-height:16px}
 }
 
-/* ── MOBILE PORTRAIT ── */
-@media (max-width:699px) and (orientation:portrait){
-  #app{
-    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-    height:100dvh;padding:6px 4px;gap:4px
-  }
-  #right-panel{display:contents}
-  #top-bar{display:flex;align-items:center;justify-content:space-between;width:min(calc(100vw - 8px),480px);flex-shrink:0}
-  #grid-wrap{flex-shrink:0;width:min(calc(100vw - 8px),calc(100dvh - 235px));aspect-ratio:1}
-  #grid{display:grid;grid-template-columns:repeat(9,1fr);width:100%;height:100%;border:2px solid var(--border-strong)}
-  #controls{display:flex;flex-direction:column;gap:4px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
-  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:min(calc(100vw - 8px),480px);flex-shrink:0}
-  #msg{font-size:11px;color:var(--text-dim);text-align:center;min-height:14px;flex-shrink:0}
-  .cell{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 235px))/9*0.5)}
-  .notes-g span{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 235px))/9*0.22)}
-}
-
-/* ── MOBILE LANDSCAPE ── */
-@media (max-width:699px) and (orientation:landscape){
-  html,body{overflow:hidden}
-  #app{
-    display:flex;flex-direction:row;align-items:stretch;
-    width:100vw;height:100dvh;padding:4px;gap:5px;overflow:hidden
-  }
-  /* Controls LEFT, scrollable */
-  #right-panel{
-    flex-shrink:0;width:42vw;
-    display:flex;flex-direction:column;
-    gap:3px;height:100dvh;
-    overflow-y:auto;overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;padding:2px 2px 2px 0
-  }
-  /* Grid RIGHT, square = screen height */
-  #grid-wrap{
-    flex-shrink:0;
-    width:calc(100dvh - 8px);
-    height:calc(100dvh - 8px);
-    max-width:55vw;
-    aspect-ratio:1;align-self:center
-  }
-  #grid{display:grid;grid-template-columns:repeat(9,1fr);width:100%;height:100%;border:2px solid var(--border-strong)}
-  #top-bar{display:flex;align-items:center;justify-content:space-between;width:100%;flex-shrink:0}
-  #controls{display:flex;flex-direction:column;gap:3px;width:100%;flex-shrink:0}
-  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:100%;flex-shrink:0}
-  #numpad button{font-size:14px;padding:6px 0}
-  #msg{font-size:10px;color:var(--text-dim);text-align:left;min-height:12px;flex-shrink:0}
-  .cell{font-size:calc(min(calc(100dvh - 8px),55vw)/9*0.5)}
-  .notes-g span{font-size:calc(min(calc(100dvh - 8px),55vw)/9*0.22)}
-  .btn{font-size:11px;padding:5px 3px}
+/* PORTRAIT <700px: grid top, controls bottom */
+@media(max-width:699px) and (orientation:portrait){
+  #app{display:flex;flex-direction:column;align-items:center;
+    justify-content:space-between;height:100dvh;padding:5px 4px;gap:3px}
+  #grid-wrap{order:1;flex-shrink:0;
+    width:min(calc(100vw - 8px),calc(100dvh - 200px));aspect-ratio:1}
+  #panel{order:2;display:flex;flex-direction:column;align-items:center;gap:3px;
+    width:min(calc(100vw - 8px),480px);flex-shrink:0}
+  .cell{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 200px))/9*0.52)}
+  .notes-g span{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 200px))/9*0.24)}
+  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:100%}
+  #numpad button{font-size:18px;padding:8px 0}
+  .btn{font-size:11px;padding:6px 2px}
   .row-label{font-size:9px}
+  #msg{font-size:11px;min-height:14px;text-align:center}
 }
 
-#title{font-size:14px;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase;font-weight:700}
-#timer{font-size:14px;letter-spacing:.1em;color:var(--text-dim);font-variant-numeric:tabular-nums;font-weight:600}
-.cell{border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-weight:600;color:var(--text);transition:background .08s;-webkit-tap-highlight-color:transparent}
+/* LANDSCAPE mobile: panel left, grid right */
+@media(max-width:699px) and (orientation:landscape){
+  #app{display:flex;flex-direction:row;align-items:stretch;
+    width:100vw;height:100dvh;padding:4px;gap:5px;overflow:hidden}
+  #panel{display:flex;flex-direction:column;gap:3px;
+    width:44vw;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;padding-right:3px}
+  #grid-wrap{flex-shrink:0;
+    width:calc(100dvh - 8px);height:calc(100dvh - 8px);
+    max-width:54vw;align-self:center}
+  .cell{font-size:calc(min(calc(100dvh - 8px),54vw)/9*0.5)}
+  .notes-g span{font-size:calc(min(calc(100dvh - 8px),54vw)/9*0.22)}
+  #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:100%}
+  #numpad button{font-size:13px;padding:6px 0}
+  .btn{font-size:10px;padding:5px 3px}
+  .row-label{font-size:8px}
+  #msg{font-size:10px;min-height:12px}
+}
+
+/* ════════════════════════════════════════
+   SHARED STYLES
+   ════════════════════════════════════════ */
+#grid{display:grid;grid-template-columns:repeat(9,1fr);
+  width:100%;height:100%;border:2px solid var(--border-strong)}
+#top-bar{display:flex;align-items:center;justify-content:space-between;
+  width:100%;flex-shrink:0}
+#title{font-size:13px;letter-spacing:.18em;color:var(--text-dim);
+  text-transform:uppercase;font-weight:700}
+#timer{font-size:13px;letter-spacing:.1em;color:var(--text-dim);
+  font-variant-numeric:tabular-nums;font-weight:600}
+#controls{display:flex;flex-direction:column;gap:inherit;width:100%;flex-shrink:0}
+#msg{color:var(--text-dim);text-align:left;flex-shrink:0}
+
+/* Cells */
+.cell{border:.5px solid var(--border);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;position:relative;
+  font-weight:600;color:var(--text);transition:background .08s;
+  -webkit-tap-highlight-color:transparent}
 .cell:nth-child(3n+1){border-left:1.5px solid var(--border-strong)}
 .cell:nth-child(n+1):nth-child(-n+9){border-top:1.5px solid var(--border-strong)}
 .cell:nth-child(n+28):nth-child(-n+36){border-top:1.5px solid var(--border-strong)}
 .cell:nth-child(n+55):nth-child(-n+63){border-top:1.5px solid var(--border-strong)}
-.cell.selected{background:rgba(255,210,60,0.28)!important}
+.cell.selected{background:rgba(255,210,0,0.32)!important}
 .cell.peer{background:var(--peer)}
 .cell.match{background:rgba(255,220,0,0.22)!important}
 .cell.user-digit{color:var(--user)}
@@ -144,8 +123,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .cell.tagged-tri-box{box-shadow:inset 0 0 0 2px var(--tri-box);background:var(--tri-box-glow)}
 .cell.hint-pivot{box-shadow:inset 0 0 0 2px #9b6fff;background:rgba(155,111,255,0.18)!important}
 .cell.hint-wing{box-shadow:inset 0 0 0 2px #ff6fa0;background:rgba(255,111,160,0.15)!important}
-.notes-g{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px}
-.notes-g span{display:flex;align-items:center;justify-content:center;color:var(--note);font-weight:400;line-height:1}
+
+/* Notes grid */
+.notes-g{display:grid;grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px}
+.notes-g span{display:flex;align-items:center;justify-content:center;
+  color:var(--note);font-weight:400;line-height:1}
 .notes-g span.pair-note-row{color:var(--pair-row);font-weight:700}
 .notes-g span.pair-note-col{color:var(--pair-col);font-weight:700}
 .notes-g span.pair-note-box{color:var(--pair-box);font-weight:700}
@@ -154,108 +137,145 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 .notes-g span.tri-note-box{color:var(--tri-box);font-weight:700}
 .notes-g span.match-note{color:var(--match-note);font-weight:700}
 .notes-g span.hint-note{color:#9b6fff;font-weight:700}
-.row-label{font-size:12px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;text-align:center;font-weight:700}
-.btn-row{display:flex;gap:3px;justify-content:center;flex-wrap:nowrap}
-.btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:8px 8px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;white-space:nowrap;flex:1;text-align:center;transition:background .1s;-webkit-tap-highlight-color:transparent;min-width:0}
-.btn:active{transform:scale(.96)}
+
+/* Buttons */
+.row-label{letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;
+  text-align:center;font-weight:700;width:100%}
+.btn-row{display:flex;gap:3px;width:100%}
+.btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);
+  border-radius:6px;cursor:pointer;font-weight:700;font-family:inherit;
+  white-space:nowrap;flex:1;text-align:center;transition:background .1s;
+  -webkit-tap-highlight-color:transparent;min-width:0;position:relative}
+.btn:active{transform:scale(.94)}
 .btn.active{background:var(--btn-active);border-color:var(--accent);color:var(--accent)}
-.btn.notes-all-active{background:rgba(74,158,255,0.25);border-color:var(--accent);color:var(--accent);font-weight:700}
+.btn.notes-all-active{background:rgba(74,158,255,0.25);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
 .btn.tag-pair{border-color:var(--pair-row);color:var(--pair-row)}
 .btn.tag-triple{border-color:var(--tri-col);color:var(--tri-col)}
 .btn.hint-style{border-color:#9b6fff;color:#9b6fff}
-.btn.hint-style:active{background:rgba(155,111,255,0.15)}
 .btn.undo-style{border-color:#888;color:#aaa}
 .btn.check-style{border-color:#4caf7a;color:#4caf7a}
-.btn.check-style:active{background:rgba(76,175,122,0.15)}
 .btn.checkpoint-style{border-color:var(--checkpoint);color:var(--checkpoint)}
-.btn.checkpoint-style:active{background:var(--checkpoint-bg)}
-.btn.checkpoint-style.has-checkpoint{background:var(--checkpoint-bg);font-weight:700}
-.btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);opacity:0.4;pointer-events:none}
+.btn.checkpoint-style.has-checkpoint{background:var(--checkpoint-bg)}
+.btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);
+  opacity:.4;pointer-events:none}
 .btn.restore-style.has-checkpoint{opacity:1;pointer-events:auto}
-#numpad button{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);border-radius:6px;padding:11px 0;cursor:pointer;font-size:22px;font-family:inherit;font-weight:700;transition:background .1s;-webkit-tap-highlight-color:transparent}
+
+/* Expand-on-tap: button shows short label, tap expands to show full word */
+/* .btn-short = abbreviated; .btn-expanded = full label shown */
+.btn .btn-short{display:inline}
+.btn .btn-long{display:none;font-size:0.85em}
+.btn.expanded .btn-short{display:none}
+.btn.expanded .btn-long{display:inline}
+.btn.expanded{background:rgba(255,255,255,0.08);z-index:10;
+  box-shadow:0 0 0 1px #666;flex:2;transition:flex .15s}
+
+/* Confirm-needed: second tap required, highlighted */
+.btn.needs-confirm{outline:2px solid var(--accent);outline-offset:1px}
+
+/* Desktop: show full labels always, no expand needed */
+@media(min-width:700px){
+  .btn .btn-short{display:none}
+  .btn .btn-long{display:inline}
+  .btn.expanded{flex:1;box-shadow:none;background:var(--btn)}
+}
+
+#numpad{flex-shrink:0}
+#numpad button{background:var(--btn);border:.5px solid var(--btn-border);
+  color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;
+  font-weight:700;transition:background .1s;-webkit-tap-highlight-color:transparent;
+  width:100%}
 #numpad button:active{transform:scale(.93);background:var(--accent-bg)}
-#numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
-#modal,#splash{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
-#modal.open,#splash.open{display:flex}
-#modal-box{background:#1a1a1a;border:1px solid #444;border-radius:10px;padding:20px;text-align:center;width:min(280px,90vw);display:flex;flex-direction:column;gap:12px}
-#modal-box h3{font-size:13px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase}
-.diff-btn{background:#222;border:.5px solid #444;color:var(--text);border-radius:6px;padding:10px;font-family:inherit;font-size:13px;cursor:pointer}
+#numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);
+  background:var(--accent-bg)}
+
+/* Modals */
+#modal,#splash,#restore-modal{display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
+#modal.open,#splash.open,#restore-modal.open{display:flex}
+#modal-box,#restore-box{background:#1a1a1a;border:1px solid #444;border-radius:10px;
+  padding:20px;text-align:center;width:min(300px,90vw);
+  display:flex;flex-direction:column;gap:12px}
+#restore-box{border-color:var(--checkpoint)}
+#modal-box h3,#restore-box h3{font-size:13px;letter-spacing:.1em;
+  color:var(--text-dim);text-transform:uppercase}
+#restore-box h3{color:var(--checkpoint)}
+#restore-box p{font-size:11px;color:var(--text-dim);line-height:1.5}
+.diff-btn{background:#222;border:.5px solid #444;color:var(--text);
+  border-radius:6px;padding:10px;font-family:inherit;font-size:13px;cursor:pointer}
 .diff-btn:active{transform:scale(.97)}
 .diff-btn:hover{background:#2a2a2a}
 .diff-btn .sub{font-size:10px;color:var(--text-dim);display:block;margin-top:2px}
-#modal-cancel{font-size:11px;color:var(--text-dim);background:none;border:none;cursor:pointer;font-family:inherit}
+#modal-cancel,#restore-cancel{font-size:11px;color:var(--text-dim);
+  background:none;border:none;cursor:pointer;font-family:inherit}
+
+/* Splash */
 #splash-box{display:flex;flex-direction:column;align-items:center;gap:24px}
 #splash-title{font-size:52px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
-#splash-sub{font-size:11px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase;text-align:center}
-#splash-tap{font-size:12px;color:var(--text-dim);letter-spacing:.15em;animation:pulse 2s ease-in-out infinite}
+#splash-sub{font-size:11px;letter-spacing:.2em;color:var(--text-dim);
+  text-transform:uppercase;text-align:center}
+#splash-tap{font-size:12px;color:var(--text-dim);letter-spacing:.15em;
+  animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
-#loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--text-dim);font-size:12px;letter-spacing:.1em}
+
+#loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  z-index:200;align-items:center;justify-content:center;flex-direction:column;
+  gap:12px;color:var(--text-dim);font-size:12px;letter-spacing:.1em}
 #loading-overlay.open{display:flex}
-#restore-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
-#restore-modal.open{display:flex}
-#restore-box{background:#1a1a1a;border:1px solid var(--checkpoint);border-radius:10px;padding:20px;text-align:center;width:min(280px,90vw);display:flex;flex-direction:column;gap:12px}
-#restore-box h3{font-size:13px;letter-spacing:.1em;color:var(--checkpoint);text-transform:uppercase}
-#restore-box p{font-size:11px;color:var(--text-dim);line-height:1.5}
-#restore-cancel{font-size:11px;color:var(--text-dim);background:none;border:none;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="top-bar">
-    <div id="title">sudokuG</div>
-    <div id="timer">0:00</div>
-  </div>
-  <div id="grid-wrap"><div id="grid"></div></div>
-
-  <!-- right-panel: in portrait = display:contents (flat), in landscape = flex column -->
-  <div id="right-panel">
+  <div id="panel">
+    <div id="top-bar">
+      <div id="title">sudokuG</div>
+      <div id="timer">0:00</div>
+    </div>
     <div id="controls">
-      <div class="row-label">Input mode</div>
+      <div class="row-label">Mode</div>
       <div class="btn-row">
-        <button class="btn active" id="btn-digit" onclick="setMode('digit')">Digit</button>
-        <button class="btn" id="btn-notes" onclick="cycleNotes()">Notes</button>
-        <button class="btn" onclick="eraseCell()">Erase</button>
-        <button class="btn undo-style" onclick="undo()">Undo</button>
-        <button class="btn check-style" onclick="checkSolution()">Check</button>
-        <button class="btn" onclick="openModal()">New</button>
+        <button class="btn active" id="btn-digit" data-tip="Place a digit" onclick="setMode('digit')">D</button>
+        <button class="btn" id="btn-notes" data-tip="Note mode / Notes-All (tap twice)" onclick="cycleNotes()">N</button>
+        <button class="btn" data-tip="Erase selected cell" onclick="eraseCell()">⌫</button>
+        <button class="btn undo-style" data-tip="Undo last action" onclick="undo()">↩</button>
+        <button class="btn check-style" data-tip="Check completed solution" onclick="checkSolution()">✓</button>
+        <button class="btn" data-tip="Start a new game" onclick="openModal()">＋</button>
       </div>
-      <div class="row-label">Notes tools</div>
+      <div class="row-label">Auto-notes</div>
       <div class="btn-row">
-        <button class="btn" onclick="autoNotes('all')">Auto All</button>
-        <button class="btn" onclick="autoNotes('peers')">Peers</button>
-        <button class="btn" onclick="clearAllNotes()">Clear Notes</button>
+        <button class="btn" data-tip="Fill valid notes in ALL empty cells" data-confirm="Fill notes for all empty cells?" onclick="handleConfirm(this,()=>autoNotes('all'))">A</button>
+        <button class="btn" data-tip="Fill notes for peers of selected cell" data-confirm="Fill notes for peers?" onclick="handleConfirm(this,()=>autoNotes('peers'))">P</button>
+        <button class="btn" data-tip="Fill notes in selected row" data-confirm="Fill notes for this row?" onclick="handleConfirm(this,()=>autoNotes('row'))">R</button>
+        <button class="btn" data-tip="Fill notes in selected col" data-confirm="Fill notes for this col?" onclick="handleConfirm(this,()=>autoNotes('col'))">C</button>
+        <button class="btn" data-tip="Fill notes in selected box" data-confirm="Fill notes for this box?" onclick="handleConfirm(this,()=>autoNotes('box'))">B</button>
+        <button class="btn undo-style" data-tip="Erase ALL notes from board" data-confirm="Clear ALL notes from board?" onclick="handleConfirm(this,()=>clearAllNotes())">✕N</button>
       </div>
-      <div class="row-label">Auto-notes scope</div>
+      <div class="row-label">Contradiction</div>
       <div class="btn-row">
-        <button class="btn" onclick="autoNotes('row')">Row</button>
-        <button class="btn" onclick="autoNotes('col')">Col</button>
-        <button class="btn" onclick="autoNotes('box')">Box</button>
+        <button class="btn checkpoint-style" id="btn-checkpoint" data-tip="Set checkpoint to return to" onclick="setCheckpoint()">📍</button>
+        <button class="btn restore-style" id="btn-restore" data-tip="Restore board to checkpoint" onclick="openRestoreModal()">↩C</button>
+        <button class="btn undo-style" data-tip="Clear checkpoint" onclick="clearCheckpoint()">✕C</button>
       </div>
-      <div class="row-label">Proof by contradiction</div>
+      <div class="row-label">Tag</div>
       <div class="btn-row">
-        <button class="btn checkpoint-style" id="btn-checkpoint" onclick="setCheckpoint()">📍 Set Point</button>
-        <button class="btn restore-style" id="btn-restore" onclick="openRestoreModal()">↩ Restore</button>
-        <button class="btn undo-style" onclick="clearCheckpoint()" style="font-size:10px">✕ Clear</button>
+        <button class="btn tag-pair" data-tip="Tag naked pair from selected cell" onclick="tagSet(2)">+P</button>
+        <button class="btn tag-pair" data-tip="Untag pair from selected cell" onclick="untagSet(2)">−P</button>
+        <button class="btn tag-triple" data-tip="Tag naked triple from selected cell" onclick="tagSet(3)">+T</button>
+        <button class="btn tag-triple" data-tip="Untag triple from selected cell" onclick="untagSet(3)">−T</button>
       </div>
-      <div class="row-label">Tag pairs &amp; triples</div>
+      <div class="row-label">Hints</div>
       <div class="btn-row">
-        <button class="btn tag-pair" onclick="tagSet(2)">Tag Pair</button>
-        <button class="btn tag-pair" onclick="untagSet(2)">Untag Pair</button>
-        <button class="btn tag-triple" onclick="tagSet(3)">Tag Triple</button>
-        <button class="btn tag-triple" onclick="untagSet(3)">Untag Triple</button>
-      </div>
-      <div class="row-label">Hint — highlight technique</div>
-      <div class="btn-row">
-        <button class="btn hint-style" onclick="hintFind('pairs')">Pairs</button>
-        <button class="btn hint-style" onclick="hintFind('triples')">Triples</button>
-        <button class="btn hint-style" onclick="hintFind('xwing')">X-Wing</button>
-        <button class="btn hint-style" onclick="hintFind('xywing')">XY-Wing</button>
-        <button class="btn hint-style" onclick="clearHints()">Clear</button>
+        <button class="btn hint-style" data-tip="Find & highlight naked pairs" onclick="hintFind('pairs')">2s</button>
+        <button class="btn hint-style" data-tip="Find & highlight naked triples" onclick="hintFind('triples')">3s</button>
+        <button class="btn hint-style" data-tip="Find X-Wing pattern" onclick="hintFind('xwing')">XW</button>
+        <button class="btn hint-style" data-tip="Find XY-Wing pattern" onclick="hintFind('xywing')">XY</button>
+        <button class="btn hint-style" data-tip="Clear hint highlights" onclick="clearHints()">✕H</button>
       </div>
     </div>
     <div id="numpad"></div>
     <div id="msg"></div>
   </div>
+  <div id="grid-wrap"><div id="grid"></div></div>
 </div>
 
 <div id="splash" class="open">
@@ -282,7 +302,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
     <h3>Restore Checkpoint?</h3>
     <p>This will roll back all progress since your checkpoint. Cannot be undone.</p>
     <button class="diff-btn" style="border-color:var(--checkpoint);color:var(--checkpoint)" onclick="confirmRestore()">&#x21A9; Yes, Restore</button>
-    <button id="restore-cancel" onclick="closeRestoreModal()">Cancel &mdash; keep playing</button>
+    <button id="restore-cancel" onclick="closeRestoreModal()">Cancel — keep playing</button>
   </div>
 </div>
 
@@ -302,53 +322,94 @@ async function fetchPuzzle(diff){
   let lastFlat;
   for(let t=0;t<maxTries;t++){
     const res=await fetch('https://sugoku.onrender.com/board?difficulty='+apiDiff);
-    if(!res.ok) throw new Error('API error');
+    if(!res.ok)throw new Error('API error');
     const data=await res.json();
     lastFlat=data.board.flat();
     const givens=lastFlat.filter(v=>v!==0).length;
-    if(diff!=='expert'||givens<=23) return lastFlat;
+    if(diff!=='expert'||givens<=23)return lastFlat;
   }
   return lastFlat;
 }
 
 let PUZZLE=[],mode='digit',selected=null,cells=[],notes=[],digits=[];
-let taggedSets=[];
-let history=[],flashError=new Set();
+let taggedSets=[],history=[],flashError=new Set();
 let timerSec=0,timerInterval=null,timerStarted=false;
 let hintPivots=new Set(),hintWings=new Set(),hintNotes=new Map();
-let notesAllMode=false;
-
-// Checkpoint state for proof-by-contradiction
-let checkpoint=null; // {digits, notes, taggedSets, timerSec}
+let notesAllMode=false,checkpoint=null;
 
 const grid=document.getElementById('grid');
 const numpad=document.getElementById('numpad');
 const msg=document.getElementById('msg');
-const loadingOverlay=document.getElementById('loading-overlay');
-const splash=document.getElementById('splash');
 
-splash.addEventListener('click',async()=>{
+// Splash
+document.getElementById('splash').addEventListener('click',async()=>{
   try{
-    if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-    else if(document.documentElement.webkitRequestFullscreen) await document.documentElement.webkitRequestFullscreen();
+    if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
+    else if(document.documentElement.webkitRequestFullscreen)await document.documentElement.webkitRequestFullscreen();
   }catch(e){}
-  splash.classList.remove('open');
+  document.getElementById('splash').classList.remove('open');
 });
 
-function showMsg(t,ms=2200){msg.textContent=t;clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>msg.textContent='',ms)}
+// tapBtn: on mobile, first tap expands button to show full label.
+// If needsConfirm=true, expanded state requires a second tap to fire action.
+// On desktop (wide screen), always fires immediately.
+let expandedBtn=null;
+function tapBtn(btn,action,needsConfirm=false){
+  const isDesktop=window.innerWidth>=700;
+  if(isDesktop){action();return;}
+  if(expandedBtn&&expandedBtn!==btn){
+    expandedBtn.classList.remove('expanded','needs-confirm');
+    expandedBtn=null;
+  }
+  if(!btn.classList.contains('expanded')){
+    btn.classList.add('expanded');
+    expandedBtn=btn;
+    if(needsConfirm){
+      btn.classList.add('needs-confirm');
+      showMsg('Tap again to confirm',1800);
+    } else {
+      // non-confirm: fire after short delay so user sees the label
+      setTimeout(()=>{
+        btn.classList.remove('expanded');
+        expandedBtn=null;
+        action();
+      },600);
+    }
+  } else if(needsConfirm){
+    btn.classList.remove('expanded','needs-confirm');
+    expandedBtn=null;
+    action();
+  }
+}
+// Tap anywhere else collapses expanded button
+document.addEventListener('touchstart',e=>{
+  if(expandedBtn&&!expandedBtn.contains(e.target)){
+    expandedBtn.classList.remove('expanded','needs-confirm');
+    expandedBtn=null;
+  }
+},{passive:true});
+
+function showMsg(t,ms=2500){
+  msg.textContent=t;clearTimeout(showMsg._t);
+  showMsg._t=setTimeout(()=>msg.textContent='',ms);
+}
 function rowOf(i){const r=Math.floor(i/9),s=new Set();for(let c=0;c<9;c++)s.add(r*9+c);return s}
 function colOf(i){const c=i%9,s=new Set();for(let r=0;r<9;r++)s.add(r*9+c);return s}
-function boxOf(i){const r=Math.floor(i/9),c=i%9,br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3,s=new Set();for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)s.add((br+dr)*9+(bc+dc));return s}
+function boxOf(i){const r=Math.floor(i/9),c=i%9,br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3,s=new Set();
+  for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)s.add((br+dr)*9+(bc+dc));return s}
 function peers(i){const s=new Set([...rowOf(i),...colOf(i),...boxOf(i)]);s.delete(i);return s}
-function possibleFor(i){const used=new Set();peers(i).forEach(j=>{if(digits[j])used.add(digits[j])});const p=new Set();for(let n=1;n<=9;n++)if(!used.has(n))p.add(n);return p}
+function possibleFor(i){const used=new Set();peers(i).forEach(j=>{if(digits[j])used.add(digits[j])});
+  const p=new Set();for(let n=1;n<=9;n++)if(!used.has(n))p.add(n);return p}
 function clearFlash(){flashError.clear()}
 function sees(a,b){return a!==b&&([...rowOf(a)].includes(b)||[...colOf(a)].includes(b)||[...boxOf(a)].includes(b))}
-function combinations(arr,k){if(k===0)return[[]];if(arr.length<k)return[];const[first,...rest]=arr;return[...combinations(rest,k-1).map(c=>[first,...c]),...combinations(rest,k)]}
+function combinations(arr,k){if(k===0)return[[]];if(arr.length<k)return[];
+  const[first,...rest]=arr;return[...combinations(rest,k-1).map(c=>[first,...c]),...combinations(rest,k)]}
 
 function startTimer(){clearInterval(timerInterval);timerInterval=null;timerSec=0;timerStarted=false;updateTimerDisplay()}
 function startTimerOnce(){if(timerStarted)return;timerStarted=true;timerInterval=setInterval(()=>{timerSec++;updateTimerDisplay()},1000)}
 function stopTimer(){clearInterval(timerInterval);timerInterval=null}
-function updateTimerDisplay(){const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');document.getElementById('timer').textContent=m+':'+s}
+function updateTimerDisplay(){const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');
+  document.getElementById('timer').textContent=m+':'+s}
 
 function snapshot(){
   history.push({digits:[...digits],notes:notes.map(s=>new Set(s)),taggedSets:JSON.parse(JSON.stringify(taggedSets))});
@@ -356,61 +417,40 @@ function snapshot(){
 }
 function undo(){
   if(!history.length){showMsg('Nothing to undo');return}
-  clearFlash();
-  const s=history.pop();
-  digits=[...s.digits];notes=s.notes.map(n=>new Set(n));taggedSets=s.taggedSets;
-  render();
+  clearFlash();const s=history.pop();
+  digits=[...s.digits];notes=s.notes.map(n=>new Set(n));taggedSets=s.taggedSets;render();
 }
 
-// ── Checkpoint (proof-by-contradiction) ──────────────────
+// Checkpoint
 function updateCheckpointUI(){
   const has=checkpoint!==null;
   document.getElementById('btn-checkpoint').classList.toggle('has-checkpoint',has);
   document.getElementById('btn-restore').classList.toggle('has-checkpoint',has);
 }
 function setCheckpoint(){
-  checkpoint={
-    digits:[...digits],
-    notes:notes.map(s=>new Set(s)),
-    taggedSets:JSON.parse(JSON.stringify(taggedSets)),
-    timerSec
-  };
-  updateCheckpointUI();
-  showMsg('📍 Checkpoint set — play on; restore if contradiction found',3000);
+  checkpoint={digits:[...digits],notes:notes.map(s=>new Set(s)),
+    taggedSets:JSON.parse(JSON.stringify(taggedSets)),timerSec};
+  updateCheckpointUI();showMsg('📍 Checkpoint set',2500);
 }
 function openRestoreModal(){
   if(!checkpoint){showMsg('No checkpoint set');return}
   document.getElementById('restore-modal').classList.add('open');
 }
-function closeRestoreModal(){
-  document.getElementById('restore-modal').classList.remove('open');
-}
+function closeRestoreModal(){document.getElementById('restore-modal').classList.remove('open')}
 function confirmRestore(){
   closeRestoreModal();
-  restoreCheckpoint();
-}
-function restoreCheckpoint(){
-  if(!checkpoint){showMsg('No checkpoint set');return}
   clearFlash();
-  digits=[...checkpoint.digits];
-  notes=checkpoint.notes.map(s=>new Set(s));
+  digits=[...checkpoint.digits];notes=checkpoint.notes.map(s=>new Set(s));
   taggedSets=JSON.parse(JSON.stringify(checkpoint.taggedSets));
-  timerSec=checkpoint.timerSec;
-  updateTimerDisplay();
-  // keep checkpoint alive so you can try the other branch
-  showMsg('↩ Restored to checkpoint — try the other candidate',3000);
-  render();
+  timerSec=checkpoint.timerSec;updateTimerDisplay();
+  showMsg('↩ Restored to checkpoint',2500);render();
 }
-function clearCheckpoint(){
-  checkpoint=null;
-  updateCheckpointUI();
-  showMsg('Checkpoint cleared');
-}
+function clearCheckpoint(){checkpoint=null;updateCheckpointUI();showMsg('Checkpoint cleared')}
 
-// ── Notes cycling ────────────────────────────────────────
+// Mode cycling
 function cycleNotes(){
-  if(mode==='digit') setMode('notes');
-  else if(mode==='notes') setMode('notes-all');
+  if(mode==='digit')setMode('notes');
+  else if(mode==='notes')setMode('notes-all');
   else setMode('digit');
 }
 function setMode(m){
@@ -419,9 +459,9 @@ function setMode(m){
   const nb=document.getElementById('btn-notes');
   nb.classList.toggle('active',m==='notes');
   nb.classList.toggle('notes-all-active',m==='notes-all');
-  nb.textContent=m==='notes-all'?'Notes*':'Notes';
+  nb.textContent=m==='notes-all'?'N*':'N';
   [...numpad.querySelectorAll('button')].forEach(b=>b.classList.toggle('notes-all-btn',notesAllMode));
-  if(m==='notes-all') showMsg('Notes-All mode: number marks all valid cells',3000);
+  if(m==='notes-all')showMsg('Notes-All: marks digit in every valid cell',3000);
 }
 
 function isTagged(i){return taggedSets.some(t=>t.indices.includes(i))}
@@ -431,21 +471,18 @@ function isImpossible(i,n){return[...peers(i)].some(j=>digits[j]===n)}
 function inputNum(n){
   clearFlash();startTimerOnce();
   if(notesAllMode){
-    snapshot();
-    let count=0;
+    snapshot();let count=0;
     for(let i=0;i<81;i++){
-      if(PUZZLE[i]||digits[i]||isTagged(i)) continue;
+      if(PUZZLE[i]||digits[i]||isTagged(i))continue;
       if(!isImpossible(i,n)){notes[i].add(n);count++;}
     }
-    showMsg('Marked '+n+' as candidate in '+count+' cells');
-    render();return;
+    showMsg('Marked '+n+' as candidate in '+count+' cells');render();return;
   }
-  if(selected===null||PUZZLE[selected]) return;
+  if(selected===null||PUZZLE[selected])return;
   if(mode==='digit'){
     snapshot();
     const placing=digits[selected]!==n?n:0;
-    digits[selected]=placing;
-    notes[selected].clear();
+    digits[selected]=placing;notes[selected].clear();
     if(placing){
       pruneNoteFromPeers(selected,placing);
       [...peers(selected)].forEach(j=>{if(digits[j]===placing)flashError.add(j)});
@@ -463,47 +500,41 @@ function inputNum(n){
 
 function eraseCell(){
   if(selected===null||PUZZLE[selected])return;
-  clearFlash();startTimerOnce();snapshot();
-  digits[selected]=0;notes[selected].clear();render();
+  clearFlash();startTimerOnce();snapshot();digits[selected]=0;notes[selected].clear();render();
 }
-
-// ── Clear all notes ───────────────────────────────────────
-function clearAllNotes(){
-  clearFlash();startTimerOnce();snapshot();
-  for(let i=0;i<81;i++) notes[i].clear();
-  showMsg('All notes cleared');
-  render();
-}
-
 function selectCell(i){clearFlash();selected=i;render()}
 
 function autoNotes(scope){
   let targets;
-  if(scope==='all') targets=[...Array(81).keys()];
-  else if(scope==='row') targets=selected!==null?[...rowOf(selected)]:[];
-  else if(scope==='col') targets=selected!==null?[...colOf(selected)]:[];
-  else if(scope==='box') targets=selected!==null?[...boxOf(selected)]:[];
-  else if(scope==='peers') targets=selected!==null?[...peers(selected)]:[];
+  if(scope==='all')targets=[...Array(81).keys()];
+  else if(scope==='row')targets=selected!==null?[...rowOf(selected)]:[];
+  else if(scope==='col')targets=selected!==null?[...colOf(selected)]:[];
+  else if(scope==='box')targets=selected!==null?[...boxOf(selected)]:[];
+  else if(scope==='peers')targets=selected!==null?[...peers(selected)]:[];
   if(!targets.length){showMsg('Select a cell first');return}
   clearFlash();startTimerOnce();snapshot();
   targets.forEach(i=>{if(isTagged(i)||PUZZLE[i]||digits[i])return;notes[i]=possibleFor(i)});
   render();
 }
 
+function clearAllNotes(){
+  clearFlash();startTimerOnce();snapshot();
+  for(let i=0;i<81;i++)notes[i].clear();
+  showMsg('All notes cleared');render();
+}
+
 function tagSet(size){
   if(selected===null){showMsg('Select a cell first');return}
   const n=notes[selected];
-  const label=size===2?'pair':'triple';
   if(size===2){
     if(n.size!==2){showMsg('Cell needs exactly 2 notes for a pair');return}
-    const[a,b]=[...n];
-    let partner=null,gType=null;
+    const[a,b]=[...n];let partner=null,gType=null;
     for(const[groupFn,gt] of [[rowOf,'row'],[colOf,'col'],[boxOf,'box']]){
       for(const j of groupFn(selected)){
-        if(j===selected) continue;
+        if(j===selected)continue;
         if(notes[j].size===2&&notes[j].has(a)&&notes[j].has(b)){partner=j;gType=gt;break}
       }
-      if(partner!==null) break;
+      if(partner!==null)break;
     }
     if(partner===null){showMsg('No matching pair in same row/col/box');return}
     clearFlash();startTimerOnce();snapshot();
@@ -522,9 +553,9 @@ function tagSet(size){
           showMsg('Triple tagged ('+gt+')');render();found=true;break;
         }
       }
-      if(found) break;
+      if(found)break;
     }
-    if(!found) showMsg('No matching triple in same row/col/box');
+    if(!found)showMsg('No matching triple in same row/col/box');
   }
 }
 
@@ -540,14 +571,15 @@ function tagClass(i){
   return '';
 }
 function noteTagClass(i){
-  for(const t of taggedSets){if(t.indices.includes(i))return (t.size===2?'pair':'tri')+'-note-'+t.groupType}
+  for(const t of taggedSets){if(t.indices.includes(i))return(t.size===2?'pair':'tri')+'-note-'+t.groupType}
   return '';
 }
 
 function checkSolution(){
   if(digits.some(d=>!d)){showMsg('Puzzle not complete yet');return}
   const valid=digits.every((d,i)=>d&&![...peers(i)].some(j=>digits[j]===d));
-  if(valid){stopTimer();const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');showMsg('Solved! Time: '+m+':'+s,6000);}
+  if(valid){stopTimer();const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');
+    showMsg('Solved! Time: '+m+':'+s,6000);}
   else showMsg('Something is wrong — check red cells');
 }
 
@@ -556,15 +588,15 @@ function render(){
   const selVal=selected!==null?digits[selected]:0;
   cells.forEach((el,i)=>{
     let cls='cell';
-    if(PUZZLE[i]) cls+=' given';
-    else if(digits[i]) cls+=' user-digit';
-    if(flashError.has(i)) cls+=' error';
-    else if(i===selected) cls+=' selected';
-    else if(peerSet.has(i)) cls+=' peer';
-    if(!flashError.has(i)&&selVal&&digits[i]===selVal&&i!==selected) cls+=' match';
-    const tc=tagClass(i);if(tc) cls+=' '+tc;
-    if(hintPivots.has(i)) cls+=' hint-pivot';
-    if(hintWings.has(i))  cls+=' hint-wing';
+    if(PUZZLE[i])cls+=' given';
+    else if(digits[i])cls+=' user-digit';
+    if(flashError.has(i))cls+=' error';
+    else if(i===selected)cls+=' selected';
+    else if(peerSet.has(i))cls+=' peer';
+    if(!flashError.has(i)&&selVal&&digits[i]===selVal&&i!==selected)cls+=' match';
+    const tc=tagClass(i);if(tc)cls+=' '+tc;
+    if(hintPivots.has(i))cls+=' hint-pivot';
+    if(hintWings.has(i))cls+=' hint-wing';
     el.className=cls;
     const d=digits[i],nt=notes[i];
     if(d){el.innerHTML=d;}
@@ -575,9 +607,9 @@ function render(){
         const sp=document.createElement('span');
         if(nt.has(k)){
           sp.textContent=k;
-          if(ntc) sp.className=ntc;
-          else if(hintNotes.has(i)&&hintNotes.get(i).has(k)) sp.className='hint-note';
-          else if(selVal&&k===selVal) sp.className='match-note';
+          if(ntc)sp.className=ntc;
+          else if(hintNotes.has(i)&&hintNotes.get(i).has(k))sp.className='hint-note';
+          else if(selVal&&k===selVal)sp.className='match-note';
         }
         ng.appendChild(sp);
       }
@@ -609,16 +641,15 @@ function openModal(){document.getElementById('modal').classList.add('open')}
 function closeModal(){document.getElementById('modal').classList.remove('open')}
 
 async function startNew(diff){
-  closeModal();loadingOverlay.classList.add('open');
+  closeModal();document.getElementById('loading-overlay').classList.add('open');
   let puzzleArr;
   try{puzzleArr=await fetchPuzzle(diff);}
   catch(e){
     const bank=FALLBACK[diff];
-    const str=bank[Math.floor(Math.random()*bank.length)];
-    puzzleArr=str.split('').map(Number);
+    puzzleArr=bank[Math.floor(Math.random()*bank.length)].split('').map(Number);
     showMsg('Offline — using local puzzle');
   }
-  loadingOverlay.classList.remove('open');
+  document.getElementById('loading-overlay').classList.remove('open');
   PUZZLE=[...puzzleArr];digits=[...PUZZLE];
   notes=Array.from({length:81},()=>new Set());
   taggedSets=[];hintPivots=new Set();hintWings=new Set();hintNotes=new Map();
@@ -626,17 +657,17 @@ async function startNew(diff){
   checkpoint=null;updateCheckpointUI();
   if(mode!=='digit')setMode('digit');
   buildGrid();startTimer();
-  if(!msg.textContent) showMsg(diff.charAt(0).toUpperCase()+diff.slice(1)+' puzzle loaded');
+  showMsg(diff.charAt(0).toUpperCase()+diff.slice(1)+' puzzle loaded');
 }
 
 // Hints
 function clearHints(){hintPivots.clear();hintWings.clear();hintNotes.clear();render();showMsg('Hints cleared')}
 function hintFind(type){
   clearHints();
-  if(type==='pairs') findNakedSets(2);
-  else if(type==='triples') findNakedSets(3);
-  else if(type==='xwing') findXWing();
-  else if(type==='xywing') findXYWing();
+  if(type==='pairs')findNakedSets(2);
+  else if(type==='triples')findNakedSets(3);
+  else if(type==='xwing')findXWing();
+  else if(type==='xywing')findXYWing();
   render();
 }
 
@@ -652,12 +683,10 @@ function findNakedSets(n){
     const empties=grp.filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].size>=2&&notes[i].size<=n);
     for(const combo of combinations(empties,n)){
       const union=new Set(combo.flatMap(i=>[...notes[i]]));
-      if(union.size===n){
-        combo.forEach(i=>{hintPivots.add(i);hintNotes.set(i,new Set(union))});found=true;
-      }
+      if(union.size===n){combo.forEach(i=>{hintPivots.add(i);hintNotes.set(i,new Set(union))});found=true;}
     }
   }
-  if(!found) showMsg(n===2?'No naked pairs found':'No naked triples found');
+  if(!found)showMsg(n===2?'No naked pairs found':'No naked triples found');
   else showMsg((n===2?'Naked pairs':'Naked triples')+' highlighted in purple');
 }
 
@@ -667,55 +696,63 @@ function findXWing(){
     const rowCands=[];
     for(let r=0;r<9;r++){
       const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>i%9);
-      if(cols.length===2) rowCands.push({r,cols});
+      if(cols.length===2)rowCands.push({r,cols});
     }
-    for(let a=0;a<rowCands.length;a++) for(let b=a+1;b<rowCands.length;b++){
+    for(let a=0;a<rowCands.length;a++)for(let b=a+1;b<rowCands.length;b++){
       if(rowCands[a].cols[0]===rowCands[b].cols[0]&&rowCands[a].cols[1]===rowCands[b].cols[1]){
         const[c1,c2]=[rowCands[a].cols[0],rowCands[a].cols[1]],[r1,r2]=[rowCands[a].r,rowCands[b].r];
-        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
-        for(let r=0;r<9;r++) if(r!==r1&&r!==r2)[c1,c2].forEach(c=>{const idx=r*9+c;if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
+        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);
+          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
+        for(let r=0;r<9;r++)if(r!==r1&&r!==r2)[c1,c2].forEach(c=>{const idx=r*9+c;
+          if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);
+            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
         found=true;
       }
     }
     const colCands=[];
     for(let c=0;c<9;c++){
       const rows=[...colOf(c)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
-      if(rows.length===2) colCands.push({c,rows});
+      if(rows.length===2)colCands.push({c,rows});
     }
-    for(let a=0;a<colCands.length;a++) for(let b=a+1;b<colCands.length;b++){
+    for(let a=0;a<colCands.length;a++)for(let b=a+1;b<colCands.length;b++){
       if(colCands[a].rows[0]===colCands[b].rows[0]&&colCands[a].rows[1]===colCands[b].rows[1]){
         const[r1,r2]=[colCands[a].rows[0],colCands[a].rows[1]],[c1,c2]=[colCands[a].c,colCands[b].c];
-        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
-        for(let c=0;c<9;c++) if(c!==c1&&c!==c2)[r1,r2].forEach(r=>{const idx=r*9+c;if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
+        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);
+          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
+        for(let c=0;c<9;c++)if(c!==c1&&c!==c2)[r1,r2].forEach(r=>{const idx=r*9+c;
+          if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);
+            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
         found=true;
       }
     }
   }
-  if(!found) showMsg('No X-Wings found in notes');
+  if(!found)showMsg('No X-Wings found in notes');
   else showMsg('X-Wing: purple=pattern, pink=eliminations');
 }
 
 function findXYWing(){
   const bi=[];
-  for(let i=0;i<81;i++) if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2) bi.push(i);
+  for(let i=0;i<81;i++)if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2)bi.push(i);
   let found=false;
   for(const pivot of bi){
     const[x,y]=[...notes[pivot]];
     for(const w1 of bi){
-      if(w1===pivot||!sees(pivot,w1)) continue;
+      if(w1===pivot||!sees(pivot,w1))continue;
       const w1n=[...notes[w1]];
-      if(!w1n.includes(x)&&!w1n.includes(y)) continue;
+      if(!w1n.includes(x)&&!w1n.includes(y))continue;
       for(const[shared1,z] of [[x,w1n.find(v=>v!==x)],[y,w1n.find(v=>v!==y)]]){
-        if(z===undefined||z===shared1) continue;
+        if(z===undefined||z===shared1)continue;
         for(const w2 of bi){
-          if(w2===pivot||w2===w1||!sees(pivot,w2)) continue;
+          if(w2===pivot||w2===w1||!sees(pivot,w2))continue;
           const other=shared1===x?y:x;
           if(notes[w2].has(other)&&notes[w2].has(z)){
             hintPivots.add(pivot);hintPivots.add(w1);hintPivots.add(w2);
-            [pivot,w1,w2].forEach(i=>{if(!hintNotes.has(i))hintNotes.set(i,new Set());notes[i].forEach(v=>hintNotes.get(i).add(v))});
+            [pivot,w1,w2].forEach(i=>{if(!hintNotes.has(i))hintNotes.set(i,new Set());
+              notes[i].forEach(v=>hintNotes.get(i).add(v))});
             for(let i=0;i<81;i++){
-              if(hintPivots.has(i)||digits[i]) continue;
-              if(sees(w1,i)&&sees(w2,i)&&notes[i].has(z)){hintWings.add(i);if(!hintNotes.has(i))hintNotes.set(i,new Set());hintNotes.get(i).add(z)}
+              if(hintPivots.has(i)||digits[i])continue;
+              if(sees(w1,i)&&sees(w2,i)&&notes[i].has(z)){hintWings.add(i);
+                if(!hintNotes.has(i))hintNotes.set(i,new Set());hintNotes.get(i).add(z)}
             }
             found=true;
           }
@@ -723,7 +760,7 @@ function findXYWing(){
       }
     }
   }
-  if(!found) showMsg('No XY-Wings found in notes');
+  if(!found)showMsg('No XY-Wings found in notes');
   else showMsg('XY-Wing: purple=pattern, pink=eliminations');
 }
 
@@ -732,8 +769,8 @@ document.addEventListener('keydown',e=>{
   const n=parseInt(e.key);
   if(n>=1&&n<=9){inputNum(n);return}
   if(e.key==='Backspace'||e.key==='Delete'){eraseCell();return}
-  if(e.key==='d'||e.key==='D') setMode('digit');
-  if(e.key==='n'||e.key==='N') cycleNotes();
+  if(e.key==='d'||e.key==='D')setMode('digit');
+  if(e.key==='n'||e.key==='N')cycleNotes();
   if(selected!==null){
     const r=Math.floor(selected/9),c=selected%9;
     if(e.key==='ArrowRight'&&c<8){clearFlash();selected++;render();e.preventDefault()}
@@ -742,10 +779,6 @@ document.addEventListener('keydown',e=>{
     if(e.key==='ArrowUp'&&r>0){clearFlash();selected-=9;render();e.preventDefault()}
   }
 });
-
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
-}
 
 buildNumpad();
 startNew('easy');
