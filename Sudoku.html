@@ -402,7 +402,8 @@ function recordTime(diff,secs){
   if(list.length>3)list.length=3; // keep only top 3
   r[diff]=list;
   saveRecords(r);
-  const rank=list.indexOf(secs)+1;
+  // Use lastIndexOf so a tied time reports the worst (highest) rank, not a stale earlier slot
+  const rank=list.lastIndexOf(secs)+1;
   return{rank,isNew,total:list.length};
 }
 function fmtTime(s){const m=Math.floor(s/60),ss=String(s%60).padStart(2,'0');return m+':'+ss}
@@ -880,28 +881,39 @@ function findXYWing(){
   for(let i=0;i<81;i++)if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2)bi.push(i);
   let found=false;
   for(const pivot of bi){
-    const[x,y]=[...notes[pivot]];
+    const[x,y]=[...notes[pivot]]; // pivot holds exactly {x,y}
     for(const w1 of bi){
       if(w1===pivot||!sees(pivot,w1))continue;
-      const w1n=[...notes[w1]];
-      if(!w1n.includes(x)&&!w1n.includes(y))continue;
-      for(const[shared1,z] of [[x,w1n.find(v=>v!==x)],[y,w1n.find(v=>v!==y)]]){
-        if(z===undefined||z===shared1)continue;
-        for(const w2 of bi){
-          if(w2===pivot||w2===w1||!sees(pivot,w2))continue;
-          const other=shared1===x?y:x;
-          if(notes[w2].has(other)&&notes[w2].has(z)){
-            hintPivots.add(pivot);hintPivots.add(w1);hintPivots.add(w2);
-            [pivot,w1,w2].forEach(i=>{if(!hintNotes.has(i))hintNotes.set(i,new Set());
-              notes[i].forEach(v=>hintNotes.get(i).add(v))});
-            for(let i=0;i<81;i++){
-              if(hintPivots.has(i)||digits[i])continue;
-              if(sees(w1,i)&&sees(w2,i)&&notes[i].has(z)){hintWings.add(i);
-                if(!hintNotes.has(i))hintNotes.set(i,new Set());hintNotes.get(i).add(z)}
-            }
-            found=true;
+      const w1arr=[...notes[w1]];
+      // w1 must share exactly one digit with pivot and have a third digit z
+      const w1hasX=notes[w1].has(x), w1hasY=notes[w1].has(y);
+      if(w1hasX===w1hasY)continue; // must share exactly one of x,y (not both, not neither)
+      const sharedW1=w1hasX?x:y;   // the digit w1 shares with pivot
+      const otherPivot=w1hasX?y:x; // the pivot digit w1 does NOT have
+      const z=w1arr.find(v=>v!==sharedW1); // w1's third digit
+      if(z===undefined)continue;
+      for(const w2 of bi){
+        if(w2===pivot||w2===w1||!sees(pivot,w2))continue;
+        // w2 must hold {otherPivot, z} — completing the XY-Wing
+        if(!notes[w2].has(otherPivot)||!notes[w2].has(z))continue;
+        // w1 and w2 must NOT see each other (otherwise the elimination scope collapses)
+        if(sees(w1,w2))continue;
+        // Valid XY-Wing found: pivot={x,y}, w1={sharedW1,z}, w2={otherPivot,z}
+        // Any cell seeing both w1 and w2 can have z eliminated
+        hintPivots.add(pivot);hintPivots.add(w1);hintPivots.add(w2);
+        [pivot,w1,w2].forEach(c=>{
+          if(!hintNotes.has(c))hintNotes.set(c,new Set());
+          notes[c].forEach(v=>hintNotes.get(c).add(v));
+        });
+        for(let i=0;i<81;i++){
+          if(hintPivots.has(i)||digits[i]||PUZZLE[i])continue;
+          if(sees(w1,i)&&sees(w2,i)&&notes[i].has(z)){
+            hintWings.add(i);
+            if(!hintNotes.has(i))hintNotes.set(i,new Set());
+            hintNotes.get(i).add(z);
           }
         }
+        found=true;
       }
     }
   }
