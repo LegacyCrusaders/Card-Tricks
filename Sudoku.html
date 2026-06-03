@@ -272,6 +272,8 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
         <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('triples'))"><span class="btn-short">3s</span><span class="btn-long">Triples</span></button>
         <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('xwing'))"><span class="btn-short">XW</span><span class="btn-long">X-Wing</span></button>
         <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('xywing'))"><span class="btn-short">XY</span><span class="btn-long">XY-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('wwing'))"><span class="btn-short">WW</span><span class="btn-long">W-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('swordfish'))"><span class="btn-short">SF</span><span class="btn-long">Swordfish</span></button>
         <button class="btn hint-style" onclick="tapBtn(this,()=>clearHints())"><span class="btn-short">✕H</span><span class="btn-long">Clr Hints</span></button>
       </div>
       <div class="row-label">Solve</div>
@@ -820,6 +822,8 @@ function hintFind(type){
   else if(type==='triples')findNakedSets(3);
   else if(type==='xwing')findXWing();
   else if(type==='xywing')findXYWing();
+  else if(type==='wwing')findWWing();
+  else if(type==='swordfish')findSwordfish();
   render();
 }
 
@@ -919,6 +923,149 @@ function findXYWing(){
   }
   if(!found)showMsg('No XY-Wings found in notes');
   else showMsg('XY-Wing: purple=pattern, pink=eliminations');
+}
+
+function findWWing(){
+  // W-Wing: two non-peer bivalue cells both holding {x,y}, bridged by a strong link on x.
+  // A strong link on x exists when x appears in exactly 2 cells in some group (row/col/box),
+  // and one of those link cells sees wing A while the other sees wing B.
+  // Elimination: y can be removed from any cell seeing BOTH wings.
+  const bi=[];
+  for(let i=0;i<81;i++)if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2)bi.push(i);
+  let found=false;
+
+  // Build strong links: for each digit, collect all groups where it appears exactly twice
+  // strongLinks[d] = array of [cellA, cellB] pairs
+  const strongLinks=Array.from({length:10},()=>[]);
+  for(const grp of allGroups()){
+    for(let d=1;d<=9;d++){
+      const cands=grp.cells.filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].has(d));
+      if(cands.length===2)strongLinks[d].push([cands[0],cands[1]]);
+    }
+  }
+
+  for(let a=0;a<bi.length;a++){
+    for(let b=a+1;b<bi.length;b++){
+      const wA=bi[a], wB=bi[b];
+      if(sees(wA,wB))continue; // wings must not see each other
+      const [p,q]=[...notes[wA]];
+      // wings must hold the same pair
+      if(!notes[wB].has(p)||!notes[wB].has(q))continue;
+
+      // Try bridging on p, eliminating q; then bridging on q, eliminating p
+      for(const[bridgeDigit,elimDigit] of [[p,q],[q,p]]){
+        for(const[lk1,lk2] of strongLinks[bridgeDigit]){
+          // One link cell must see wA, the other must see wB (and not vice-versa,
+          // to avoid the trivial case where a single link cell sees both wings)
+          const fwd=sees(lk1,wA)&&sees(lk2,wB)&&!sees(lk1,wB)&&!sees(lk2,wA);
+          const rev=sees(lk2,wA)&&sees(lk1,wB)&&!sees(lk2,wB)&&!sees(lk1,wA);
+          if(!fwd&&!rev)continue;
+
+          // Valid W-Wing found
+          [wA,wB].forEach(w=>{
+            hintPivots.add(w);
+            if(!hintNotes.has(w))hintNotes.set(w,new Set());
+            notes[w].forEach(v=>hintNotes.get(w).add(v));
+          });
+          [lk1,lk2].forEach(lk=>{
+            hintWings.add(lk);
+            if(!hintNotes.has(lk))hintNotes.set(lk,new Set());
+            hintNotes.get(lk).add(bridgeDigit);
+          });
+
+          // Eliminate elimDigit from cells seeing both wings
+          for(let i=0;i<81;i++){
+            if(hintPivots.has(i)||hintWings.has(i)||digits[i]||PUZZLE[i])continue;
+            if(sees(wA,i)&&sees(wB,i)&&notes[i].has(elimDigit)){
+              hintWings.add(i);
+              if(!hintNotes.has(i))hintNotes.set(i,new Set());
+              hintNotes.get(i).add(elimDigit);
+            }
+          }
+          found=true;
+        }
+      }
+    }
+  }
+  if(!found)showMsg('No W-Wings found in notes');
+  else showMsg('W-Wing: purple=wings, pink=bridge & eliminations');
+}
+
+function findSwordfish(){
+  // Swordfish: for a digit d, find 3 rows each containing d in exactly 2 or 3 columns,
+  // where the union of those columns is exactly 3. Then d can be eliminated from those
+  // 3 columns in all other rows. Same logic applies with rows and columns swapped.
+  let found=false;
+
+  for(let d=1;d<=9;d++){
+    // Row-based swordfish
+    const rowCands=[];
+    for(let r=0;r<9;r++){
+      const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>i%9);
+      if(cols.length>=2&&cols.length<=3)rowCands.push({r,cols});
+    }
+    for(const combo of combinations(rowCands,3)){
+      const colUnion=new Set(combo.flatMap(rc=>rc.cols));
+      if(colUnion.size!==3)continue;
+      const rows=combo.map(rc=>rc.r);
+      const cols=[...colUnion];
+      rows.forEach(r=>cols.forEach(c=>{
+        const idx=r*9+c;
+        if(!digits[idx]&&notes[idx].has(d)){
+          hintPivots.add(idx);
+          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
+          hintNotes.get(idx).add(d);
+        }
+      }));
+      for(let r=0;r<9;r++){
+        if(rows.includes(r))continue;
+        cols.forEach(c=>{
+          const idx=r*9+c;
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){
+            hintWings.add(idx);
+            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
+            hintNotes.get(idx).add(d);
+          }
+        });
+      }
+      found=true;
+    }
+
+    // Column-based swordfish
+    const colCands=[];
+    for(let c=0;c<9;c++){
+      const rows=[...colOf(c)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
+      if(rows.length>=2&&rows.length<=3)colCands.push({c,rows});
+    }
+    for(const combo of combinations(colCands,3)){
+      const rowUnion=new Set(combo.flatMap(cc=>cc.rows));
+      if(rowUnion.size!==3)continue;
+      const cols=combo.map(cc=>cc.c);
+      const rows=[...rowUnion];
+      rows.forEach(r=>cols.forEach(c=>{
+        const idx=r*9+c;
+        if(!digits[idx]&&notes[idx].has(d)){
+          hintPivots.add(idx);
+          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
+          hintNotes.get(idx).add(d);
+        }
+      }));
+      for(let c=0;c<9;c++){
+        if(cols.includes(c))continue;
+        rows.forEach(r=>{
+          const idx=r*9+c;
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){
+            hintWings.add(idx);
+            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
+            hintNotes.get(idx).add(d);
+          }
+        });
+      }
+      found=true;
+    }
+  }
+  if(!found)showMsg('No Swordfish found in notes');
+  else showMsg('Swordfish: purple=pattern, pink=eliminations');
 }
 
 // ── Keyboard ───────────────────────────────────────────────────
