@@ -16,24 +16,20 @@
   --accent:#4a9eff;--accent-bg:rgba(74,158,255,0.12);
   --peer:#1e1e1e;--user:#4a9eff;--error:#ff5a5a;
   --note:#888;--match-note:#ffd700;
-  --pair-row:#f0a030;--pair-row-glow:rgba(240,160,48,0.22);
-  --pair-col:#30d0a0;--pair-col-glow:rgba(48,208,160,0.22);
-  --pair-box:#d060f0;--pair-box-glow:rgba(208,96,240,0.22);
-  --tri-row:#ff7a30;--tri-row-glow:rgba(255,122,48,0.22);
-  --tri-col:#30b8ff;--tri-col-glow:rgba(48,184,255,0.22);
-  --tri-box:#c0e040;--tri-box-glow:rgba(192,224,64,0.22);
+  --pair-row:#f0a030;--pair-row-glow:rgba(240,160,48,0.10);
+  --pair-col:#30d0a0;--pair-col-glow:rgba(48,208,160,0.10);
+  --pair-box:#d060f0;--pair-box-glow:rgba(208,96,240,0.10);
+  --tri-row:#ff7a30;--tri-row-glow:rgba(255,122,48,0.10);
+  --tri-col:#30b8ff;--tri-col-glow:rgba(48,184,255,0.10);
+  --tri-box:#c0e040;--tri-box-glow:rgba(192,224,64,0.10);
   --btn:#222;--btn-active:rgba(74,158,255,0.18);--btn-border:#333;
   --checkpoint:#ff9f43;--checkpoint-bg:rgba(255,159,67,0.15);
+  --solve:#e040e0;--solve-bg:rgba(224,64,224,0.15);
 }
 
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   font-family:'Courier New',monospace;overflow:hidden;touch-action:manipulation}
 
-/* ════════════════════════════════════════
-   LAYOUT — three modes
-   ════════════════════════════════════════ */
-
-/* DESKTOP ≥700px: panel left, grid right */
 @media(min-width:700px){
   #app{display:flex;flex-direction:row;align-items:stretch;
     width:100vw;height:100vh;padding:14px;gap:16px}
@@ -51,7 +47,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   #msg{font-size:12px;min-height:16px}
 }
 
-/* PORTRAIT <700px: grid top, controls bottom */
 @media(max-width:699px) and (orientation:portrait){
   #app{display:flex;flex-direction:column;align-items:center;
     justify-content:space-between;height:100dvh;padding:5px 4px;gap:3px}
@@ -68,7 +63,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   #msg{font-size:11px;min-height:14px;text-align:center}
 }
 
-/* LANDSCAPE mobile: panel left, grid right */
 @media(max-width:699px) and (orientation:landscape){
   #app{display:flex;flex-direction:row;align-items:stretch;
     width:100vw;height:100dvh;padding:4px;gap:5px;overflow:hidden}
@@ -87,9 +81,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   #msg{font-size:10px;min-height:12px}
 }
 
-/* ════════════════════════════════════════
-   SHARED STYLES
-   ════════════════════════════════════════ */
 #grid{display:grid;grid-template-columns:repeat(9,1fr);
   width:100%;height:100%;border:2px solid var(--border-strong)}
 #top-bar{display:flex;align-items:center;justify-content:space-between;
@@ -101,7 +92,6 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 #controls{display:flex;flex-direction:column;gap:inherit;width:100%;flex-shrink:0}
 #msg{color:var(--text-dim);text-align:left;flex-shrink:0}
 
-/* Cells */
 .cell{border:.5px solid var(--border);display:flex;align-items:center;
   justify-content:center;cursor:pointer;position:relative;
   font-weight:600;color:var(--text);transition:background .08s;
@@ -112,7 +102,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 .cell:nth-child(n+55):nth-child(-n+63){border-top:1.5px solid var(--border-strong)}
 .cell.selected{background:rgba(255,210,0,0.32)!important}
 .cell.peer{background:var(--peer)}
-.cell.match{background:rgba(255,220,0,0.22)!important}
+.cell.match{background:rgba(255,220,0,0.07)!important}
 .cell.user-digit{color:var(--user)}
 .cell.error{background:rgba(255,90,90,0.22)!important;color:var(--error)!important}
 .cell.tagged-pair-row{box-shadow:inset 0 0 0 2px var(--pair-row);background:var(--pair-row-glow)}
@@ -121,10 +111,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 .cell.tagged-tri-row{box-shadow:inset 0 0 0 2px var(--tri-row);background:var(--tri-row-glow)}
 .cell.tagged-tri-col{box-shadow:inset 0 0 0 2px var(--tri-col);background:var(--tri-col-glow)}
 .cell.tagged-tri-box{box-shadow:inset 0 0 0 2px var(--tri-box);background:var(--tri-box-glow)}
+.cell.tagged-pair-row.match,.cell.tagged-pair-col.match,.cell.tagged-pair-box.match,
+.cell.tagged-tri-row.match,.cell.tagged-tri-col.match,.cell.tagged-tri-box.match{
+  background:rgba(255,220,0,0.22)!important}
 .cell.hint-pivot{box-shadow:inset 0 0 0 2px #9b6fff;background:rgba(155,111,255,0.18)!important}
 .cell.hint-wing{box-shadow:inset 0 0 0 2px #ff6fa0;background:rgba(255,111,160,0.15)!important}
+.cell.solve-reveal{color:var(--solve)!important;opacity:0.75}
 
-/* Notes grid */
 .notes-g{display:grid;grid-template-columns:repeat(3,1fr);
   grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px}
 .notes-g span{display:flex;align-items:center;justify-content:center;
@@ -138,67 +131,52 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 .notes-g span.match-note{color:var(--match-note);font-weight:700}
 .notes-g span.hint-note{color:#9b6fff;font-weight:700}
 
-/* Buttons */
 .row-label{letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;
   text-align:center;font-weight:700;width:100%}
 .btn-row{display:flex;gap:3px;width:100%}
 .btn{background:var(--btn);border:.5px solid var(--btn-border);color:var(--text);
   border-radius:6px;cursor:pointer;font-weight:700;font-family:inherit;
-  white-space:nowrap;flex:1;text-align:center;transition:background .1s;
+  white-space:nowrap;flex:1;text-align:center;transition:background .1s,flex .15s;
   -webkit-tap-highlight-color:transparent;min-width:0;position:relative}
 .btn:active{transform:scale(.94)}
 .btn.active{background:var(--btn-active);border-color:var(--accent);color:var(--accent)}
-.btn.notes-all-active{background:rgba(74,158,255,0.25);border-color:var(--accent);
-  color:var(--accent);font-weight:700}
+.btn.notes-all-active{background:rgba(74,158,255,0.25);border-color:var(--accent);color:var(--accent);font-weight:700}
 .btn.tag-pair{border-color:var(--pair-row);color:var(--pair-row)}
 .btn.tag-triple{border-color:var(--tri-col);color:var(--tri-col)}
 .btn.hint-style{border-color:#9b6fff;color:#9b6fff}
 .btn.undo-style{border-color:#888;color:#aaa}
-.btn.check-style{border-color:#4caf7a;color:#4caf7a}
 .btn.checkpoint-style{border-color:var(--checkpoint);color:var(--checkpoint)}
 .btn.checkpoint-style.has-checkpoint{background:var(--checkpoint-bg)}
-.btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);
-  opacity:.4;pointer-events:none}
+.btn.restore-style{border-color:var(--checkpoint);color:var(--checkpoint);opacity:.4;pointer-events:none}
 .btn.restore-style.has-checkpoint{opacity:1;pointer-events:auto}
+.btn.solve-style{border-color:var(--solve);color:var(--solve)}
+.btn.solve-style.solve-on{background:var(--solve-bg)}
 
-/* Expand-on-tap: button shows short label, tap expands to show full word */
-/* .btn-short = abbreviated; .btn-expanded = full label shown */
 .btn .btn-short{display:inline}
 .btn .btn-long{display:none;font-size:0.85em}
 .btn.expanded .btn-short{display:none}
 .btn.expanded .btn-long{display:inline}
 .btn.expanded{background:rgba(255,255,255,0.08);z-index:10;
-  box-shadow:0 0 0 1px #666;flex:2;transition:flex .15s}
-
-/* Confirm-needed: second tap required, highlighted */
+  box-shadow:0 0 0 1px #888;flex:2}
 .btn.needs-confirm{outline:2px solid var(--accent);outline-offset:1px}
-
-/* Desktop: show full labels always, no expand needed */
-@media(min-width:700px){
-  .btn .btn-short{display:none}
-  .btn .btn-long{display:inline}
-  .btn.expanded{flex:1;box-shadow:none;background:var(--btn)}
-}
 
 #numpad{flex-shrink:0}
 #numpad button{background:var(--btn);border:.5px solid var(--btn-border);
   color:var(--text);border-radius:6px;cursor:pointer;font-family:inherit;
-  font-weight:700;transition:background .1s;-webkit-tap-highlight-color:transparent;
-  width:100%}
+  font-weight:700;transition:background .1s;-webkit-tap-highlight-color:transparent;width:100%}
 #numpad button:active{transform:scale(.93);background:var(--accent-bg)}
-#numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);
-  background:var(--accent-bg)}
+#numpad button.notes-all-btn{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
 
-/* Modals */
-#modal,#splash,#restore-modal{display:none;position:fixed;inset:0;
+#modal,#splash,#restore-modal,#records-modal{display:none;position:fixed;inset:0;
   background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center}
-#modal.open,#splash.open,#restore-modal.open{display:flex}
-#modal-box,#restore-box{background:#1a1a1a;border:1px solid #444;border-radius:10px;
-  padding:20px;text-align:center;width:min(300px,90vw);
-  display:flex;flex-direction:column;gap:12px}
+#modal.open,#splash.open,#restore-modal.open,#records-modal.open{display:flex}
+#modal-box,#restore-box,#records-box{background:#1a1a1a;border:1px solid #444;border-radius:10px;
+  padding:20px;text-align:center;width:min(320px,90vw);display:flex;flex-direction:column;gap:12px}
 #restore-box{border-color:var(--checkpoint)}
-#modal-box h3,#restore-box h3{font-size:13px;letter-spacing:.1em;
+#records-box{border-color:var(--accent)}
+#modal-box h3,#restore-box h3,#records-box h3{font-size:13px;letter-spacing:.1em;
   color:var(--text-dim);text-transform:uppercase}
+#records-box h3{color:var(--accent)}
 #restore-box h3{color:var(--checkpoint)}
 #restore-box p{font-size:11px;color:var(--text-dim);line-height:1.5}
 .diff-btn{background:#222;border:.5px solid #444;color:var(--text);
@@ -206,10 +184,22 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
 .diff-btn:active{transform:scale(.97)}
 .diff-btn:hover{background:#2a2a2a}
 .diff-btn .sub{font-size:10px;color:var(--text-dim);display:block;margin-top:2px}
-#modal-cancel,#restore-cancel{font-size:11px;color:var(--text-dim);
+#modal-cancel,#restore-cancel,#records-close{font-size:11px;color:var(--text-dim);
   background:none;border:none;cursor:pointer;font-family:inherit}
 
-/* Splash */
+.rec-table{width:100%;border-collapse:collapse}
+.rec-table th{font-size:10px;letter-spacing:.1em;color:var(--text-dim);
+  text-transform:uppercase;padding:4px 6px;border-bottom:1px solid #333;text-align:left}
+.rec-table td{font-size:13px;padding:6px 6px;border-bottom:.5px solid #222;
+  font-variant-numeric:tabular-nums}
+.rec-table td.gold{color:#ffd700;font-weight:700}
+.rec-table td.silver{color:#c0c0c0}
+.rec-table td.bronze{color:#cd7f32}
+.rec-table td.dim{color:var(--text-dim);font-size:11px}
+.rec-new-badge{display:inline-block;background:rgba(74,158,255,0.2);border:1px solid var(--accent);
+  color:var(--accent);font-size:9px;letter-spacing:.08em;padding:1px 5px;
+  border-radius:3px;margin-left:6px;vertical-align:middle}
+
 #splash-box{display:flex;flex-direction:column;align-items:center;gap:24px}
 #splash-title{font-size:52px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
 #splash-sub{font-size:11px;letter-spacing:.2em;color:var(--text-dim);
@@ -222,6 +212,20 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   z-index:200;align-items:center;justify-content:center;flex-direction:column;
   gap:12px;color:var(--text-dim);font-size:12px;letter-spacing:.1em}
 #loading-overlay.open{display:flex}
+
+#win-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
+  z-index:150;align-items:center;justify-content:center;flex-direction:column;gap:18px}
+#win-overlay.open{display:flex}
+#win-box{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+#win-time{font-size:38px;font-weight:700;color:var(--accent);letter-spacing:.06em;
+  font-variant-numeric:tabular-nums}
+#win-label{font-size:11px;letter-spacing:.2em;color:var(--text-dim);text-transform:uppercase}
+#win-rank{font-size:13px;color:var(--text-dim);letter-spacing:.05em}
+#win-btns{display:flex;gap:10px}
+.win-btn{background:#222;border:.5px solid #555;color:var(--text);border-radius:8px;
+  padding:12px 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.win-btn:active{transform:scale(.96)}
+.win-btn.accent{border-color:var(--accent);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -234,42 +238,46 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     <div id="controls">
       <div class="row-label">Mode</div>
       <div class="btn-row">
-        <button class="btn active" id="btn-digit" onclick="tapBtn(this,()=>{setMode('digit')})"><span class="btn-short">D</span><span class="btn-long">Digit</span></button>
-        <button class="btn " id="btn-notes" onclick="tapBtn(this,()=>{cycleNotes()})"><span class="btn-short">N</span><span class="btn-long">Notes</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{eraseCell()})"><span class="btn-short">⌫</span><span class="btn-long">Erase</span></button>
-        <button class="btn undo-style" onclick="tapBtn(this,()=>{undo()})"><span class="btn-short">↩</span><span class="btn-long">Undo</span></button>
-        <button class="btn check-style" onclick="tapBtn(this,()=>{checkSolution()})"><span class="btn-short">✓</span><span class="btn-long">Check</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{openModal()})"><span class="btn-short">＋</span><span class="btn-long">New</span></button>
+        <button class="btn active" id="btn-digit" onclick="tapBtn(this,()=>setMode('digit'))"><span class="btn-short">D</span><span class="btn-long">Digit</span></button>
+        <button class="btn" id="btn-notes" onclick="tapBtn(this,()=>toggleNotes())"><span class="btn-short">N</span><span class="btn-long">Notes</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>eraseCell())"><span class="btn-short">⌫</span><span class="btn-long">Erase</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>undo())"><span class="btn-short">↩</span><span class="btn-long">Undo</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>openModal())"><span class="btn-short">＋</span><span class="btn-long">New</span></button>
       </div>
       <div class="row-label">Auto-notes</div>
       <div class="btn-row">
-        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('all')},true)"><span class="btn-short">A</span><span class="btn-long">All</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('peers')},true)"><span class="btn-short">P</span><span class="btn-long">Peers</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('row')},true)"><span class="btn-short">R</span><span class="btn-long">Row</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('col')},true)"><span class="btn-short">C</span><span class="btn-long">Col</span></button>
-        <button class="btn " onclick="tapBtn(this,()=>{autoNotes('box')},true)"><span class="btn-short">B</span><span class="btn-long">Box</span></button>
-        <button class="btn undo-style" onclick="tapBtn(this,()=>{clearAllNotes()},true)"><span class="btn-short">✕N</span><span class="btn-long">Clr Notes</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>autoNotes('all'),true)"><span class="btn-short">A</span><span class="btn-long">All</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>autoNotes('peers'),true)"><span class="btn-short">P</span><span class="btn-long">Peers</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>autoNotes('row'),true)"><span class="btn-short">R</span><span class="btn-long">Row</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>autoNotes('col'),true)"><span class="btn-short">C</span><span class="btn-long">Col</span></button>
+        <button class="btn" onclick="tapBtn(this,()=>autoNotes('box'),true)"><span class="btn-short">B</span><span class="btn-long">Box</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>clearAllNotes(),true)"><span class="btn-short">✕N</span><span class="btn-long">Clr Notes</span></button>
       </div>
       <div class="row-label">Contradiction</div>
       <div class="btn-row">
-        <button class="btn checkpoint-style" id="btn-checkpoint" onclick="tapBtn(this,()=>{setCheckpoint()})"><span class="btn-short">📍</span><span class="btn-long">Set Pt</span></button>
-        <button class="btn restore-style" id="btn-restore" onclick="tapBtn(this,()=>{openRestoreModal()})"><span class="btn-short">↩C</span><span class="btn-long">Restore</span></button>
-        <button class="btn undo-style" onclick="tapBtn(this,()=>{clearCheckpoint()})"><span class="btn-short">✕C</span><span class="btn-long">Clr Pt</span></button>
+        <button class="btn checkpoint-style" id="btn-checkpoint" onclick="tapBtn(this,()=>setCheckpoint())"><span class="btn-short">📍</span><span class="btn-long">Set Pt</span></button>
+        <button class="btn restore-style" id="btn-restore" onclick="tapBtn(this,()=>openRestoreModal())"><span class="btn-short">↩C</span><span class="btn-long">Restore</span></button>
+        <button class="btn undo-style" onclick="tapBtn(this,()=>clearCheckpoint())"><span class="btn-short">✕C</span><span class="btn-long">Clr Pt</span></button>
       </div>
       <div class="row-label">Tag</div>
       <div class="btn-row">
-        <button class="btn tag-pair" onclick="tapBtn(this,()=>{tagSet(2)})"><span class="btn-short">+P</span><span class="btn-long">Tag Pair</span></button>
-        <button class="btn tag-pair" onclick="tapBtn(this,()=>{untagSet(2)})"><span class="btn-short">−P</span><span class="btn-long">Untag Pair</span></button>
-        <button class="btn tag-triple" onclick="tapBtn(this,()=>{tagSet(3)})"><span class="btn-short">+T</span><span class="btn-long">Tag Triple</span></button>
-        <button class="btn tag-triple" onclick="tapBtn(this,()=>{untagSet(3)})"><span class="btn-short">−T</span><span class="btn-long">Untag Triple</span></button>
+        <button class="btn tag-pair" onclick="tapBtn(this,()=>tagSet(2))"><span class="btn-short">+P</span><span class="btn-long">Tag Pair</span></button>
+        <button class="btn tag-pair" onclick="tapBtn(this,()=>untagSet(2))"><span class="btn-short">−P</span><span class="btn-long">Untag Pair</span></button>
+        <button class="btn tag-triple" onclick="tapBtn(this,()=>tagSet(3))"><span class="btn-short">+T</span><span class="btn-long">Tag Triple</span></button>
+        <button class="btn tag-triple" onclick="tapBtn(this,()=>untagSet(3))"><span class="btn-short">−T</span><span class="btn-long">Untag Triple</span></button>
       </div>
       <div class="row-label">Hints</div>
       <div class="btn-row">
-        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('pairs')})"><span class="btn-short">2s</span><span class="btn-long">Pairs</span></button>
-        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('triples')})"><span class="btn-short">3s</span><span class="btn-long">Triples</span></button>
-        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('xwing')})"><span class="btn-short">XW</span><span class="btn-long">X-Wing</span></button>
-        <button class="btn hint-style" onclick="tapBtn(this,()=>{hintFind('xywing')})"><span class="btn-short">XY</span><span class="btn-long">XY-Wing</span></button>
-        <button class="btn hint-style" onclick="tapBtn(this,()=>{clearHints()})"><span class="btn-short">✕H</span><span class="btn-long">Clr Hints</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('pairs'))"><span class="btn-short">2s</span><span class="btn-long">Pairs</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('triples'))"><span class="btn-short">3s</span><span class="btn-long">Triples</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('xwing'))"><span class="btn-short">XW</span><span class="btn-long">X-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>hintFind('xywing'))"><span class="btn-short">XY</span><span class="btn-long">XY-Wing</span></button>
+        <button class="btn hint-style" onclick="tapBtn(this,()=>clearHints())"><span class="btn-short">✕H</span><span class="btn-long">Clr Hints</span></button>
+      </div>
+      <div class="row-label">Solve</div>
+      <div class="btn-row">
+        <button class="btn solve-style" id="btn-autosolve" onclick="tapBtn(this,()=>toggleAutoSolve())"><span class="btn-short">👁</span><span class="btn-long">Peek</span></button>
+        <button class="btn solve-style" onclick="tapBtn(this,()=>openRecords())"><span class="btn-short">🏆</span><span class="btn-long">Records</span></button>
       </div>
     </div>
     <div id="numpad"></div>
@@ -306,42 +314,137 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   </div>
 </div>
 
-<div id="loading-overlay"><div>fetching puzzle...</div></div>
+<div id="records-modal">
+  <div id="records-box">
+    <h3>Best Times</h3>
+    <table class="rec-table" id="rec-table"></table>
+    <button id="records-close" onclick="closeRecords()">Close</button>
+  </div>
+</div>
+
+<div id="win-overlay">
+  <div id="win-box">
+    <div id="win-label">Solved</div>
+    <div id="win-time"></div>
+    <div id="win-rank"></div>
+    <div id="win-btns">
+      <button class="win-btn accent" onclick="document.getElementById('win-overlay').classList.remove('open');openRecords()">Records</button>
+      <button class="win-btn" onclick="document.getElementById('win-overlay').classList.remove('open');openModal()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading-overlay"><div>fetching puzzle…</div></div>
 
 <script>
+// ── Fallback puzzles (all verified solvable) ───────────────────
 const FALLBACK={
-  easy:["530070000600195000098000060800060003400803001700020006060000280000419005000080079","200070038000006070300040600008020700100000003007030400004080009060700000730060001"],
+  easy:["530070000600195000098000060800060003400803001700020006060000280000419005000080079","003020600900305001001806400008102900700000008006708200002609500800203009005010300"],
   medium:["000000907000420180000705026100904000050000040000507009920108000034059000507000000","040700000060010070007030014001040500030000090004090200690080100080050060000009020"],
   hard:["000006000059000008200008000045000000003000600000003054000325006000000000000070830","010020300009005040860000000000100008070000050900003000000000081050800700003090020"],
   expert:["800000000003600000070090200060005300004000098000000070000504060050008000000000000","000000010400000000020000000000050407008000300001090000300400200050100000000806000"]
 };
 
+// ── Solver ─────────────────────────────────────────────────────
+function solvePuzzle(flat){
+  const b=[...flat];
+  function valid(pos,n){
+    const r=Math.floor(pos/9),c=pos%9;
+    for(let i=0;i<9;i++){if(b[r*9+i]===n||b[i*9+c]===n)return false}
+    const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+    for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)if(b[(br+dr)*9+(bc+dc)]===n)return false;
+    return true;
+  }
+  function go(){
+    for(let i=0;i<81;i++){
+      if(b[i])continue;
+      for(let n=1;n<=9;n++){if(valid(i,n)){b[i]=n;if(go())return true;b[i]=0;}}
+      return false;
+    }
+    return true;
+  }
+  return go()?b:null;
+}
+
+// ── Fetch + validate puzzle ────────────────────────────────────
 async function fetchPuzzle(diff){
   const apiDiff=diff==='expert'?'hard':diff;
-  const maxTries=diff==='expert'?6:1;
-  let lastFlat;
+  const maxTries=diff==='expert'?8:3;
   for(let t=0;t<maxTries;t++){
     const res=await fetch('https://sugoku.onrender.com/board?difficulty='+apiDiff);
     if(!res.ok)throw new Error('API error');
     const data=await res.json();
-    lastFlat=data.board.flat();
-    const givens=lastFlat.filter(v=>v!==0).length;
-    if(diff!=='expert'||givens<=23)return lastFlat;
+    const flat=data.board.flat();
+    const givens=flat.filter(v=>v!==0).length;
+    if(diff==='expert'&&givens>23)continue;
+    const sol=solvePuzzle(flat);
+    if(sol)return{puzzle:flat,solution:sol};
   }
-  return lastFlat;
+  throw new Error('Could not get valid puzzle from API');
 }
 
-let PUZZLE=[],mode='digit',selected=null,cells=[],notes=[],digits=[];
+// ── Records (localStorage) — stores top 3 per difficulty ──────
+const RECORDS_KEY='sudokuG_records_v1';
+function loadRecords(){
+  try{return JSON.parse(localStorage.getItem(RECORDS_KEY))||{};}catch{return{};}
+}
+function saveRecords(r){try{localStorage.setItem(RECORDS_KEY,JSON.stringify(r));}catch{}}
+
+// Records a solve time; keeps only the top 3 best times.
+function recordTime(diff,secs){
+  const r=loadRecords();
+  if(!r[diff])r[diff]=[];
+  const list=r[diff];
+  const prevBest=list.length>0?list[0]:null;
+  const isNew=prevBest===null||secs<prevBest;
+  list.push(secs);
+  list.sort((a,b)=>a-b);
+  if(list.length>3)list.length=3; // keep only top 3
+  r[diff]=list;
+  saveRecords(r);
+  const rank=list.indexOf(secs)+1;
+  return{rank,isNew,total:list.length};
+}
+function fmtTime(s){const m=Math.floor(s/60),ss=String(s%60).padStart(2,'0');return m+':'+ss}
+
+function openRecords(){
+  const r=loadRecords();
+  const diffs=['easy','medium','hard','expert'];
+  const colors=['#4caf7a','#4a9eff','#ff9f43','#ff5a5a'];
+  let html='';
+  diffs.forEach((d,di)=>{
+    const list=r[d]||[];
+    html+=`<tr><td colspan="3" style="padding:8px 6px 3px;font-size:10px;letter-spacing:.1em;
+      color:${colors[di]};text-transform:uppercase;font-weight:700">${d}</td></tr>`;
+    if(!list.length){
+      html+=`<tr><td colspan="3" class="dim" style="padding:2px 6px 6px">No solves yet</td></tr>`;
+    } else {
+      const medals=['gold','silver','bronze'];
+      list.forEach((t,i)=>{
+        html+=`<tr><td class="${medals[i]||''}" style="width:20px">${i+1}</td>
+          <td class="${medals[i]||''}">${fmtTime(t)}</td>
+          <td class="dim">${i===0&&list.length>1?'best':''}</td></tr>`;
+      });
+    }
+  });
+  document.getElementById('rec-table').innerHTML=html;
+  document.getElementById('records-modal').classList.add('open');
+}
+function closeRecords(){document.getElementById('records-modal').classList.remove('open')}
+
+// ── State ──────────────────────────────────────────────────────
+let PUZZLE=[],SOLUTION=[],currentDiff='easy';
+let mode='digit',selected=null,cells=[],notes=[],digits=[];
 let taggedSets=[],history=[],flashError=new Set();
 let timerSec=0,timerInterval=null,timerStarted=false;
 let hintPivots=new Set(),hintWings=new Set(),hintNotes=new Map();
-let notesAllMode=false,checkpoint=null;
+let notesAllMode=false,checkpoint=null,activeNoteHighlight=null;
+let autoSolveOn=false;
 
 const grid=document.getElementById('grid');
 const numpad=document.getElementById('numpad');
 const msg=document.getElementById('msg');
 
-// Splash
 document.getElementById('splash').addEventListener('click',async()=>{
   try{
     if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
@@ -350,73 +453,59 @@ document.getElementById('splash').addEventListener('click',async()=>{
   document.getElementById('splash').classList.remove('open');
 });
 
-// tapBtn: on mobile, first tap expands button to show full label.
-// If needsConfirm=true, expanded state requires a second tap to fire action.
-// On desktop (wide screen), always fires immediately.
-let expandedBtn=null,expandedAction=null,expandedConfirm=false,expandTimer=null;
+// ── Button expand ──────────────────────────────────────────────
+let expandedBtn=null,expandedAction=null,expandTimer=null;
+
+function isFinePointer(){return window.matchMedia('(pointer:fine)').matches}
 
 function collapseExpanded(){
-  if(expandedBtn){
-    expandedBtn.classList.remove('expanded','needs-confirm');
-    expandedBtn=null;expandedAction=null;expandedConfirm=false;
-  }
+  if(expandedBtn){expandedBtn.classList.remove('expanded','needs-confirm');expandedBtn=null;expandedAction=null;}
   clearTimeout(expandTimer);expandTimer=null;
 }
 
 function tapBtn(btn,action,needsConfirm=false){
-  const isDesktop=window.innerWidth>=700;
-  if(isDesktop){action();return;}
-
+  if(isFinePointer()){action();return;}
   if(expandedBtn===btn){
-    // already expanded
     if(needsConfirm){collapseExpanded();action();}
-    // non-confirm: already waiting on timer, ignore extra taps
     return;
   }
-
   collapseExpanded();
   btn.classList.add('expanded');
-  expandedBtn=btn;expandedAction=action;expandedConfirm=needsConfirm;
-
+  expandedBtn=btn;expandedAction=action;
   if(needsConfirm){
     btn.classList.add('needs-confirm');
     showMsg('Tap again to confirm',2000);
   } else {
-    expandTimer=setTimeout(()=>{
-      const a=expandedAction;
-      collapseExpanded();
-      a();
-    },900);
+    expandTimer=setTimeout(()=>{const a=expandedAction;collapseExpanded();a();},900);
   }
 }
 
-// Click anywhere outside collapses (click fires after touch, avoids race)
 document.addEventListener('click',e=>{
-  if(expandedBtn&&!expandedBtn.contains(e.target)){collapseExpanded();}
+  if(expandedBtn&&!expandedBtn.contains(e.target))collapseExpanded();
 });
 
-function showMsg(t,ms=2500){
-  msg.textContent=t;clearTimeout(showMsg._t);
-  showMsg._t=setTimeout(()=>msg.textContent='',ms);
+// ── Auto-solve toggle ──────────────────────────────────────────
+function toggleAutoSolve(){
+  if(!SOLUTION.length){showMsg('No solution available — puzzle may still be loading');return;}
+  autoSolveOn=!autoSolveOn;
+  document.getElementById('btn-autosolve').classList.toggle('solve-on',autoSolveOn);
+  const shortEl=document.getElementById('btn-autosolve').querySelector('.btn-short');
+  const longEl=document.getElementById('btn-autosolve').querySelector('.btn-long');
+  shortEl.textContent=autoSolveOn?'👁‍🗨':'👁';
+  longEl.textContent=autoSolveOn?'Hide':'Peek';
+  showMsg(autoSolveOn?'Solution visible — timer paused':'Solution hidden',2000);
+  if(autoSolveOn)stopTimer();else if(timerStarted)timerInterval=setInterval(()=>{timerSec++;updateTimerDisplay()},1000);
+  render();
 }
-function rowOf(i){const r=Math.floor(i/9),s=new Set();for(let c=0;c<9;c++)s.add(r*9+c);return s}
-function colOf(i){const c=i%9,s=new Set();for(let r=0;r<9;r++)s.add(r*9+c);return s}
-function boxOf(i){const r=Math.floor(i/9),c=i%9,br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3,s=new Set();
-  for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)s.add((br+dr)*9+(bc+dc));return s}
-function peers(i){const s=new Set([...rowOf(i),...colOf(i),...boxOf(i)]);s.delete(i);return s}
-function possibleFor(i){const used=new Set();peers(i).forEach(j=>{if(digits[j])used.add(digits[j])});
-  const p=new Set();for(let n=1;n<=9;n++)if(!used.has(n))p.add(n);return p}
-function clearFlash(){flashError.clear()}
-function sees(a,b){return a!==b&&([...rowOf(a)].includes(b)||[...colOf(a)].includes(b)||[...boxOf(a)].includes(b))}
-function combinations(arr,k){if(k===0)return[[]];if(arr.length<k)return[];
-  const[first,...rest]=arr;return[...combinations(rest,k-1).map(c=>[first,...c]),...combinations(rest,k)]}
 
+// ── Msg / Timer ────────────────────────────────────────────────
+function showMsg(t,ms=2500){msg.textContent=t;clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>msg.textContent='',ms)}
 function startTimer(){clearInterval(timerInterval);timerInterval=null;timerSec=0;timerStarted=false;updateTimerDisplay()}
-function startTimerOnce(){if(timerStarted)return;timerStarted=true;timerInterval=setInterval(()=>{timerSec++;updateTimerDisplay()},1000)}
+function startTimerOnce(){if(timerStarted||autoSolveOn)return;timerStarted=true;timerInterval=setInterval(()=>{timerSec++;updateTimerDisplay()},1000)}
 function stopTimer(){clearInterval(timerInterval);timerInterval=null}
-function updateTimerDisplay(){const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');
-  document.getElementById('timer').textContent=m+':'+s}
+function updateTimerDisplay(){const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');document.getElementById('timer').textContent=m+':'+s}
 
+// ── History / Undo ─────────────────────────────────────────────
 function snapshot(){
   history.push({digits:[...digits],notes:notes.map(s=>new Set(s)),taggedSets:JSON.parse(JSON.stringify(taggedSets))});
   if(history.length>200)history.shift();
@@ -427,25 +516,20 @@ function undo(){
   digits=[...s.digits];notes=s.notes.map(n=>new Set(n));taggedSets=s.taggedSets;render();
 }
 
-// Checkpoint
+// ── Checkpoint ─────────────────────────────────────────────────
 function updateCheckpointUI(){
   const has=checkpoint!==null;
   document.getElementById('btn-checkpoint').classList.toggle('has-checkpoint',has);
   document.getElementById('btn-restore').classList.toggle('has-checkpoint',has);
 }
 function setCheckpoint(){
-  checkpoint={digits:[...digits],notes:notes.map(s=>new Set(s)),
-    taggedSets:JSON.parse(JSON.stringify(taggedSets)),timerSec};
+  checkpoint={digits:[...digits],notes:notes.map(s=>new Set(s)),taggedSets:JSON.parse(JSON.stringify(taggedSets)),timerSec};
   updateCheckpointUI();showMsg('📍 Checkpoint set',2500);
 }
-function openRestoreModal(){
-  if(!checkpoint){showMsg('No checkpoint set');return}
-  document.getElementById('restore-modal').classList.add('open');
-}
+function openRestoreModal(){if(!checkpoint){showMsg('No checkpoint set');return}document.getElementById('restore-modal').classList.add('open')}
 function closeRestoreModal(){document.getElementById('restore-modal').classList.remove('open')}
 function confirmRestore(){
-  closeRestoreModal();
-  clearFlash();
+  closeRestoreModal();clearFlash();
   digits=[...checkpoint.digits];notes=checkpoint.notes.map(s=>new Set(s));
   taggedSets=JSON.parse(JSON.stringify(checkpoint.taggedSets));
   timerSec=checkpoint.timerSec;updateTimerDisplay();
@@ -453,27 +537,68 @@ function confirmRestore(){
 }
 function clearCheckpoint(){checkpoint=null;updateCheckpointUI();showMsg('Checkpoint cleared')}
 
-// Mode cycling
-function cycleNotes(){
-  if(mode==='digit')setMode('notes');
-  else if(mode==='notes')setMode('notes-all');
-  else setMode('digit');
-}
+// ── Mode ───────────────────────────────────────────────────────
+function toggleNotes(){if(mode==='notes')setMode('notes-all');else setMode('notes')}
 function setMode(m){
   mode=m;notesAllMode=m==='notes-all';
   document.getElementById('btn-digit').classList.toggle('active',m==='digit');
   const nb=document.getElementById('btn-notes');
-  nb.classList.toggle('active',m==='notes');
-  nb.classList.toggle('notes-all-active',m==='notes-all');
-  nb.textContent=m==='notes-all'?'N*':'N';
+  nb.classList.remove('active','notes-all-active');
+  if(m==='notes')nb.classList.add('active');
+  if(m==='notes-all')nb.classList.add('notes-all-active');
+  nb.querySelector('.btn-short').textContent=m==='notes-all'?'N*':'N';
+  nb.querySelector('.btn-long').textContent=m==='notes-all'?'Notes*':'Notes';
   [...numpad.querySelectorAll('button')].forEach(b=>b.classList.toggle('notes-all-btn',notesAllMode));
   if(m==='notes-all')showMsg('Notes-All: marks digit in every valid cell',3000);
 }
 
+// ── Group helpers ──────────────────────────────────────────────
+function rowOf(i){const r=Math.floor(i/9),s=new Set();for(let c=0;c<9;c++)s.add(r*9+c);return s}
+function colOf(i){const c=i%9,s=new Set();for(let r=0;r<9;r++)s.add(r*9+c);return s}
+function boxOf(i){const r=Math.floor(i/9),c=i%9,br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3,s=new Set();
+  for(let dr=0;dr<3;dr++)for(let dc=0;dc<3;dc++)s.add((br+dr)*9+(bc+dc));return s}
+function peers(i){const s=new Set([...rowOf(i),...colOf(i),...boxOf(i)]);s.delete(i);return s}
+function allGroups(){
+  const g=[];
+  for(let i=0;i<9;i++){
+    g.push({cells:[...rowOf(i*9)],type:'row'});
+    g.push({cells:[...colOf(i)],type:'col'});
+    g.push({cells:[...boxOf(Math.floor(i/3)*27+(i%3)*3)],type:'box'});
+  }
+  return g;
+}
+function possibleFor(i){const used=new Set();peers(i).forEach(j=>{if(digits[j])used.add(digits[j])});
+  const p=new Set();for(let n=1;n<=9;n++)if(!used.has(n))p.add(n);return p}
+function clearFlash(){flashError.clear()}
+function sees(a,b){return a!==b&&([...rowOf(a)].includes(b)||[...colOf(a)].includes(b)||[...boxOf(a)].includes(b))}
+function combinations(arr,k){if(k===0)return[[]];if(arr.length<k)return[];
+  const[first,...rest]=arr;return[...combinations(rest,k-1).map(c=>[first,...c]),...combinations(rest,k)]}
+
+// ── Tagged sets ────────────────────────────────────────────────
 function isTagged(i){return taggedSets.some(t=>t.indices.includes(i))}
-function pruneNoteFromPeers(i,n){peers(i).forEach(j=>{if(!isTagged(j))notes[j].delete(n)})}
+function pruneNoteFromPeers(i,n){peers(i).forEach(j=>{notes[j].delete(n);})}
 function isImpossible(i,n){return[...peers(i)].some(j=>digits[j]===n)}
 
+// ── Win detection ──────────────────────────────────────────────
+function checkAutoWin(){
+  if(autoSolveOn)return;
+  if(digits.some(d=>!d))return;
+  const valid=digits.every((d,i)=>d&&![...peers(i)].some(j=>digits[j]===d));
+  if(!valid)return;
+  stopTimer();
+  const {rank,isNew,total}=recordTime(currentDiff,timerSec);
+  const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');
+  document.getElementById('win-time').textContent=m+':'+s;
+  const medals=['🥇','🥈','🥉'];
+  let rankTxt='';
+  if(isNew&&total>1)rankTxt='New best!';
+  else if(rank<=3)rankTxt=`${medals[rank-1]} #${rank} of ${total}`;
+  else rankTxt=`#${rank} of ${total}`;
+  document.getElementById('win-rank').textContent=rankTxt;
+  document.getElementById('win-overlay').classList.add('open');
+}
+
+// ── Input ──────────────────────────────────────────────────────
 function inputNum(n){
   clearFlash();startTimerOnce();
   if(notesAllMode){
@@ -489,26 +614,33 @@ function inputNum(n){
     snapshot();
     const placing=digits[selected]!==n?n:0;
     digits[selected]=placing;notes[selected].clear();
+    activeNoteHighlight=null;
     if(placing){
       pruneNoteFromPeers(selected,placing);
       [...peers(selected)].forEach(j=>{if(digits[j]===placing)flashError.add(j)});
       if([...peers(selected)].some(j=>digits[j]===placing))flashError.add(selected);
     }
+    render();checkAutoWin();
   } else {
     if(!notes[selected].has(n)&&isImpossible(selected,n)){
       flashError.add(selected);showMsg('Already in this row, column, or box');render();return;
     }
     snapshot();
-    notes[selected].has(n)?notes[selected].delete(n):notes[selected].add(n);
+    if(notes[selected].has(n)){notes[selected].delete(n);if(activeNoteHighlight===n)activeNoteHighlight=null;}
+    else{notes[selected].add(n);activeNoteHighlight=n;}
+    render();
   }
-  render();
 }
 
 function eraseCell(){
   if(selected===null||PUZZLE[selected])return;
-  clearFlash();startTimerOnce();snapshot();digits[selected]=0;notes[selected].clear();render();
+  clearFlash();startTimerOnce();snapshot();
+  digits[selected]=0;notes[selected].clear();activeNoteHighlight=null;render();
 }
-function selectCell(i){clearFlash();selected=i;render()}
+
+function selectCell(i){
+  clearFlash();if(i!==selected)activeNoteHighlight=null;selected=i;render();
+}
 
 function autoNotes(scope){
   let targets;
@@ -526,9 +658,10 @@ function autoNotes(scope){
 function clearAllNotes(){
   clearFlash();startTimerOnce();snapshot();
   for(let i=0;i<81;i++)notes[i].clear();
-  showMsg('All notes cleared');render();
+  activeNoteHighlight=null;showMsg('All notes cleared');render();
 }
 
+// ── Tagging ────────────────────────────────────────────────────
 function tagSet(size){
   if(selected===null){showMsg('Select a cell first');return}
   const n=notes[selected];
@@ -572,40 +705,43 @@ function untagSet(size){
   clearFlash();startTimerOnce();snapshot();taggedSets.splice(idx,1);render();
 }
 
-function tagClass(i){
-  for(const t of taggedSets){if(t.indices.includes(i))return 'tagged-'+(t.size===2?'pair':'tri')+'-'+t.groupType}
-  return '';
-}
-function noteTagClass(i){
-  for(const t of taggedSets){if(t.indices.includes(i))return(t.size===2?'pair':'tri')+'-note-'+t.groupType}
-  return '';
-}
+function tagClass(i){for(const t of taggedSets){if(t.indices.includes(i))return 'tagged-'+(t.size===2?'pair':'tri')+'-'+t.groupType}return ''}
+function noteTagClass(i){for(const t of taggedSets){if(t.indices.includes(i))return(t.size===2?'pair':'tri')+'-note-'+t.groupType}return ''}
 
-function checkSolution(){
-  if(digits.some(d=>!d)){showMsg('Puzzle not complete yet');return}
-  const valid=digits.every((d,i)=>d&&![...peers(i)].some(j=>digits[j]===d));
-  if(valid){stopTimer();const m=Math.floor(timerSec/60),s=String(timerSec%60).padStart(2,'0');
-    showMsg('Solved! Time: '+m+':'+s,6000);}
-  else showMsg('Something is wrong — check red cells');
-}
-
+// ── Render ─────────────────────────────────────────────────────
 function render(){
   const peerSet=selected!==null?peers(selected):new Set();
-  const selVal=selected!==null?digits[selected]:0;
+  const selDigit=selected!==null?digits[selected]:0;
+  // FIX: when peek mode is on and selected cell is empty, use the solution digit for highlighting
+  const peekVal=autoSolveOn&&selected!==null&&!digits[selected]&&!PUZZLE[selected]?SOLUTION[selected]:0;
+  const selVal=selDigit||peekVal||(selected!==null&&mode!=='digit'?activeNoteHighlight:null)||0;
+
   cells.forEach((el,i)=>{
+    const displayVal=autoSolveOn&&!PUZZLE[i]&&!digits[i]?SOLUTION[i]:0;
+
     let cls='cell';
     if(PUZZLE[i])cls+=' given';
     else if(digits[i])cls+=' user-digit';
+    else if(displayVal)cls+=' solve-reveal';
+
     if(flashError.has(i))cls+=' error';
     else if(i===selected)cls+=' selected';
     else if(peerSet.has(i))cls+=' peer';
-    if(!flashError.has(i)&&selVal&&digits[i]===selVal&&i!==selected)cls+=' match';
+
+    if(!flashError.has(i)&&selVal&&i!==selected){
+      const cellMatchesDigit=digits[i]===selVal||(displayVal===selVal);
+      const noteMatchesActive=!digits[i]&&!displayVal&&notes[i].has(selVal);
+      if(cellMatchesDigit||noteMatchesActive)cls+=' match';
+    }
+
     const tc=tagClass(i);if(tc)cls+=' '+tc;
     if(hintPivots.has(i))cls+=' hint-pivot';
     if(hintWings.has(i))cls+=' hint-wing';
     el.className=cls;
+
     const d=digits[i],nt=notes[i];
     if(d){el.innerHTML=d;}
+    else if(displayVal){el.innerHTML=displayVal;}
     else if(nt.size>0){
       const ng=document.createElement('div');ng.className='notes-g';
       const ntc=noteTagClass(i);
@@ -613,9 +749,9 @@ function render(){
         const sp=document.createElement('span');
         if(nt.has(k)){
           sp.textContent=k;
-          if(ntc)sp.className=ntc;
+          if(selVal&&k===selVal)sp.className='match-note';
+          else if(ntc)sp.className=ntc;
           else if(hintNotes.has(i)&&hintNotes.get(i).has(k))sp.className='hint-note';
-          else if(selVal&&k===selVal)sp.className='match-note';
         }
         ng.appendChild(sp);
       }
@@ -624,6 +760,7 @@ function render(){
   });
 }
 
+// ── Build ──────────────────────────────────────────────────────
 function buildGrid(){
   grid.innerHTML='';cells=[];
   for(let i=0;i<81;i++){
@@ -637,8 +774,7 @@ function buildGrid(){
 function buildNumpad(){
   numpad.innerHTML='';
   for(let n=1;n<=9;n++){
-    const b=document.createElement('button');
-    b.textContent=n;b.onclick=()=>inputNum(n);
+    const b=document.createElement('button');b.textContent=n;b.onclick=()=>inputNum(n);
     numpad.appendChild(b);
   }
 }
@@ -647,26 +783,35 @@ function openModal(){document.getElementById('modal').classList.add('open')}
 function closeModal(){document.getElementById('modal').classList.remove('open')}
 
 async function startNew(diff){
-  closeModal();document.getElementById('loading-overlay').classList.add('open');
-  let puzzleArr;
-  try{puzzleArr=await fetchPuzzle(diff);}
-  catch(e){
+  closeModal();
+  autoSolveOn=false;
+  document.getElementById('btn-autosolve').classList.remove('solve-on');
+  document.getElementById('btn-autosolve').querySelector('.btn-short').textContent='👁';
+  document.getElementById('btn-autosolve').querySelector('.btn-long').textContent='Peek';
+  document.getElementById('loading-overlay').classList.add('open');
+  currentDiff=diff;
+  let puzzleArr,solArr;
+  try{
+    const result=await fetchPuzzle(diff);
+    puzzleArr=result.puzzle;solArr=result.solution;
+  } catch(e){
     const bank=FALLBACK[diff];
     puzzleArr=bank[Math.floor(Math.random()*bank.length)].split('').map(Number);
-    showMsg('Offline — using local puzzle');
+    solArr=solvePuzzle(puzzleArr);
+    showMsg('Using local puzzle');
   }
   document.getElementById('loading-overlay').classList.remove('open');
-  PUZZLE=[...puzzleArr];digits=[...PUZZLE];
+  PUZZLE=[...puzzleArr];SOLUTION=solArr||[];digits=[...PUZZLE];
   notes=Array.from({length:81},()=>new Set());
   taggedSets=[];hintPivots=new Set();hintWings=new Set();hintNotes=new Map();
-  history=[];selected=null;flashError.clear();
+  history=[];selected=null;flashError.clear();activeNoteHighlight=null;
   checkpoint=null;updateCheckpointUI();
   if(mode!=='digit')setMode('digit');
   buildGrid();startTimer();
   showMsg(diff.charAt(0).toUpperCase()+diff.slice(1)+' puzzle loaded');
 }
 
-// Hints
+// ── Hints ──────────────────────────────────────────────────────
 function clearHints(){hintPivots.clear();hintWings.clear();hintNotes.clear();render();showMsg('Hints cleared')}
 function hintFind(type){
   clearHints();
@@ -678,15 +823,9 @@ function hintFind(type){
 }
 
 function findNakedSets(n){
-  const groups=[];
-  for(let i=0;i<9;i++){
-    groups.push([...rowOf(i*9)]);
-    groups.push([...colOf(i)]);
-    groups.push([...boxOf(Math.floor(i/3)*27+(i%3)*3)]);
-  }
   let found=false;
-  for(const grp of groups){
-    const empties=grp.filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].size>=2&&notes[i].size<=n);
+  for(const grp of allGroups()){
+    const empties=grp.cells.filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].size>=2&&notes[i].size<=n);
     for(const combo of combinations(empties,n)){
       const union=new Set(combo.flatMap(i=>[...notes[i]]));
       if(union.size===n){combo.forEach(i=>{hintPivots.add(i);hintNotes.set(i,new Set(union))});found=true;}
@@ -770,19 +909,21 @@ function findXYWing(){
   else showMsg('XY-Wing: purple=pattern, pink=eliminations');
 }
 
+// ── Keyboard ───────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if(e.key==='z'&&(e.ctrlKey||e.metaKey)){undo();return}
   const n=parseInt(e.key);
   if(n>=1&&n<=9){inputNum(n);return}
   if(e.key==='Backspace'||e.key==='Delete'){eraseCell();return}
   if(e.key==='d'||e.key==='D')setMode('digit');
-  if(e.key==='n'||e.key==='N')cycleNotes();
+  if(e.key==='n'||e.key==='N')toggleNotes();
+  if(e.key==='s'||e.key==='S')toggleAutoSolve();
   if(selected!==null){
     const r=Math.floor(selected/9),c=selected%9;
-    if(e.key==='ArrowRight'&&c<8){clearFlash();selected++;render();e.preventDefault()}
-    if(e.key==='ArrowLeft'&&c>0){clearFlash();selected--;render();e.preventDefault()}
-    if(e.key==='ArrowDown'&&r<8){clearFlash();selected+=9;render();e.preventDefault()}
-    if(e.key==='ArrowUp'&&r>0){clearFlash();selected-=9;render();e.preventDefault()}
+    if(e.key==='ArrowRight'&&c<8){clearFlash();activeNoteHighlight=null;selected++;render();e.preventDefault()}
+    if(e.key==='ArrowLeft'&&c>0){clearFlash();activeNoteHighlight=null;selected--;render();e.preventDefault()}
+    if(e.key==='ArrowDown'&&r<8){clearFlash();activeNoteHighlight=null;selected+=9;render();e.preventDefault()}
+    if(e.key==='ArrowUp'&&r>0){clearFlash();activeNoteHighlight=null;selected-=9;render();e.preventDefault()}
   }
 });
 
