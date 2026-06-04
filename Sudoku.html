@@ -238,11 +238,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     <div id="controls">
       <div class="row-label">Mode</div>
       <div class="btn-row">
-        <button class="btn active" id="btn-digit" onclick="tapBtn(this,()=>setMode('digit'))"><span class="btn-short">D</span><span class="btn-long">Digit</span></button>
-        <button class="btn" id="btn-notes" onclick="tapBtn(this,()=>toggleNotes())"><span class="btn-short">N</span><span class="btn-long">Notes</span></button>
+        <button class="btn active" id="btn-digit" onclick="tapBtn(this,()=>setMode('digit'),false,true)"><span class="btn-short">D</span><span class="btn-long">Digit</span></button>
+        <button class="btn" id="btn-notes" onclick="tapBtn(this,()=>toggleNotes(),false,true)"><span class="btn-short">N</span><span class="btn-long">Notes</span></button>
         <button class="btn" onclick="tapBtn(this,()=>eraseCell())"><span class="btn-short">⌫</span><span class="btn-long">Erase</span></button>
         <button class="btn undo-style" onclick="tapBtn(this,()=>undo())"><span class="btn-short">↩</span><span class="btn-long">Undo</span></button>
         <button class="btn" onclick="tapBtn(this,()=>openModal())"><span class="btn-short">＋</span><span class="btn-long">New</span></button>
+        <button class="btn undo-style" onclick="deselect()"><span class="btn-short">○</span><span class="btn-long">Deselect</span></button>
       </div>
       <div class="row-label">Auto-notes</div>
       <div class="btn-row">
@@ -466,8 +467,8 @@ function collapseExpanded(){
   clearTimeout(expandTimer);expandTimer=null;
 }
 
-function tapBtn(btn,action,needsConfirm=false){
-  if(isFinePointer()){action();return;}
+function tapBtn(btn,action,needsConfirm=false,instant=false){
+  if(isFinePointer()||instant){action();return;}
   if(expandedBtn===btn){
     if(needsConfirm){collapseExpanded();action();}
     return;
@@ -764,6 +765,10 @@ function render(){
 }
 
 // ── Build ──────────────────────────────────────────────────────
+function deselect(){
+  selected=null;activeNoteHighlight=null;clearFlash();render();
+}
+
 function buildGrid(){
   grid.innerHTML='';cells=[];
   for(let i=0;i<81;i++){
@@ -772,6 +777,8 @@ function buildGrid(){
     el.addEventListener('click',()=>selectCell(i));
     grid.appendChild(el);cells.push(el);
   }
+  // Clicking the grid background (between cells) deselects
+  grid.addEventListener('click',e=>{if(e.target===grid)deselect();});
   render();
 }
 function buildNumpad(){
@@ -815,127 +822,150 @@ async function startNew(diff){
 }
 
 // ── Hints ──────────────────────────────────────────────────────
-function clearHints(){hintPivots.clear();hintWings.clear();hintNotes.clear();render();showMsg('Hints cleared')}
+// Each pattern is {pivots:[cellIdx,...], wings:[cellIdx,...], notes:Map<cellIdx,Set<digit>>}
+let hintPatterns=[], hintPatternIdx=0, hintLastType=null;
+
+function clearHints(){
+  hintPivots.clear();hintWings.clear();hintNotes.clear();
+  hintPatterns=[];hintPatternIdx=0;hintLastType=null;
+  render();showMsg('Hints cleared');
+}
+
+function applyPattern(p){
+  hintPivots.clear();hintWings.clear();hintNotes.clear();
+  p.pivots.forEach(i=>hintPivots.add(i));
+  p.wings.forEach(i=>hintWings.add(i));
+  p.notes.forEach((s,i)=>hintNotes.set(i,new Set(s)));
+}
+
 function hintFind(type){
-  clearHints();
-  if(type==='pairs')findNakedSets(2);
-  else if(type==='triples')findNakedSets(3);
-  else if(type==='xwing')findXWing();
-  else if(type==='xywing')findXYWing();
-  else if(type==='wwing')findWWing();
-  else if(type==='swordfish')findSwordfish();
+  // Same button pressed again → cycle to next pattern
+  if(type===hintLastType&&hintPatterns.length>0){
+    hintPatternIdx=(hintPatternIdx+1)%hintPatterns.length;
+    applyPattern(hintPatterns[hintPatternIdx]);
+    showMsg(`Pattern ${hintPatternIdx+1} of ${hintPatterns.length}`);
+    render();return;
+  }
+  // New type: collect all patterns fresh
+  hintPivots.clear();hintWings.clear();hintNotes.clear();
+  hintPatterns=[];hintPatternIdx=0;hintLastType=type;
+  if(type==='pairs')collectNakedSets(2);
+  else if(type==='triples')collectNakedSets(3);
+  else if(type==='xwing')collectXWing();
+  else if(type==='xywing')collectXYWing();
+  else if(type==='wwing')collectWWing();
+  else if(type==='swordfish')collectSwordfish();
+  if(!hintPatterns.length){
+    const names={pairs:'naked pairs',triples:'naked triples',xwing:'X-Wings',
+      xywing:'XY-Wings',wwing:'W-Wings',swordfish:'Swordfish'};
+    showMsg('No '+names[type]+' found in notes');render();return;
+  }
+  applyPattern(hintPatterns[0]);
+  const label={pairs:'Naked pair',triples:'Naked triple',xwing:'X-Wing',
+    xywing:'XY-Wing',wwing:'W-Wing',swordfish:'Swordfish'};
+  showMsg(`${label[type]} 1 of ${hintPatterns.length} — press again to cycle`);
   render();
 }
 
-function findNakedSets(n){
-  let found=false;
+// Helper: build a pattern object from working sets, then reset them
+function _collectPattern(pivotArr,wingArr,notesMap){
+  hintPatterns.push({
+    pivots:[...pivotArr],
+    wings:[...wingArr],
+    notes:new Map([...notesMap].map(([k,v])=>[k,new Set(v)]))
+  });
+}
+
+function collectNakedSets(n){
   for(const grp of allGroups()){
     const empties=grp.cells.filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].size>=2&&notes[i].size<=n);
     for(const combo of combinations(empties,n)){
       const union=new Set(combo.flatMap(i=>[...notes[i]]));
-      if(union.size===n){combo.forEach(i=>{hintPivots.add(i);hintNotes.set(i,new Set(union))});found=true;}
+      if(union.size===n){
+        const piv=new Set(combo);
+        const nm=new Map(combo.map(i=>[i,new Set(union)]));
+        _collectPattern(piv,[],nm);
+      }
     }
   }
-  if(!found)showMsg(n===2?'No naked pairs found':'No naked triples found');
-  else showMsg((n===2?'Naked pairs':'Naked triples')+' highlighted in purple');
 }
 
-function findXWing(){
-  let found=false;
+function collectXWing(){
   for(let d=1;d<=9;d++){
     const rowCands=[];
     for(let r=0;r<9;r++){
-      const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>i%9);
+      const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].has(d)).map(i=>i%9);
       if(cols.length===2)rowCands.push({r,cols});
     }
     for(let a=0;a<rowCands.length;a++)for(let b=a+1;b<rowCands.length;b++){
       if(rowCands[a].cols[0]===rowCands[b].cols[0]&&rowCands[a].cols[1]===rowCands[b].cols[1]){
         const[c1,c2]=[rowCands[a].cols[0],rowCands[a].cols[1]],[r1,r2]=[rowCands[a].r,rowCands[b].r];
-        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);
-          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
-        for(let r=0;r<9;r++)if(r!==r1&&r!==r2)[c1,c2].forEach(c=>{const idx=r*9+c;
-          if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);
-            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
-        found=true;
+        const piv=new Set(),wngs=new Set(),nm=new Map();
+        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{
+          const idx=r*9+c;piv.add(idx);nm.set(idx,new Set([d]));});
+        for(let r=0;r<9;r++)if(r!==r1&&r!==r2)[c1,c2].forEach(c=>{
+          const idx=r*9+c;
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){wngs.add(idx);nm.set(idx,new Set([d]));}});
+        if(wngs.size===0)continue;
+        _collectPattern(piv,wngs,nm);
       }
     }
     const colCands=[];
     for(let c=0;c<9;c++){
-      const rows=[...colOf(c)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
+      const rows=[...colOf(c)].filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
       if(rows.length===2)colCands.push({c,rows});
     }
     for(let a=0;a<colCands.length;a++)for(let b=a+1;b<colCands.length;b++){
       if(colCands[a].rows[0]===colCands[b].rows[0]&&colCands[a].rows[1]===colCands[b].rows[1]){
         const[r1,r2]=[colCands[a].rows[0],colCands[a].rows[1]],[c1,c2]=[colCands[a].c,colCands[b].c];
-        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{const idx=r*9+c;hintPivots.add(idx);
-          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)});
-        for(let c=0;c<9;c++)if(c!==c1&&c!==c2)[r1,r2].forEach(r=>{const idx=r*9+c;
-          if(!digits[idx]&&notes[idx].has(d)){hintWings.add(idx);
-            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());hintNotes.get(idx).add(d)}});
-        found=true;
+        const piv=new Set(),wngs=new Set(),nm=new Map();
+        [[r1,c1],[r1,c2],[r2,c1],[r2,c2]].forEach(([r,c])=>{
+          const idx=r*9+c;piv.add(idx);nm.set(idx,new Set([d]));});
+        for(let c=0;c<9;c++)if(c!==c1&&c!==c2)[r1,r2].forEach(r=>{
+          const idx=r*9+c;
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){wngs.add(idx);nm.set(idx,new Set([d]));}});
+        if(wngs.size===0)continue;
+        _collectPattern(piv,wngs,nm);
       }
     }
   }
-  if(!found)showMsg('No X-Wings found in notes');
-  else showMsg('X-Wing: purple=pattern, pink=eliminations');
 }
 
-function findXYWing(){
+function collectXYWing(){
   const bi=[];
   for(let i=0;i<81;i++)if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2)bi.push(i);
-  let found=false;
   for(const pivot of bi){
-    const[x,y]=[...notes[pivot]]; // pivot holds exactly {x,y}
+    const[x,y]=[...notes[pivot]];
     for(const w1 of bi){
       if(w1===pivot||!sees(pivot,w1))continue;
       const w1arr=[...notes[w1]];
-      // w1 must share exactly one digit with pivot and have a third digit z
-      const w1hasX=notes[w1].has(x), w1hasY=notes[w1].has(y);
-      if(w1hasX===w1hasY)continue; // must share exactly one of x,y (not both, not neither)
-      const sharedW1=w1hasX?x:y;   // the digit w1 shares with pivot
-      const otherPivot=w1hasX?y:x; // the pivot digit w1 does NOT have
-      const z=w1arr.find(v=>v!==sharedW1); // w1's third digit
+      const w1hasX=notes[w1].has(x),w1hasY=notes[w1].has(y);
+      if(w1hasX===w1hasY)continue;
+      const sharedW1=w1hasX?x:y;
+      const otherPivot=w1hasX?y:x;
+      const z=w1arr.find(v=>v!==sharedW1);
       if(z===undefined)continue;
       for(const w2 of bi){
         if(w2===pivot||w2===w1||!sees(pivot,w2))continue;
-        // w2 must hold {otherPivot, z} — completing the XY-Wing
         if(!notes[w2].has(otherPivot)||!notes[w2].has(z))continue;
-        // w1 and w2 must NOT see each other (otherwise the elimination scope collapses)
         if(sees(w1,w2))continue;
-        // Valid XY-Wing found: pivot={x,y}, w1={sharedW1,z}, w2={otherPivot,z}
-        // Any cell seeing both w1 and w2 can have z eliminated
-        hintPivots.add(pivot);hintPivots.add(w1);hintPivots.add(w2);
-        [pivot,w1,w2].forEach(c=>{
-          if(!hintNotes.has(c))hintNotes.set(c,new Set());
-          notes[c].forEach(v=>hintNotes.get(c).add(v));
-        });
+        const piv=new Set([pivot,w1,w2]),wngs=new Set(),nm=new Map();
+        [pivot,w1,w2].forEach(c=>nm.set(c,new Set(notes[c])));
         for(let i=0;i<81;i++){
-          if(hintPivots.has(i)||digits[i]||PUZZLE[i])continue;
+          if(piv.has(i)||digits[i]||PUZZLE[i])continue;
           if(sees(w1,i)&&sees(w2,i)&&notes[i].has(z)){
-            hintWings.add(i);
-            if(!hintNotes.has(i))hintNotes.set(i,new Set());
-            hintNotes.get(i).add(z);
+            wngs.add(i);nm.set(i,new Set([z]));
           }
         }
-        found=true;
+        _collectPattern(piv,wngs,nm);
       }
     }
   }
-  if(!found)showMsg('No XY-Wings found in notes');
-  else showMsg('XY-Wing: purple=pattern, pink=eliminations');
 }
 
-function findWWing(){
-  // W-Wing: two non-peer bivalue cells both holding {x,y}, bridged by a strong link on x.
-  // A strong link on x exists when x appears in exactly 2 cells in some group (row/col/box),
-  // and one of those link cells sees wing A while the other sees wing B.
-  // Elimination: y can be removed from any cell seeing BOTH wings.
+function collectWWing(){
   const bi=[];
   for(let i=0;i<81;i++)if(!digits[i]&&!PUZZLE[i]&&notes[i].size===2)bi.push(i);
-  let found=false;
-
-  // Build strong links: for each digit, collect all groups where it appears exactly twice
-  // strongLinks[d] = array of [cellA, cellB] pairs
   const strongLinks=Array.from({length:10},()=>[]);
   for(const grp of allGroups()){
     for(let d=1;d<=9;d++){
@@ -943,133 +973,99 @@ function findWWing(){
       if(cands.length===2)strongLinks[d].push([cands[0],cands[1]]);
     }
   }
-
   for(let a=0;a<bi.length;a++){
     for(let b=a+1;b<bi.length;b++){
-      const wA=bi[a], wB=bi[b];
-      if(sees(wA,wB))continue; // wings must not see each other
-      const [p,q]=[...notes[wA]];
-      // wings must hold the same pair
+      const wA=bi[a],wB=bi[b];
+      if(sees(wA,wB))continue;
+      const[p,q]=[...notes[wA]];
       if(!notes[wB].has(p)||!notes[wB].has(q))continue;
-
-      // Try bridging on p, eliminating q; then bridging on q, eliminating p
       for(const[bridgeDigit,elimDigit] of [[p,q],[q,p]]){
         for(const[lk1,lk2] of strongLinks[bridgeDigit]){
-          // One link cell must see wA, the other must see wB (and not vice-versa,
-          // to avoid the trivial case where a single link cell sees both wings)
           const fwd=sees(lk1,wA)&&sees(lk2,wB)&&!sees(lk1,wB)&&!sees(lk2,wA);
           const rev=sees(lk2,wA)&&sees(lk1,wB)&&!sees(lk2,wB)&&!sees(lk1,wA);
           if(!fwd&&!rev)continue;
-
-          // Valid W-Wing found
-          [wA,wB].forEach(w=>{
-            hintPivots.add(w);
-            if(!hintNotes.has(w))hintNotes.set(w,new Set());
-            notes[w].forEach(v=>hintNotes.get(w).add(v));
-          });
-          [lk1,lk2].forEach(lk=>{
-            hintWings.add(lk);
-            if(!hintNotes.has(lk))hintNotes.set(lk,new Set());
-            hintNotes.get(lk).add(bridgeDigit);
-          });
-
-          // Eliminate elimDigit from cells seeing both wings
+          const piv=new Set([wA,wB]),wngs=new Set([lk1,lk2]),nm=new Map();
+          nm.set(wA,new Set(notes[wA]));nm.set(wB,new Set(notes[wB]));
+          nm.set(lk1,new Set([bridgeDigit]));nm.set(lk2,new Set([bridgeDigit]));
           for(let i=0;i<81;i++){
-            if(hintPivots.has(i)||hintWings.has(i)||digits[i]||PUZZLE[i])continue;
+            if(piv.has(i)||wngs.has(i)||digits[i]||PUZZLE[i])continue;
             if(sees(wA,i)&&sees(wB,i)&&notes[i].has(elimDigit)){
-              hintWings.add(i);
-              if(!hintNotes.has(i))hintNotes.set(i,new Set());
-              hintNotes.get(i).add(elimDigit);
+              wngs.add(i);nm.set(i,new Set([elimDigit]));
             }
           }
-          found=true;
+          _collectPattern(piv,wngs,nm);
         }
       }
     }
   }
-  if(!found)showMsg('No W-Wings found in notes');
-  else showMsg('W-Wing: purple=wings, pink=bridge & eliminations');
 }
 
-function findSwordfish(){
-  // Swordfish: for a digit d, find 3 rows each containing d in exactly 2 or 3 columns,
-  // where the union of those columns is exactly 3. Then d can be eliminated from those
-  // 3 columns in all other rows. Same logic applies with rows and columns swapped.
-  let found=false;
-
+function collectSwordfish(){
   for(let d=1;d<=9;d++){
-    // Row-based swordfish
+    // Row-based: find rows where digit d appears in exactly 2 or 3 candidate cells
     const rowCands=[];
     for(let r=0;r<9;r++){
-      const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>i%9);
+      const cols=[...rowOf(r*9)].filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].has(d)).map(i=>i%9);
       if(cols.length>=2&&cols.length<=3)rowCands.push({r,cols});
     }
     for(const combo of combinations(rowCands,3)){
       const colUnion=new Set(combo.flatMap(rc=>rc.cols));
+      // Must be exactly 3 columns — 2 would be X-Wing, 4+ is not Swordfish
       if(colUnion.size!==3)continue;
-      const rows=combo.map(rc=>rc.r);
-      const cols=[...colUnion];
+      // At least one row must have candidates in 3 columns (otherwise it's just an X-Wing repeated)
+      const hasThreeColRow=combo.some(rc=>rc.cols.length===3);
+      if(!hasThreeColRow)continue;
+      const rows=combo.map(rc=>rc.r),cols=[...colUnion];
+      const piv=new Set(),wngs=new Set(),nm=new Map();
       rows.forEach(r=>cols.forEach(c=>{
         const idx=r*9+c;
-        if(!digits[idx]&&notes[idx].has(d)){
-          hintPivots.add(idx);
-          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
-          hintNotes.get(idx).add(d);
-        }
+        if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){piv.add(idx);nm.set(idx,new Set([d]));}
       }));
+      // Find eliminations — d in those columns outside the pattern rows
       for(let r=0;r<9;r++){
         if(rows.includes(r))continue;
         cols.forEach(c=>{
           const idx=r*9+c;
-          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){
-            hintWings.add(idx);
-            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
-            hintNotes.get(idx).add(d);
-          }
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){wngs.add(idx);nm.set(idx,new Set([d]));}
         });
       }
-      found=true;
+      // Only record if there are actual eliminations to make
+      if(wngs.size===0)continue;
+      _collectPattern(piv,wngs,nm);
     }
-
-    // Column-based swordfish
+    // Column-based: find cols where digit d appears in exactly 2 or 3 candidate cells
     const colCands=[];
     for(let c=0;c<9;c++){
-      const rows=[...colOf(c)].filter(i=>!digits[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
+      const rows=[...colOf(c)].filter(i=>!digits[i]&&!PUZZLE[i]&&notes[i].has(d)).map(i=>Math.floor(i/9));
       if(rows.length>=2&&rows.length<=3)colCands.push({c,rows});
     }
     for(const combo of combinations(colCands,3)){
       const rowUnion=new Set(combo.flatMap(cc=>cc.rows));
       if(rowUnion.size!==3)continue;
-      const cols=combo.map(cc=>cc.c);
-      const rows=[...rowUnion];
+      const hasThreeRowCol=combo.some(cc=>cc.rows.length===3);
+      if(!hasThreeRowCol)continue;
+      const cols=combo.map(cc=>cc.c),rows=[...rowUnion];
+      const piv=new Set(),wngs=new Set(),nm=new Map();
       rows.forEach(r=>cols.forEach(c=>{
         const idx=r*9+c;
-        if(!digits[idx]&&notes[idx].has(d)){
-          hintPivots.add(idx);
-          if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
-          hintNotes.get(idx).add(d);
-        }
+        if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){piv.add(idx);nm.set(idx,new Set([d]));}
       }));
       for(let c=0;c<9;c++){
         if(cols.includes(c))continue;
         rows.forEach(r=>{
           const idx=r*9+c;
-          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){
-            hintWings.add(idx);
-            if(!hintNotes.has(idx))hintNotes.set(idx,new Set());
-            hintNotes.get(idx).add(d);
-          }
+          if(!digits[idx]&&!PUZZLE[idx]&&notes[idx].has(d)){wngs.add(idx);nm.set(idx,new Set([d]));}
         });
       }
-      found=true;
+      if(wngs.size===0)continue;
+      _collectPattern(piv,wngs,nm);
     }
   }
-  if(!found)showMsg('No Swordfish found in notes');
-  else showMsg('Swordfish: purple=pattern, pink=eliminations');
 }
 
 // ── Keyboard ───────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){deselect();return;}
   if(e.key==='z'&&(e.ctrlKey||e.metaKey)){undo();return}
   const n=parseInt(e.key);
   if(n>=1&&n<=9){inputNum(n);return}
