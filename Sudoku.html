@@ -30,6 +30,16 @@
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   font-family:'Courier New',monospace;overflow:hidden;touch-action:manipulation}
 
+/* ── Row/Col Labels ───────────────────────────────────────────── */
+#grid-outer{display:flex;flex-direction:column;width:100%;height:100%}
+#col-labels{display:grid;grid-template-columns:var(--label-size) repeat(9,1fr);width:100%;flex-shrink:0;height:var(--label-size)}
+#grid-row{display:flex;flex-direction:row;flex:1;min-height:0}
+#row-labels{display:grid;grid-template-rows:repeat(9,1fr);flex-shrink:0;width:var(--label-size)}
+.col-label,.row-num{display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);font-size:var(--label-font);font-weight:600;
+  letter-spacing:0;opacity:0.55;font-family:'Courier New',monospace}
+.corner-cell{display:block}
+
 @media(min-width:700px){
   #app{display:flex;flex-direction:row;align-items:stretch;
     width:100vw;height:100vh;padding:14px;gap:16px}
@@ -37,9 +47,11 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     width:300px;flex-shrink:0;overflow-y:auto;overflow-x:hidden}
   #grid-wrap{flex:1;align-self:center;
     --gs:min(calc(100vh - 28px),calc(100vw - 344px));
+    --label-size:calc(var(--gs)*0.045);
+    --label-font:calc(var(--gs)*0.025);
     width:var(--gs);height:var(--gs);flex-shrink:0}
-  .cell{font-size:calc(var(--gs)/9*0.52)}
-  .notes-g span{font-size:calc(var(--gs)/9*0.24)}
+  .cell{font-size:calc((var(--gs) - var(--label-size))/9*0.52)}
+  .notes-g span{font-size:calc((var(--gs) - var(--label-size))/9*0.24)}
   #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;width:100%}
   #numpad button{font-size:20px;padding:10px 0}
   .btn{font-size:13px;padding:9px 6px}
@@ -54,8 +66,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     width:min(calc(100vw - 8px),calc(100dvh - 200px));aspect-ratio:1}
   #panel{order:2;display:flex;flex-direction:column;align-items:center;gap:3px;
     width:min(calc(100vw - 8px),480px);flex-shrink:0}
-  .cell{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 200px))/9*0.52)}
-  .notes-g span{font-size:calc(min(calc(100vw - 8px),calc(100dvh - 200px))/9*0.24)}
+  #grid-wrap{--gs:min(calc(100vw - 8px),calc(100dvh - 200px));
+    --label-size:calc(var(--gs)*0.05);--label-font:calc(var(--gs)*0.028)}
+  .cell{font-size:calc((var(--gs) - var(--label-size))/9*0.52)}
+  .notes-g span{font-size:calc((var(--gs) - var(--label-size))/9*0.24)}
   #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:100%}
   #numpad button{font-size:18px;padding:8px 0}
   .btn{font-size:11px;padding:6px 2px}
@@ -72,8 +86,10 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   #grid-wrap{flex-shrink:0;
     width:calc(100dvh - 8px);height:calc(100dvh - 8px);
     max-width:54vw;align-self:center}
-  .cell{font-size:calc(min(calc(100dvh - 8px),54vw)/9*0.5)}
-  .notes-g span{font-size:calc(min(calc(100dvh - 8px),54vw)/9*0.22)}
+  #grid-wrap{--gs:min(calc(100dvh - 8px),54vw);
+    --label-size:calc(var(--gs)*0.05);--label-font:calc(var(--gs)*0.026)}
+  .cell{font-size:calc((var(--gs) - var(--label-size))/9*0.5)}
+  .notes-g span{font-size:calc((var(--gs) - var(--label-size))/9*0.22)}
   #numpad{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;width:100%}
   #numpad button{font-size:13px;padding:6px 0}
   .btn{font-size:10px;padding:5px 3px}
@@ -286,8 +302,24 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
     <div id="numpad"></div>
     <div id="msg"></div>
   </div>
-  <div id="grid-wrap"><div id="grid"></div></div>
-</div>
+  <div id="grid-wrap">
+    <div id="grid-outer">
+      <div id="col-labels">
+        <div class="corner-cell"></div>
+        <div class="col-label">C1</div><div class="col-label">C2</div><div class="col-label">C3</div>
+        <div class="col-label">C4</div><div class="col-label">C5</div><div class="col-label">C6</div>
+        <div class="col-label">C7</div><div class="col-label">C8</div><div class="col-label">C9</div>
+      </div>
+      <div id="grid-row">
+        <div id="row-labels">
+          <div class="row-num">R1</div><div class="row-num">R2</div><div class="row-num">R3</div>
+          <div class="row-num">R4</div><div class="row-num">R5</div><div class="row-num">R6</div>
+          <div class="row-num">R7</div><div class="row-num">R8</div><div class="row-num">R9</div>
+        </div>
+        <div id="grid"></div>
+      </div>
+    </div>
+  </div>
 
 <div id="splash" class="open">
   <div id="splash-box">
@@ -643,7 +675,10 @@ function eraseCell(){
 }
 
 function selectCell(i){
-  clearFlash();if(i!==selected)activeNoteHighlight=null;selected=i;render();
+  clearFlash();if(i!==selected)activeNoteHighlight=null;selected=i;
+  const r=Math.floor(i/9)+1,c=(i%9)+1;
+  showMsg(`R${r}C${c}`,1200);
+  render();
 }
 
 function autoNotes(scope){
@@ -957,6 +992,7 @@ function collectXYWing(){
             wngs.add(i);nm.set(i,new Set([z]));
           }
         }
+        if(wngs.size===0)continue;
         _collectPattern(piv,wngs,nm);
       }
     }
@@ -993,6 +1029,7 @@ function collectWWing(){
               wngs.add(i);nm.set(i,new Set([elimDigit]));
             }
           }
+          if(wngs.size<=2)continue; // lk1+lk2 are pre-added; need at least one real elimination
           _collectPattern(piv,wngs,nm);
         }
       }
